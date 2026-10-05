@@ -23,7 +23,14 @@ import { CatalogFilterDrawer } from "@/components/storefront/catalog-filter-draw
 import { CatalogActiveFilters } from "@/components/storefront/catalog-active-filters";
 import { CatalogPagination } from "@/components/storefront/catalog-pagination";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
-import { DEFAULT_CATALOG_QUERY } from "@/lib/storefront/catalog-query";
+import {
+  buildCatalogHref,
+  CATALOG_SORT_LABELS_RO,
+  DEFAULT_CATALOG_QUERY,
+  type CatalogQuery,
+} from "@/lib/storefront/catalog-query";
+import { publicSavedPath } from "@/lib/storefront/paths";
+import { IconBookmark, IconGrid, IconSort } from "@/components/storefront/icons";
 
 /** Always read fresh inventory — reserved/sold must not linger in storefront cache. */
 export const dynamic = "force-dynamic";
@@ -50,6 +57,13 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     };
   }
   return { title: "Negăsit" };
+}
+
+function nextSortHref(query: CatalogQuery): string {
+  const order = ["newest", "price_asc", "price_desc", "year_desc", "mileage_asc"] as const;
+  const idx = order.indexOf(query.sort);
+  const next = order[(idx + 1) % order.length]!;
+  return buildCatalogHref({ ...query, sort: next, page: 1 });
 }
 
 /**
@@ -87,38 +101,20 @@ export default async function RootPage({ searchParams }: PageProps) {
   const totalPages = catalog?.totalPages ?? 1;
   const query = catalog?.query ?? DEFAULT_CATALOG_QUERY;
   const hasFilterChips = catalogQueryHasFilterChips(query);
-  const stickyPad =
-    tenantView.phone || tenantView.whatsapp ? "pb-24 md:pb-8" : undefined;
+  const sortLabel = CATALOG_SORT_LABELS_RO[query.sort];
 
   return (
-    <PublicStorefrontShell
-      tenant={tenantView}
-      stickySurface="catalog"
-      mainClassName={stickyPad}
-    >
-      <div className="flex min-w-0 flex-col gap-6 sm:gap-7">
-        <div className="flex flex-col gap-2">
-          <p
-            className="text-sm font-medium tracking-wide uppercase"
-            style={{ color: tenantView.primaryColor }}
-          >
-            Catalog
-          </p>
-          <h2 className="text-2xl font-semibold tracking-tight text-[var(--sf-text)] sm:text-3xl">
-            Vehicule disponibile
-          </h2>
-          <p className="max-w-2xl text-sm leading-6 text-[var(--sf-text-muted)]">
-            Stocul public al dealerului {tenantView.name}.
-          </p>
-        </div>
+    <PublicStorefrontShell tenant={tenantView} stickySurface="catalog">
+      <div className="flex min-w-0 flex-col gap-4 sm:gap-6">
+        <h2 className="sr-only">Vehicule disponibile</h2>
 
         <CatalogFilterDrawer query={query} />
         <div className="hidden md:block">
           <CatalogFilters
             query={query}
             idPrefix="catalog-desktop"
-            submitLabel="Caută"
-            className="flex flex-col gap-4 rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)] bg-[var(--sf-surface)] p-4 sm:p-5"
+            submitLabel="Vezi Rezultatele"
+            className="sf-glow-pattern flex flex-col gap-4 rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)] p-4 sm:p-5"
           />
         </div>
         <CatalogActiveFilters query={query} />
@@ -126,17 +122,50 @@ export default async function RootPage({ searchParams }: PageProps) {
         {listError ? <FeedbackBanner variant="error">{listError}</FeedbackBanner> : null}
 
         {!listError ? (
-          <p
-            className="text-sm font-semibold text-[var(--sf-text)]"
+          <div
+            className="flex items-center justify-between gap-3"
             aria-live="polite"
             aria-atomic="true"
           >
-            {catalogResultsLabel(total)}
-          </p>
+            <div>
+              <p className="text-lg font-bold tracking-tight text-[var(--sf-text)]">
+                {total === 1 ? "1 mașină" : `${total} mașini`}
+              </p>
+              <p className="text-sm text-[var(--sf-text-muted)]">în stoc</p>
+              <span className="sr-only">{catalogResultsLabel(total)}</span>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <span
+                className="inline-flex size-10 items-center justify-center rounded-xl border border-[var(--sf-border)] bg-white text-[var(--sf-text-muted)]"
+                aria-hidden
+                title="Vizualizare listă"
+              >
+                <IconGrid size={16} />
+              </span>
+              <Link
+                href={publicSavedPath()}
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[var(--sf-border)] bg-white px-2.5 text-xs font-semibold text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+              >
+                <IconBookmark size={14} />
+                Salvează
+              </Link>
+              <Link
+                href={nextSortHref(query)}
+                className="inline-flex min-h-10 max-w-[7.5rem] items-center gap-1.5 truncate rounded-xl border border-[var(--sf-border)] bg-white px-2.5 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                style={{ color: "var(--sf-accent)" }}
+                title={`Sortare: ${sortLabel}. Apasă pentru următoarea.`}
+              >
+                <IconSort size={14} />
+                <span className="truncate">
+                  {query.sort === "newest" ? "Recente" : sortLabel}
+                </span>
+              </Link>
+            </div>
+          </div>
         ) : null}
 
         {!listError && total === 0 ? (
-          <div className="rounded-[var(--sf-radius-lg)] border border-dashed border-[var(--sf-border)] bg-[var(--sf-surface)] px-4 py-10 text-center">
+          <div className="rounded-[var(--sf-radius-lg)] border border-dashed border-[var(--sf-border)] bg-white px-4 py-10 text-center">
             {hasFilterChips ? (
               <>
                 <p className="text-base font-medium text-[var(--sf-text)]">

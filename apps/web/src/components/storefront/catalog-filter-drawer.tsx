@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import type { CatalogQuery } from "@/lib/storefront/catalog-query";
 import {
   catalogQueryHasFilterChips,
   countActiveCatalogFilters,
+  resetCatalogHref,
 } from "@/lib/storefront/catalog-chips";
 import {
   CATALOG_DRAWER_FOCUSABLE_SELECTOR,
@@ -12,6 +14,17 @@ import {
   resolveFocusTrapIndex,
 } from "@/lib/storefront/catalog-drawer-a11y";
 import { CatalogFilters } from "@/components/storefront/catalog-filters";
+import {
+  IconBody,
+  IconCalendar,
+  IconChevronLeft,
+  IconChevronRight,
+  IconFuel,
+  IconGrid,
+  IconSearch,
+  IconSliders,
+  IconTag,
+} from "@/components/storefront/icons";
 
 type CatalogFilterDrawerProps = {
   query: CatalogQuery;
@@ -27,19 +40,13 @@ function listFocusable(root: HTMLElement): HTMLElement[] {
   });
 }
 
-function FilterIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 20 20"
-      className="size-4 shrink-0"
-      fill="currentColor"
-    >
-      <path d="M3 5.5A1.5 1.5 0 0 1 4.5 4h11a1.5 1.5 0 0 1 1.06 2.56L12 11.12V15a1 1 0 0 1-1.45.89l-2-1A1 1 0 0 1 8 14v-2.88L3.44 6.56A1.5 1.5 0 0 1 3 5.5Z" />
-    </svg>
-  );
-}
+const pillClass =
+  "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--sf-border)] bg-white/85 px-3 text-sm font-semibold text-[var(--sf-text)] shadow-sm backdrop-blur-[1px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]";
 
+/**
+ * Homepage mobile filter chrome — matches storefront reference layout (white theme).
+ * Quick pills + search open the full filter drawer; form fields stay in CatalogFilters.
+ */
 export function CatalogFilterDrawer({ query }: CatalogFilterDrawerProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -52,6 +59,10 @@ export function CatalogFilterDrawer({ query }: CatalogFilterDrawerProps) {
 
   function close() {
     setOpen(false);
+  }
+
+  function openDrawer() {
+    setOpen(true);
   }
 
   useEffect(() => {
@@ -99,26 +110,124 @@ export function CatalogFilterDrawer({ query }: CatalogFilterDrawerProps) {
     };
   }, [open]);
 
-  const triggerLabel =
-    activeCount > 0 ? `Filtre (${activeCount})` : "Filtre";
+  const triggerHint =
+    activeCount > 0
+      ? `${activeCount} ${activeCount === 1 ? "filtru activ" : "filtre active"}`
+      : "Cutie · km · TVA · scaune · dotări";
 
   return (
     <div className="md:hidden">
-      <button
-        ref={triggerRef}
-        type="button"
-        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-        aria-expanded={open}
-        aria-controls={panelId}
-        aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
-      >
-        <FilterIcon />
-        {triggerLabel}
-      </button>
+      <div className="sf-glow-pattern flex flex-col gap-3 rounded-2xl border border-[var(--sf-border)] p-3">
+        <div
+          className="flex rounded-full bg-white/80 p-1 shadow-sm backdrop-blur-[2px]"
+          role="presentation"
+        >
+          <span className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full bg-white px-3 text-sm font-semibold text-[var(--sf-text)] shadow-sm">
+            În stoc
+          </span>
+          <span
+            className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full px-3 text-sm font-medium text-[var(--sf-text-muted)]"
+            title="Disponibil ulterior"
+          >
+            Urmează în stoc
+          </span>
+        </div>
+
+        <form method="GET" action="/" className="relative">
+          <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--sf-text-muted)]">
+            <IconSearch size={18} />
+          </span>
+          <label htmlFor={`${panelId}-quick-q`} className="sr-only">
+            Caută marca sau modelul
+          </label>
+          <input
+            id={`${panelId}-quick-q`}
+            name="q"
+            type="search"
+            defaultValue={query.q ?? ""}
+            maxLength={80}
+            placeholder="Caută marca sau modelul..."
+            className="min-h-12 w-full rounded-2xl border border-[var(--sf-border)] bg-[var(--sf-surface-muted)] py-2.5 pr-3 pl-11 text-sm text-[var(--sf-text)] placeholder:text-[var(--sf-text-muted)] focus:border-[var(--sf-accent)] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--sf-accent)_25%,transparent)]"
+          />
+          {/* Preserve active filters when searching from quick bar */}
+          {query.priceMin != null ? (
+            <input type="hidden" name="priceMin" value={query.priceMin} />
+          ) : null}
+          {query.priceMax != null ? (
+            <input type="hidden" name="priceMax" value={query.priceMax} />
+          ) : null}
+          {query.yearMin != null ? (
+            <input type="hidden" name="yearMin" value={query.yearMin} />
+          ) : null}
+          {query.yearMax != null ? (
+            <input type="hidden" name="yearMax" value={query.yearMax} />
+          ) : null}
+          {query.kmMin != null ? (
+            <input type="hidden" name="kmMin" value={query.kmMin} />
+          ) : null}
+          {query.kmMax != null ? (
+            <input type="hidden" name="kmMax" value={query.kmMax} />
+          ) : null}
+          {query.fuel.map((f) => (
+            <input key={`fuel-${f}`} type="hidden" name="fuel" value={f} />
+          ))}
+          {query.transmission.map((t) => (
+            <input key={`tr-${t}`} type="hidden" name="transmission" value={t} />
+          ))}
+          {query.bodyType.map((b) => (
+            <input key={`body-${b}`} type="hidden" name="bodyType" value={b} />
+          ))}
+          {query.sort !== "newest" ? (
+            <input type="hidden" name="sort" value={query.sort} />
+          ) : null}
+        </form>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" className={`${pillClass} col-span-2`} onClick={openDrawer}>
+            <IconGrid size={16} />
+            Brand
+          </button>
+          <button type="button" className={pillClass} onClick={openDrawer}>
+            <IconBody size={16} />
+            Caroserie
+          </button>
+          <button type="button" className={pillClass} onClick={openDrawer}>
+            <IconFuel size={16} />
+            Combustibil
+          </button>
+          <button type="button" className={pillClass} onClick={openDrawer}>
+            <IconTag size={16} />
+            Preț
+          </button>
+          <button type="button" className={pillClass} onClick={openDrawer}>
+            <IconCalendar size={16} />
+            An
+          </button>
+        </div>
+
+        <button
+          ref={triggerRef}
+          type="button"
+          className="inline-flex min-h-14 w-full items-center gap-3 rounded-2xl px-4 text-left text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+          style={{ backgroundColor: "var(--sf-accent)" }}
+          aria-expanded={open}
+          aria-controls={panelId}
+          aria-haspopup="dialog"
+          onClick={openDrawer}
+        >
+          <IconSliders size={18} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold">Toate filtrele</span>
+            <span className="mt-0.5 block truncate text-xs font-medium text-white/85">
+              {triggerHint}
+            </span>
+          </span>
+          <IconChevronRight size={18} />
+        </button>
+      </div>
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center md:hidden">
+        <div className="fixed inset-0 z-50 flex items-stretch justify-center md:hidden">
           <button
             type="button"
             className="absolute inset-0 bg-zinc-900/45 motion-safe:transition-opacity motion-safe:duration-200 motion-reduce:transition-none"
@@ -132,30 +241,59 @@ export function CatalogFilterDrawer({ query }: CatalogFilterDrawerProps) {
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            className="catalog-filter-drawer-panel relative z-10 flex max-h-[92dvh] w-full flex-col rounded-t-2xl border border-zinc-200 bg-white shadow-xl outline-none"
+            className="catalog-filter-drawer-panel relative z-10 flex h-full w-full flex-col bg-white outline-none"
           >
-            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3">
-              <h2 id={titleId} className="text-base font-semibold text-zinc-900">
-                Filtre
-              </h2>
+            <div className="flex shrink-0 items-center gap-2 border-b border-[var(--sf-border)] px-3 py-3">
               <button
                 type="button"
                 onClick={close}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl px-3 text-sm font-medium text-zinc-700 hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                aria-label="Închide filtrele"
+                className="inline-flex size-10 items-center justify-center rounded-lg border border-[var(--sf-accent)] text-[var(--sf-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                aria-label="Înapoi"
               >
-                Închide
+                <IconChevronLeft size={18} />
               </button>
+              <h2
+                id={titleId}
+                className="min-w-0 flex-1 text-center text-base font-bold text-[var(--sf-text)]"
+              >
+                Filtrează
+              </h2>
+              {hasFilters ? (
+                <Link
+                  href={resetCatalogHref()}
+                  className="shrink-0 text-sm font-medium text-[var(--sf-accent)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                  onClick={close}
+                >
+                  Șterge opțiunile
+                </Link>
+              ) : (
+                <span className="inline-block w-[7.5rem]" aria-hidden />
+              )}
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+            <div className="sf-glow-pattern min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-28">
               <CatalogFilters
                 query={query}
                 idPrefix="catalog-mobile"
-                submitLabel="Aplică filtrele"
-                showReset={hasFilters}
-                className="flex flex-col gap-4 border-0 bg-transparent p-0"
+                formId={`${panelId}-form`}
+                submitLabel="Vezi Rezultatele"
+                hideActions
+                className="flex flex-col gap-3 border-0 bg-transparent p-0"
               />
+            </div>
+
+            <div
+              className="absolute inset-x-0 bottom-0 z-20 border-t border-[var(--sf-border)] bg-white px-4 pt-3"
+              style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+            >
+              <button
+                type="submit"
+                form={`${panelId}-form`}
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl text-sm font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                style={{ backgroundColor: "var(--sf-accent)" }}
+              >
+                Vezi Rezultatele
+              </button>
             </div>
           </div>
         </div>

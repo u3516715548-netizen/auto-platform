@@ -5,3 +5,11 @@ export function publicVehiclePath(slug: string): string {
 export function publicCatalogPath(): string {
   return "/";
 }
+
+export function publicSavedPath(): string {
+  return "/salvate";
+}
+
+export function publicComparePath(): string {
+  return "/compara";
+}

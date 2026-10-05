@@ -48,7 +48,7 @@ export function PublicVehicleGallery({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100">
+      <div className="relative overflow-hidden rounded-[var(--sf-radius-lg)] bg-[var(--sf-surface-muted)]">
         {activeUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -60,7 +60,7 @@ export function PublicVehicleGallery({
           />
         ) : (
           <div className="flex aspect-[16/10] flex-col items-center justify-center gap-2 px-4 text-center">
-            <p className="text-sm text-zinc-600">Imagine indisponibilă momentan.</p>
+            <p className="text-sm text-[var(--sf-text-muted)]">Imagine indisponibilă momentan.</p>
             <button
               type="button"
               className="text-sm font-medium underline-offset-2 hover:underline"
@@ -80,7 +80,7 @@ export function PublicVehicleGallery({
             <button
               type="button"
               aria-label="Imagine anterioară"
-              className="absolute top-1/2 left-2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-lg font-semibold text-zinc-900 shadow"
+              className="absolute top-1/2 left-2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-lg font-semibold text-[var(--sf-text)] shadow-sm"
               onClick={() => go(-1)}
             >
               ‹
@@ -88,12 +88,25 @@ export function PublicVehicleGallery({
             <button
               type="button"
               aria-label="Imagine următoare"
-              className="absolute top-1/2 right-2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-lg font-semibold text-zinc-900 shadow"
+              className="absolute top-1/2 right-2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-lg font-semibold text-[var(--sf-text)] shadow-sm"
               onClick={() => go(1)}
             >
               ›
             </button>
-            <p className="absolute right-2 bottom-2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
+
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 flex items-center justify-center gap-1.5">
+              {sorted.slice(0, 8).map((_, index) => (
+                <span
+                  key={index}
+                  className={`h-1.5 rounded-full ${
+                    index === safeIndex ? "w-4 bg-white" : "w-1.5 bg-white/55"
+                  }`}
+                  aria-hidden
+                />
+              ))}
+            </div>
+
+            <p className="absolute right-3 bottom-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white">
               {safeIndex + 1} / {sorted.length}
             </p>
           </>
@@ -111,9 +124,9 @@ export function PublicVehicleGallery({
                   type="button"
                   aria-label={`Vezi imaginea ${index + 1}`}
                   aria-current={isActive ? "true" : undefined}
-                  className="w-full overflow-hidden rounded-md border-2 bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  className="w-full overflow-hidden rounded-[var(--sf-radius-sm)] border-2 bg-[var(--sf-surface-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                   style={{
-                    borderColor: isActive ? color : "#e4e4e7",
+                    borderColor: isActive ? color : "var(--sf-border)",
                   }}
                   onClick={() => selectIndex(index)}
                 >
@@ -126,7 +139,7 @@ export function PublicVehicleGallery({
                       onError={() => setBroken((prev) => ({ ...prev, [index]: true }))}
                     />
                   ) : (
-                    <div className="flex aspect-[4/3] items-center justify-center px-1 text-center text-[10px] leading-tight text-zinc-500">
+                    <div className="flex aspect-[4/3] items-center justify-center px-1 text-center text-[10px] leading-tight text-[var(--sf-text-muted)]">
                       Indisponibil
                     </div>
                   )}

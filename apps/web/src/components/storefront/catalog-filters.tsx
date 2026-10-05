@@ -14,6 +14,13 @@ import {
   VEHICLE_TRANSMISSION_LABELS_RO,
   enumOptions,
 } from "@/lib/vehicles/vehicle-field-labels";
+import {
+  IconBody,
+  IconFuel,
+  IconSearch,
+  IconSort,
+  IconTag,
+} from "@/components/storefront/icons";
 
 type CatalogFiltersProps = {
   query: CatalogQuery;
@@ -23,23 +30,80 @@ type CatalogFiltersProps = {
   className?: string;
   /** Show Reset → `/` when filters are active (drawer). */
   showReset?: boolean;
+  /** Form id so an external sticky submit can target this form. */
+  formId?: string;
+  /** Hide bottom actions — used when the drawer owns a sticky „Vezi Rezultatele”. */
+  hideActions?: boolean;
 };
 
-const inputClass =
-  "min-h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30";
+const fieldShell =
+  "flex min-h-12 items-center rounded-lg border border-[var(--sf-border)] bg-white focus-within:border-[var(--sf-accent)] focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--sf-accent)_20%,transparent)]";
+
+const ghostInput =
+  "min-h-12 w-full min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-[var(--sf-text)] outline-none placeholder:text-[var(--sf-text-muted)]";
+
+const unitClass = "shrink-0 pr-3 text-sm font-medium text-[var(--sf-text)]";
 
 const checkboxLabelClass =
-  "flex min-h-11 items-center gap-2.5 text-sm text-zinc-800";
+  "flex min-h-12 items-center gap-3 border-b border-[var(--sf-border)] py-1 text-sm text-[var(--sf-text)] last:border-b-0";
 
 const checkboxClass =
-  "size-5 shrink-0 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
+  "size-5 shrink-0 rounded border-[var(--sf-border)] text-[var(--sf-accent)] focus:ring-[var(--sf-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]";
 
+function GhostRange({
+  id,
+  name,
+  placeholder,
+  unit,
+  defaultValue,
+  min,
+  max,
+}: {
+  id: string;
+  name: string;
+  placeholder: string;
+  unit?: string;
+  defaultValue: string | number;
+  min?: number;
+  max?: number;
+}) {
+  return (
+    <div className={fieldShell}>
+      <label htmlFor={id} className="sr-only">
+        {placeholder}
+      </label>
+      <input
+        id={id}
+        name={name}
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        defaultValue={defaultValue}
+        placeholder={placeholder}
+        className={ghostInput}
+      />
+      {unit ? (
+        <span className={unitClass} aria-hidden>
+          {unit}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Catalog filters — Autovit-like ghost placeholders, no Stare / finanțare.
+ * Existing query params only (q, price, year, km, fuel, transmission, bodyType, sort).
+ */
 export function CatalogFilters({
   query,
   idPrefix,
   submitLabel,
   className,
   showReset = false,
+  formId,
+  hideActions = false,
 }: CatalogFiltersProps) {
   const fuelOptions = enumOptions(VEHICLE_FUEL_LABELS_RO);
   const transmissionOptions = enumOptions(VEHICLE_TRANSMISSION_LABELS_RO);
@@ -49,151 +113,114 @@ export function CatalogFilters({
 
   return (
     <form
+      id={formId}
       method="GET"
       action="/"
-      className={
-        className ??
-        "flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-5"
-      }
+      className={className ?? "flex flex-col gap-4"}
     >
-      {/* Changing filters always starts at page 1 — do not submit page. */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-3">
-          <label htmlFor={id("q")} className="text-sm font-medium text-zinc-800">
-            Căutare
-          </label>
-          <input
-            id={id("q")}
-            name="q"
-            type="search"
-            defaultValue={query.q ?? ""}
-            maxLength={80}
-            placeholder="Caută marcă sau model"
-            className={inputClass}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={id("priceMin")} className="text-sm font-medium text-zinc-800">
-            Preț de
-          </label>
-          <input
-            id={id("priceMin")}
-            name="priceMin"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={2_000_000}
-            defaultValue={query.priceMin ?? ""}
-            placeholder="EUR"
-            className={inputClass}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={id("priceMax")} className="text-sm font-medium text-zinc-800">
-            Preț până la
-          </label>
-          <input
-            id={id("priceMax")}
-            name="priceMax"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={2_000_000}
-            defaultValue={query.priceMax ?? ""}
-            placeholder="EUR"
-            className={inputClass}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={id("yearMin")} className="text-sm font-medium text-zinc-800">
-            An de
-          </label>
-          <input
-            id={id("yearMin")}
-            name="yearMin"
-            type="number"
-            inputMode="numeric"
-            min={1950}
-            max={2100}
-            defaultValue={query.yearMin ?? ""}
-            placeholder="2015"
-            className={inputClass}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={id("yearMax")} className="text-sm font-medium text-zinc-800">
-            An până la
-          </label>
-          <input
-            id={id("yearMax")}
-            name="yearMax"
-            type="number"
-            inputMode="numeric"
-            min={1950}
-            max={2100}
-            defaultValue={query.yearMax ?? ""}
-            placeholder="2024"
-            className={inputClass}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={id("kmMin")} className="text-sm font-medium text-zinc-800">
-            Km de
-          </label>
-          <input
-            id={id("kmMin")}
-            name="kmMin"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={2_000_000}
-            defaultValue={query.kmMin ?? ""}
-            placeholder="0"
-            className={inputClass}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={id("kmMax")} className="text-sm font-medium text-zinc-800">
-            Km până la
-          </label>
-          <input
-            id={id("kmMax")}
-            name="kmMax"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={2_000_000}
-            defaultValue={query.kmMax ?? ""}
-            placeholder="150 000"
-            className={inputClass}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
-          <label htmlFor={id("sort")} className="text-sm font-medium text-zinc-800">
-            Sortare
-          </label>
-          <select
-            id={id("sort")}
-            name="sort"
-            defaultValue={query.sort}
-            className={inputClass}
-          >
-            {CATALOG_SORT_VALUES.map((value) => (
-              <option key={value} value={value}>
-                {CATALOG_SORT_LABELS_RO[value]}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className={`${fieldShell} relative`}>
+        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[var(--sf-text-muted)]">
+          <IconSearch size={18} />
+        </span>
+        <label htmlFor={id("q")} className="sr-only">
+          Căutare
+        </label>
+        <input
+          id={id("q")}
+          name="q"
+          type="search"
+          defaultValue={query.q ?? ""}
+          maxLength={80}
+          placeholder="Căutare"
+          className={`${ghostInput} pl-10`}
+        />
       </div>
 
-      <fieldset className="rounded-xl border border-zinc-200 bg-white p-3">
-        <legend className="px-1 text-sm font-medium text-zinc-800">Combustibil</legend>
-        <div className="mt-2 grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2">
+        <GhostRange
+          id={id("priceMin")}
+          name="priceMin"
+          placeholder="Preț de la"
+          unit="EUR"
+          defaultValue={query.priceMin ?? ""}
+          min={0}
+          max={2_000_000}
+        />
+        <GhostRange
+          id={id("priceMax")}
+          name="priceMax"
+          placeholder="Preț până la"
+          unit="EUR"
+          defaultValue={query.priceMax ?? ""}
+          min={0}
+          max={2_000_000}
+        />
+        <GhostRange
+          id={id("yearMin")}
+          name="yearMin"
+          placeholder="Anul de la"
+          defaultValue={query.yearMin ?? ""}
+          min={1950}
+          max={2100}
+        />
+        <GhostRange
+          id={id("yearMax")}
+          name="yearMax"
+          placeholder="Anul până la"
+          defaultValue={query.yearMax ?? ""}
+          min={1950}
+          max={2100}
+        />
+        <GhostRange
+          id={id("kmMin")}
+          name="kmMin"
+          placeholder="Km de la"
+          unit="km"
+          defaultValue={query.kmMin ?? ""}
+          min={0}
+          max={2_000_000}
+        />
+        <GhostRange
+          id={id("kmMax")}
+          name="kmMax"
+          placeholder="Km până la"
+          unit="km"
+          defaultValue={query.kmMax ?? ""}
+          min={0}
+          max={2_000_000}
+        />
+      </div>
+
+      <div className={fieldShell}>
+        <span className="pl-3 text-[var(--sf-text-muted)]" aria-hidden>
+          <IconSort size={16} />
+        </span>
+        <label htmlFor={id("sort")} className="sr-only">
+          Sortare
+        </label>
+        <select
+          id={id("sort")}
+          name="sort"
+          defaultValue={query.sort}
+          className={`${ghostInput} appearance-none pr-8`}
+        >
+          {CATALOG_SORT_VALUES.map((value) => (
+            <option key={value} value={value}>
+              {CATALOG_SORT_LABELS_RO[value]}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <section className="rounded-xl border border-[var(--sf-border)] bg-white px-3">
+        <div className="flex items-center gap-2 border-b border-[var(--sf-border)] py-3">
+          <IconFuel size={18} className="text-[var(--sf-accent)]" />
+          <div>
+            <p className="text-sm font-semibold text-[var(--sf-text)]">Combustibil</p>
+            <p className="text-xs text-[var(--sf-text-muted)]">Tip carburant</p>
+          </div>
+        </div>
+        <div className="py-1">
           {fuelOptions.map((opt) => (
             <label key={opt.value} className={checkboxLabelClass}>
               <input
@@ -207,11 +234,17 @@ export function CatalogFilters({
             </label>
           ))}
         </div>
-      </fieldset>
+      </section>
 
-      <fieldset className="rounded-xl border border-zinc-200 bg-white p-3">
-        <legend className="px-1 text-sm font-medium text-zinc-800">Transmisie</legend>
-        <div className="mt-2 grid grid-cols-2 gap-1 sm:grid-cols-3">
+      <section className="rounded-xl border border-[var(--sf-border)] bg-white px-3">
+        <div className="flex items-center gap-2 border-b border-[var(--sf-border)] py-3">
+          <IconTag size={18} className="text-[var(--sf-accent)]" />
+          <div>
+            <p className="text-sm font-semibold text-[var(--sf-text)]">Cutie de viteze</p>
+            <p className="text-xs text-[var(--sf-text-muted)]">Transmisie</p>
+          </div>
+        </div>
+        <div className="py-1">
           {transmissionOptions.map((opt) => (
             <label key={opt.value} className={checkboxLabelClass}>
               <input
@@ -225,11 +258,17 @@ export function CatalogFilters({
             </label>
           ))}
         </div>
-      </fieldset>
+      </section>
 
-      <fieldset className="rounded-xl border border-zinc-200 bg-white p-3">
-        <legend className="px-1 text-sm font-medium text-zinc-800">Caroserie</legend>
-        <div className="mt-2 grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4">
+      <section className="rounded-xl border border-[var(--sf-border)] bg-white px-3">
+        <div className="flex items-center gap-2 border-b border-[var(--sf-border)] py-3">
+          <IconBody size={18} className="text-[var(--sf-accent)]" />
+          <div>
+            <p className="text-sm font-semibold text-[var(--sf-text)]">Tip caroserie</p>
+            <p className="text-xs text-[var(--sf-text-muted)]">Formă caroserie</p>
+          </div>
+        </div>
+        <div className="py-1">
           {bodyOptions.map((opt) => (
             <label key={opt.value} className={checkboxLabelClass}>
               <input
@@ -243,24 +282,26 @@ export function CatalogFilters({
             </label>
           ))}
         </div>
-      </fieldset>
+      </section>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <button
-          type="submit"
-          className="inline-flex min-h-11 flex-1 items-center justify-center rounded-[var(--sf-radius)] bg-[var(--sf-accent,#2563eb)] px-5 text-sm font-semibold text-white transition-[filter] hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent,#2563eb)]"
-        >
-          {submitLabel}
-        </button>
-        {showReset && hasFilters ? (
-          <Link
-            href={resetCatalogHref()}
-            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      {!hideActions ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <button
+            type="submit"
+            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-[var(--sf-accent,#2563eb)] px-5 text-sm font-bold text-white transition-[filter] hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent,#2563eb)]"
           >
-            Resetează
-          </Link>
-        ) : null}
-      </div>
+            {submitLabel}
+          </button>
+          {showReset && hasFilters ? (
+            <Link
+              href={resetCatalogHref()}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--sf-border)] bg-white px-4 text-sm font-medium text-[var(--sf-accent)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+            >
+              Șterge opțiunile
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
     </form>
   );
 }

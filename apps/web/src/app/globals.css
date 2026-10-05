@@ -57,16 +57,21 @@ textarea:focus-visible,
 /**
  * Template 1 design tokens — scoped to storefront shell only (Etapa 9A).
  * --sf-accent is set inline from validated PublicTenantView.primaryColor.
+ * Demo visual language: white canvas, rounded pills, red-forward CTAs via --sf-accent.
  */
 .storefront-template-1 {
-  --sf-bg: #f4f4f5;
+  --sf-bg: #ffffff;
   --sf-surface: #ffffff;
+  --sf-surface-muted: #f4f4f5;
   --sf-text: #18181b;
   --sf-text-muted: #71717a;
   --sf-border: #e4e4e7;
-  --sf-radius-sm: 0.5rem;
-  --sf-radius: 0.75rem;
-  --sf-radius-lg: 1rem;
+  --sf-danger: #dc2626;
+  --sf-success: #16a34a;
+  --sf-radius-sm: 0.625rem;
+  --sf-radius: 0.875rem;
+  --sf-radius-lg: 1.125rem;
+  --sf-radius-pill: 9999px;
   --sf-space-1: 0.25rem;
   --sf-space-2: 0.5rem;
   --sf-space-3: 0.75rem;
@@ -77,4 +82,58 @@ textarea:focus-visible,
   background: var(--sf-bg);
   color: var(--sf-text);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.storefront-template-1 .sf-pill {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--sf-radius-pill);
+  border: 1px solid var(--sf-border);
+  background: var(--sf-surface);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--sf-text);
+}
+
+.storefront-template-1 .sf-section-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.storefront-template-1 .sf-spec-tile {
+  border-radius: var(--sf-radius);
+  border: 1px solid var(--sf-border);
+  background: var(--sf-surface-muted);
+  padding: 0.875rem;
+}
+
+/** Soft glow circles behind filter chrome / pill clusters (white canvas). */
+.storefront-template-1 .sf-glow-pattern {
+  position: relative;
+  isolation: isolate;
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(
+      circle at 12% 18%,
+      color-mix(in srgb, var(--sf-accent) 16%, transparent) 0%,
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 88% 12%,
+      color-mix(in srgb, var(--sf-accent) 10%, transparent) 0%,
+      transparent 38%
+    ),
+    radial-gradient(circle at 70% 78%, rgba(24, 24, 27, 0.05) 0%, transparent 42%),
+    radial-gradient(circle at 28% 88%, rgba(24, 24, 27, 0.04) 0%, transparent 36%);
+}
+
+.storefront-template-1 .sf-glow-pattern > * {
+  position: relative;
+  z-index: 1;
 }
