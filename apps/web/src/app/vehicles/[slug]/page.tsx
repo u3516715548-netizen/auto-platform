@@ -79,7 +79,7 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
       stickySurface="detail"
       mainClassName="pb-28 md:pb-8"
     >
-      <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-6 sm:gap-8">
+      <div className="sf-glow-ambient mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-6 sm:gap-8">
         <div className="flex items-center justify-between gap-3">
           <Link
             href={publicCatalogPath()}

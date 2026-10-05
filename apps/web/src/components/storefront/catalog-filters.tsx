@@ -135,6 +135,9 @@ export function CatalogFilters({
           className={`${ghostInput} pl-10`}
         />
       </div>
+      {query.make.map((m) => (
+        <input key={`make-${m}`} type="hidden" name="make" value={m} />
+      ))}
 
       <div className="grid grid-cols-2 gap-2">
         <GhostRange

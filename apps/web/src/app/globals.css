@@ -79,9 +79,34 @@ textarea:focus-visible,
   --sf-space-5: 1.25rem;
   --sf-space-6: 1.5rem;
   --sf-space-8: 2rem;
-  background: var(--sf-bg);
+  position: relative;
+  isolation: isolate;
+  overflow-x: hidden;
   color: var(--sf-text);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  /* White page + very subtle circle pattern (not heavy glow) */
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(
+      circle at 8% 12%,
+      color-mix(in srgb, var(--sf-accent) 7%, transparent) 0 28%,
+      transparent 29%
+    ),
+    radial-gradient(
+      circle at 92% 18%,
+      color-mix(in srgb, var(--sf-accent) 5%, transparent) 0 22%,
+      transparent 23%
+    ),
+    radial-gradient(
+      circle at 14% 78%,
+      color-mix(in srgb, var(--sf-accent) 4%, transparent) 0 20%,
+      transparent 21%
+    ),
+    radial-gradient(
+      circle at 88% 82%,
+      rgba(24, 24, 27, 0.03) 0 18%,
+      transparent 19%
+    );
 }
 
 .storefront-template-1 .sf-pill {
@@ -109,31 +134,52 @@ textarea:focus-visible,
 .storefront-template-1 .sf-spec-tile {
   border-radius: var(--sf-radius);
   border: 1px solid var(--sf-border);
-  background: var(--sf-surface-muted);
+  background: #ffffff;
   padding: 0.875rem;
 }
 
-/** Soft glow circles behind filter chrome / pill clusters (white canvas). */
-.storefront-template-1 .sf-glow-pattern {
+/**
+ * Solid single-color panels (filters / car cards) with mild circle pattern — not glowy.
+ */
+.storefront-template-1 .sf-glow-pattern,
+.storefront-template-1 .sf-solid-card {
   position: relative;
   isolation: isolate;
+  overflow: hidden;
   background-color: #ffffff;
   background-image:
     radial-gradient(
-      circle at 12% 18%,
-      color-mix(in srgb, var(--sf-accent) 16%, transparent) 0%,
-      transparent 42%
+      circle at 100% 0%,
+      color-mix(in srgb, var(--sf-accent) 6%, transparent) 0 18%,
+      transparent 19%
     ),
     radial-gradient(
-      circle at 88% 12%,
-      color-mix(in srgb, var(--sf-accent) 10%, transparent) 0%,
-      transparent 38%
-    ),
-    radial-gradient(circle at 70% 78%, rgba(24, 24, 27, 0.05) 0%, transparent 42%),
-    radial-gradient(circle at 28% 88%, rgba(24, 24, 27, 0.04) 0%, transparent 36%);
+      circle at 0% 100%,
+      color-mix(in srgb, var(--sf-accent) 5%, transparent) 0 16%,
+      transparent 17%
+    );
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
-.storefront-template-1 .sf-glow-pattern > * {
+.storefront-template-1 .sf-glow-pattern::before,
+.storefront-template-1 .sf-glow-pattern::after,
+.storefront-template-1 .sf-solid-card::before,
+.storefront-template-1 .sf-solid-card::after {
+  content: none;
+}
+
+.storefront-template-1 .sf-glow-pattern > *,
+.storefront-template-1 .sf-solid-card > * {
   position: relative;
   z-index: 1;
+}
+
+.storefront-template-1 .sf-glow-ambient {
+  position: relative;
+}
+
+.storefront-template-1 .sf-glow-ambient::before,
+.storefront-template-1 .sf-glow-ambient::after {
+  content: none;
 }

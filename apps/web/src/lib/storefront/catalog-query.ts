@@ -43,6 +43,8 @@ export const CATALOG_FORBIDDEN_PARAM_KEYS = [
 
 export type CatalogQuery = {
   q: string | null;
+  /** Exact make names from brand sheet (multi-select). */
+  make: string[];
   priceMin: number | null;
   priceMax: number | null;
   yearMin: number | null;
@@ -58,6 +60,7 @@ export type CatalogQuery = {
 
 export const DEFAULT_CATALOG_QUERY: CatalogQuery = {
   q: null,
+  make: [],
   priceMin: null,
   priceMax: null,
   yearMin: null,
@@ -164,6 +167,32 @@ function sanitizeQ(raw: string | null): string | null {
   return cleaned.length > 0 ? cleaned : null;
 }
 
+/** Brand / make names from the brand sheet — letters, digits, spaces, .'- */
+function parseMakeName(raw: string): string | null {
+  const cleaned = raw
+    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .trim()
+    .slice(0, 40);
+  if (!cleaned) return null;
+  if (!/^[\p{L}0-9 .'-]+$/u.test(cleaned)) return null;
+  return cleaned;
+}
+
+function uniqueMakes(values: string[], max: number): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const value of values) {
+    const parsed = parseMakeName(value);
+    if (!parsed) continue;
+    const key = parsed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(parsed);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
 /**
  * Escapes `%`, `_`, `\` for PostgreSQL ILIKE patterns.
  */
@@ -196,6 +225,7 @@ export function parseCatalogSearchParams(params: SearchParamsLike): CatalogQuery
 
   return {
     q,
+    make: uniqueMakes(getAll(params, "make"), 12),
     priceMin: price.min,
     priceMax: price.max,
     yearMin: year.min,
@@ -213,6 +243,7 @@ export function parseCatalogSearchParams(params: SearchParamsLike): CatalogQuery
 /** True when query has any user filter besides default sort/page=1. */
 export function catalogQueryHasFilters(query: CatalogQuery): boolean {
   if (query.q) return true;
+  if (query.make.length > 0) return true;
   if (query.priceMin !== null || query.priceMax !== null) return true;
   if (query.yearMin !== null || query.yearMax !== null) return true;
   if (query.kmMin !== null || query.kmMax !== null) return true;
@@ -231,6 +262,7 @@ export function catalogQueryHasFilters(query: CatalogQuery): boolean {
 export function catalogQueryToSearchParams(query: CatalogQuery): URLSearchParams {
   const sp = new URLSearchParams();
   if (query.q) sp.set("q", query.q);
+  for (const v of query.make) sp.append("make", v);
   if (query.priceMin !== null) sp.set("priceMin", String(query.priceMin));
   if (query.priceMax !== null) sp.set("priceMax", String(query.priceMax));
   if (query.yearMin !== null) sp.set("yearMin", String(query.yearMin));

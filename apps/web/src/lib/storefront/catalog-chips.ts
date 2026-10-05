@@ -13,6 +13,7 @@ import {
 
 export type CatalogChip =
   | { id: "q"; kind: "q"; label: string }
+  | { id: `make:${string}`; kind: "make"; value: string; label: string }
   | { id: "price"; kind: "price"; label: string }
   | { id: "year"; kind: "year"; label: string }
   | { id: "km"; kind: "km"; label: string }
@@ -33,6 +34,7 @@ export type CatalogChip =
 /** Active filter chips (excludes sort + page). */
 export function catalogQueryHasFilterChips(query: CatalogQuery): boolean {
   if (query.q) return true;
+  if (query.make.length > 0) return true;
   if (query.priceMin !== null || query.priceMax !== null) return true;
   if (query.yearMin !== null || query.yearMax !== null) return true;
   if (query.kmMin !== null || query.kmMax !== null) return true;
@@ -58,6 +60,14 @@ export function buildCatalogChips(query: CatalogQuery): CatalogChip[] {
   const chips: CatalogChip[] = [];
   if (query.q) {
     chips.push({ id: "q", kind: "q", label: `Căutare: ${query.q}` });
+  }
+  for (const value of query.make) {
+    chips.push({
+      id: `make:${value}`,
+      kind: "make",
+      value,
+      label: value,
+    });
   }
   if (query.priceMin !== null || query.priceMax !== null) {
     chips.push({
@@ -113,6 +123,9 @@ export function queryWithoutChip(query: CatalogQuery, chip: CatalogChip): Catalo
   switch (chip.kind) {
     case "q":
       next.q = null;
+      break;
+    case "make":
+      next.make = query.make.filter((v) => v.toLowerCase() !== chip.value.toLowerCase());
       break;
     case "price":
       next.priceMin = null;

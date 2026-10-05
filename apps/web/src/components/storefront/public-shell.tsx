@@ -64,7 +64,7 @@ export function PublicStorefrontShell({
         data-storefront-template={tenant.templateId}
         style={tokenStyle}
       >
-        <header className="sticky top-0 z-30 border-b border-[var(--sf-border)] bg-white">
+        <header className="sticky top-0 z-30 border-b border-[var(--sf-border)] bg-white/90 backdrop-blur-md">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-3 py-3 sm:px-6">
             <div className="flex min-w-0 items-center gap-3 sm:gap-5">
               <Link
@@ -115,12 +115,12 @@ export function PublicStorefrontShell({
         </header>
 
         <main
-          className={`mx-auto w-full min-w-0 max-w-6xl flex-1 bg-white px-3 py-4 sm:px-6 sm:py-8 ${mainClassName ?? ""} ${showMobileNav ? "pb-28 md:pb-8" : ""}`}
+          className={`mx-auto w-full min-w-0 max-w-6xl flex-1 bg-transparent px-3 py-4 sm:px-6 sm:py-8 ${mainClassName ?? ""} ${showMobileNav ? "pb-28 md:pb-8" : ""}`}
         >
           {children}
         </main>
 
-        <footer className="mt-auto hidden border-t border-[var(--sf-border)] bg-white md:block">
+        <footer className="mt-auto hidden border-t border-[var(--sf-border)] bg-white/90 backdrop-blur-md md:block">
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-3 py-5 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div className="flex flex-col gap-1">
               <p className="font-medium text-[var(--sf-text)]">{tenant.name}</p>
@@ -154,7 +154,7 @@ export function PublicStorefrontShell({
         {showMobileNav ? (
           <nav
             aria-label="Navigare mobil"
-            className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--sf-border)] bg-white md:hidden"
+            className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--sf-border)] bg-white/95 backdrop-blur-md md:hidden"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <ul className="mx-auto flex max-w-6xl items-stretch justify-around px-1 py-1.5">

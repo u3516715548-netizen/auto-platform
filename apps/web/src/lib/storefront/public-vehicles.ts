@@ -118,6 +118,7 @@ function resolveCatalogQuery(
     return {
       ...DEFAULT_CATALOG_QUERY,
       ...query,
+      make: query.make ?? [],
       fuel: query.fuel ?? [],
       transmission: query.transmission ?? [],
       bodyType: query.bodyType ?? [],
@@ -137,6 +138,12 @@ function buildPublicCatalogWhere(tenantId: string, query: CatalogQuery): SQL {
   if (query.q) {
     const pattern = `%${escapeIlikePattern(query.q)}%`;
     parts.push(or(ilike(vehicles.make, pattern), ilike(vehicles.model, pattern))!);
+  }
+  if (query.make.length > 0) {
+    const makeParts = query.make.map(
+      (m) => ilike(vehicles.make, escapeIlikePattern(m)),
+    );
+    parts.push(or(...makeParts)!);
   }
   if (query.priceMin !== null) {
     parts.push(gte(vehicles.price, String(query.priceMin)));

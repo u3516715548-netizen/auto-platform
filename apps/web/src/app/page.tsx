@@ -103,18 +103,61 @@ export default async function RootPage({ searchParams }: PageProps) {
   const hasFilterChips = catalogQueryHasFilterChips(query);
   const sortLabel = CATALOG_SORT_LABELS_RO[query.sort];
 
+  const brandSet = new Set<string>([
+    "Alfa Romeo",
+    "Audi",
+    "BMW",
+    "Citroën",
+    "Dacia",
+    "Fiat",
+    "Ford",
+    "Hyundai",
+    "Kia",
+    "Mercedes-Benz",
+    "Opel",
+    "Peugeot",
+    "Renault",
+    "Skoda",
+    "Toyota",
+    "Volkswagen",
+    "Volvo",
+  ]);
+  for (const v of vehicles) {
+    if (v.make?.trim()) brandSet.add(v.make.trim());
+  }
+  const brands = Array.from(brandSet).sort((a, b) => a.localeCompare(b, "ro"));
+  const priceCeiling = Math.max(
+    114_000,
+    ...vehicles.map((v) => {
+      const n = Number(v.price);
+      return Number.isFinite(n) ? Math.ceil(n / 1000) * 1000 : 0;
+    }),
+  );
+  const yearCeiling = new Date().getFullYear();
+  const yearFloor = Math.min(
+    2001,
+    ...vehicles.map((v) => v.year).filter((y) => Number.isFinite(y)),
+    yearCeiling,
+  );
+
   return (
     <PublicStorefrontShell tenant={tenantView} stickySurface="catalog">
-      <div className="flex min-w-0 flex-col gap-4 sm:gap-6">
+      <div className="sf-glow-ambient flex min-w-0 flex-col gap-4 sm:gap-6">
         <h2 className="sr-only">Vehicule disponibile</h2>
 
-        <CatalogFilterDrawer query={query} />
+        <CatalogFilterDrawer
+          query={query}
+          brands={brands.length > 0 ? brands : undefined}
+          priceCeiling={priceCeiling}
+          yearFloor={yearFloor}
+          yearCeiling={yearCeiling}
+        />
         <div className="hidden md:block">
           <CatalogFilters
             query={query}
             idPrefix="catalog-desktop"
             submitLabel="Vezi Rezultatele"
-            className="sf-glow-pattern flex flex-col gap-4 rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)] p-4 sm:p-5"
+            className="sf-solid-card flex flex-col gap-4 rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)] p-4 sm:p-5"
           />
         </div>
         <CatalogActiveFilters query={query} />

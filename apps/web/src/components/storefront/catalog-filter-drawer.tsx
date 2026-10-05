@@ -15,6 +15,10 @@ import {
 } from "@/lib/storefront/catalog-drawer-a11y";
 import { CatalogFilters } from "@/components/storefront/catalog-filters";
 import {
+  CatalogQuickSheet,
+  type QuickSheetKind,
+} from "@/components/storefront/catalog-quick-sheets";
+import {
   IconBody,
   IconCalendar,
   IconChevronLeft,
@@ -28,6 +32,10 @@ import {
 
 type CatalogFilterDrawerProps = {
   query: CatalogQuery;
+  brands?: string[];
+  priceCeiling?: number;
+  yearFloor?: number;
+  yearCeiling?: number;
 };
 
 function listFocusable(root: HTMLElement): HTMLElement[] {
@@ -41,14 +49,41 @@ function listFocusable(root: HTMLElement): HTMLElement[] {
 }
 
 const pillClass =
-  "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--sf-border)] bg-white/85 px-3 text-sm font-semibold text-[var(--sf-text)] shadow-sm backdrop-blur-[1px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]";
+  "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--sf-border)] bg-white px-3 text-sm font-semibold text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]";
+
+const DEFAULT_BRANDS = [
+  "Alfa Romeo",
+  "Audi",
+  "BMW",
+  "Citroën",
+  "Dacia",
+  "Fiat",
+  "Ford",
+  "Hyundai",
+  "Kia",
+  "Mercedes-Benz",
+  "Opel",
+  "Peugeot",
+  "Renault",
+  "Skoda",
+  "Toyota",
+  "Volkswagen",
+  "Volvo",
+];
 
 /**
- * Homepage mobile filter chrome — matches storefront reference layout (white theme).
- * Quick pills + search open the full filter drawer; form fields stay in CatalogFilters.
+ * Homepage mobile filter chrome — quick pills open dedicated sheets;
+ * „Toate filtrele” opens the full drawer.
  */
-export function CatalogFilterDrawer({ query }: CatalogFilterDrawerProps) {
+export function CatalogFilterDrawer({
+  query,
+  brands = DEFAULT_BRANDS,
+  priceCeiling = 114_000,
+  yearFloor = 2001,
+  yearCeiling = new Date().getFullYear(),
+}: CatalogFilterDrawerProps) {
   const [open, setOpen] = useState(false);
+  const [sheet, setSheet] = useState<QuickSheetKind | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const reactId = useId();
@@ -62,6 +97,7 @@ export function CatalogFilterDrawer({ query }: CatalogFilterDrawerProps) {
   }
 
   function openDrawer() {
+    setSheet(null);
     setOpen(true);
   }
 
@@ -110,6 +146,15 @@ export function CatalogFilterDrawer({ query }: CatalogFilterDrawerProps) {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!sheet) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = catalogDrawerBodyOverflow(true);
+    return () => {
+      document.body.style.overflow = previousOverflow || catalogDrawerBodyOverflow(false);
+    };
+  }, [sheet]);
+
   const triggerHint =
     activeCount > 0
       ? `${activeCount} ${activeCount === 1 ? "filtru activ" : "filtre active"}`
@@ -117,9 +162,9 @@ export function CatalogFilterDrawer({ query }: CatalogFilterDrawerProps) {
 
   return (
     <div className="md:hidden">
-      <div className="sf-glow-pattern flex flex-col gap-3 rounded-2xl border border-[var(--sf-border)] p-3">
+      <div className="sf-solid-card flex flex-col gap-3 rounded-2xl border border-[var(--sf-border)] p-3">
         <div
-          className="flex rounded-full bg-white/80 p-1 shadow-sm backdrop-blur-[2px]"
+          className="flex rounded-full bg-[var(--sf-surface-muted)] p-1"
           role="presentation"
         >
           <span className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full bg-white px-3 text-sm font-semibold text-[var(--sf-text)] shadow-sm">
@@ -149,7 +194,9 @@ export function CatalogFilterDrawer({ query }: CatalogFilterDrawerProps) {
             placeholder="Caută marca sau modelul..."
             className="min-h-12 w-full rounded-2xl border border-[var(--sf-border)] bg-[var(--sf-surface-muted)] py-2.5 pr-3 pl-11 text-sm text-[var(--sf-text)] placeholder:text-[var(--sf-text-muted)] focus:border-[var(--sf-accent)] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--sf-accent)_25%,transparent)]"
           />
-          {/* Preserve active filters when searching from quick bar */}
+          {query.make.map((m) => (
+            <input key={`make-${m}`} type="hidden" name="make" value={m} />
+          ))}
           {query.priceMin != null ? (
             <input type="hidden" name="priceMin" value={query.priceMin} />
           ) : null}
@@ -183,23 +230,23 @@ export function CatalogFilterDrawer({ query }: CatalogFilterDrawerProps) {
         </form>
 
         <div className="grid grid-cols-2 gap-2">
-          <button type="button" className={`${pillClass} col-span-2`} onClick={openDrawer}>
+          <button type="button" className={`${pillClass} col-span-2`} onClick={() => setSheet("brand")}>
             <IconGrid size={16} />
             Brand
           </button>
-          <button type="button" className={pillClass} onClick={openDrawer}>
+          <button type="button" className={pillClass} onClick={() => setSheet("body")}>
             <IconBody size={16} />
             Caroserie
           </button>
-          <button type="button" className={pillClass} onClick={openDrawer}>
+          <button type="button" className={pillClass} onClick={() => setSheet("fuel")}>
             <IconFuel size={16} />
             Combustibil
           </button>
-          <button type="button" className={pillClass} onClick={openDrawer}>
+          <button type="button" className={pillClass} onClick={() => setSheet("price")}>
             <IconTag size={16} />
             Preț
           </button>
-          <button type="button" className={pillClass} onClick={openDrawer}>
+          <button type="button" className={pillClass} onClick={() => setSheet("year")}>
             <IconCalendar size={16} />
             An
           </button>
@@ -225,6 +272,18 @@ export function CatalogFilterDrawer({ query }: CatalogFilterDrawerProps) {
           <IconChevronRight size={18} />
         </button>
       </div>
+
+      {sheet ? (
+        <CatalogQuickSheet
+          kind={sheet}
+          query={query}
+          brands={brands}
+          priceCeiling={priceCeiling}
+          yearFloor={yearFloor}
+          yearCeiling={yearCeiling}
+          onClose={() => setSheet(null)}
+        />
+      ) : null}
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-stretch justify-center md:hidden">
@@ -271,7 +330,7 @@ export function CatalogFilterDrawer({ query }: CatalogFilterDrawerProps) {
               )}
             </div>
 
-            <div className="sf-glow-pattern min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-28">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-4 py-4 pb-28">
               <CatalogFilters
                 query={query}
                 idPrefix="catalog-mobile"

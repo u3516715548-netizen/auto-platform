@@ -57,8 +57,8 @@ export function PublicVehicleList({ vehicles }: PublicVehicleListProps) {
 
         return (
           <li key={vehicle.slug} className="min-w-0">
-            <article className="group relative flex h-full flex-col overflow-hidden rounded-[var(--sf-radius-lg)] bg-white">
-              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[var(--sf-radius-lg)] bg-[var(--sf-surface-muted)]">
+            <article className="sf-solid-card group relative flex h-full flex-col overflow-hidden rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)]">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-[var(--sf-radius-lg)] bg-[var(--sf-surface-muted)]">
                 <Link
                   href={href}
                   className="absolute inset-0 block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
@@ -90,7 +90,7 @@ export function PublicVehicleList({ vehicles }: PublicVehicleListProps) {
 
               <Link
                 href={href}
-                className="flex flex-1 flex-col gap-1.5 pt-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                className="flex flex-1 flex-col gap-1.5 p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
               >
                 <h3 className="text-lg font-bold tracking-tight text-[var(--sf-text)]">
                   {title}
