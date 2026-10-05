@@ -20,7 +20,7 @@ import {
   type PublicTenantView,
   type ResolvePublicTenantResult,
 } from "../resolve-public-tenant";
-import type { PublicVehicleDto } from "../public-vehicles";
+import { PUBLIC_VEHICLE_DTO_KEYS, type PublicVehicleDto } from "../public-dto";
 import { publicCatalogPath, publicVehiclePath } from "../paths";
 import {
   getPublicVehicleBySlug,
@@ -37,18 +37,13 @@ function form(entries: Record<string, string>): FormData {
   return data;
 }
 
-const PUBLIC_TENANT_VIEW_KEYS = ["slug", "name", "primaryColor", "leadsEnabled"] as const;
-const PUBLIC_VEHICLE_DTO_KEYS = [
+const PUBLIC_TENANT_VIEW_KEYS = [
   "slug",
-  "make",
-  "model",
-  "year",
-  "mileage",
-  "price",
-  "currency",
-  "specs",
+  "name",
+  "primaryColor",
+  "templateId",
+  "leadsEnabled",
 ] as const;
-
 describe("public DTO whitelist", () => {
   it("accepts validated hex primaryColor only", () => {
     expect(parsePublicPrimaryColor({ primaryColor: "#0f766e" })).toBe("#0f766e");
@@ -83,6 +78,7 @@ describe("public DTO whitelist", () => {
       name: "ACME",
       status: "active",
       primaryColor: "#0f766e",
+      templateId: "template-1",
     };
     const trial: PublicTenantRecord = { ...active, status: "trial", slug: "trial-co" };
 
@@ -92,6 +88,7 @@ describe("public DTO whitelist", () => {
       slug: "acme",
       name: "ACME",
       primaryColor: "#0f766e",
+      templateId: "template-1",
       leadsEnabled: true,
     });
     expect(activeView).not.toHaveProperty("tenantId");
@@ -106,7 +103,7 @@ describe("public DTO whitelist", () => {
     expect(trialView).not.toHaveProperty("status");
   });
 
-  it("PublicVehicleDto shape excludes id/vin/tenantId/status", () => {
+  it("PublicVehicleDto shape excludes id/vin/tenantId/status/specs", () => {
     const dto: PublicVehicleDto = {
       slug: "golf-8",
       make: "VW",
@@ -115,13 +112,38 @@ describe("public DTO whitelist", () => {
       mileage: 1,
       price: "1.00",
       currency: "EUR",
-      specs: { fuel: "diesel" },
+      fuel: "diesel",
+      transmission: null,
+      bodyType: null,
+      condition: null,
+      powerHp: null,
+      description: null,
+      driveType: null,
+      engineDisplacementCc: null,
+      emissionStandard: null,
+      doors: null,
+      seats: null,
+      exteriorColor: null,
+      interiorColor: null,
+      firstRegistrationYear: null,
+      firstRegistrationMonth: null,
+      priceNegotiable: false,
+      vatRegime: null,
+      originCountry: null,
+      locationCity: null,
+      warrantyMonths: null,
+      warrantyNotes: null,
+      hasServiceBook: false,
+      hasServiceHistory: false,
+      accidentStatus: null,
+      features: [],
     };
     expect(Object.keys(dto).sort()).toEqual([...PUBLIC_VEHICLE_DTO_KEYS].sort());
     expect(dto).not.toHaveProperty("id");
     expect(dto).not.toHaveProperty("vin");
     expect(dto).not.toHaveProperty("tenantId");
     expect(dto).not.toHaveProperty("status");
+    expect(dto).not.toHaveProperty("specs");
   });
 });
 
@@ -145,7 +167,8 @@ describe("host / tenant publishability → safe deny", () => {
           slug: "acme",
           name: "ACME",
           status: "active",
-          primaryColor: null,
+          primaryColor: "#2563eb",
+          templateId: "template-1",
         },
       }),
     ).toBe(false);
@@ -173,7 +196,8 @@ describe("lead form availability: active vs trial", () => {
       tenantId: "00000000-0000-4000-8000-000000000001",
       slug: "acme",
       name: "ACME",
-      primaryColor: null as string | null,
+      primaryColor: "#2563eb",
+      templateId: "template-1" as const,
     };
     const activeView: PublicTenantView = toPublicTenantView({ ...base, status: "active" });
     const trialView: PublicTenantView = toPublicTenantView({
@@ -183,6 +207,23 @@ describe("lead form availability: active vs trial", () => {
     });
     expect(activeView.leadsEnabled).toBe(true);
     expect(trialView.leadsEnabled).toBe(false);
+  });
+
+  it("VERCEL_DEMO publicLeadsDisabled forces leadsEnabled false without changing Host contract", () => {
+    const active = toPublicTenantView(
+      {
+        tenantId: "00000000-0000-4000-8000-000000000001",
+        slug: "acme",
+        name: "ACME",
+        status: "active",
+        primaryColor: "#2563eb",
+        templateId: "template-1",
+        phone: "+40700001001",
+      },
+      { publicLeadsDisabled: true },
+    );
+    expect(active.leadsEnabled).toBe(false);
+    expect(active.phone).toBe("+40700001001");
   });
 });
 
@@ -212,7 +253,7 @@ describe("public lead parse + anti-abuse", () => {
     ).toBe(false);
   });
 
-  it("Zod validates name/email/phone/message bounds", () => {
+  it("Zod validates name/email/phone/message bounds and requires contact", () => {
     expect(createPublicLeadInputSchema.safeParse({ name: "" }).success).toBe(false);
     expect(createPublicLeadInputSchema.safeParse({ name: "Ana", email: "bad" }).success).toBe(
       false,
@@ -224,11 +265,19 @@ describe("public lead parse + anti-abuse", () => {
         phone: "",
         message: "",
       }).success,
+    ).toBe(false);
+    expect(
+      createPublicLeadInputSchema.safeParse({
+        name: "Ana",
+        email: "ana@example.com",
+        message: "",
+      }).success,
     ).toBe(true);
     expect(
       createPublicLeadInputSchema.safeParse({
         name: "Ana",
         message: "x".repeat(2001),
+        phone: "0722123456",
       }).success,
     ).toBe(false);
   });
@@ -240,7 +289,7 @@ describe("public lead parse + anti-abuse", () => {
     expect(ok).toMatchObject({
       ok: true,
       honeypotTriggered: false,
-      data: { name: "Ana", email: "ana@example.com" },
+      data: { name: "Ana", email: "ana@example.com", phone: undefined },
     });
 
     const bot = parsePublicLeadForm(form({ name: "Bot", company: "spam-co" }));
@@ -375,6 +424,7 @@ describe("public catalog/detail online (DATABASE_URL)", () => {
 
     expect(acmeList.every((v) => typeof v.slug === "string")).toBe(true);
     expect(acmeList.some((v) => v.slug === "golf-8-acme")).toBe(true);
+    expect(acmeList.some((v) => v.slug === "draft-incomplet-acme")).toBe(false);
     expect(acmeList.some((v) => v.slug === "focus-beta")).toBe(false);
     expect(betaList.some((v) => v.slug === "focus-beta")).toBe(true);
     expect(betaList.some((v) => v.slug === "golf-8-acme")).toBe(false);
@@ -385,8 +435,19 @@ describe("public catalog/detail online (DATABASE_URL)", () => {
       expect(row).not.toHaveProperty("vin");
       expect(row).not.toHaveProperty("tenantId");
       expect(row).not.toHaveProperty("status");
+      expect(row).not.toHaveProperty("specs");
+      expect(row.currency).toBe("EUR");
     }
 
+    const golf = acmeList.find((v) => v.slug === "golf-8-acme");
+    expect(golf?.fuel).toBe("diesel");
+    expect(golf?.features.length).toBeGreaterThan(0);
+    expect(golf?.features.every((f) => typeof f.label === "string" && f.label.length > 0)).toBe(
+      true,
+    );
+    expect(golf?.description).toMatch(/Golf/);
+
+    expect(await getPublicVehicleBySlug(acme.tenant.tenantId, "draft-incomplet-acme")).toBeNull();
     expect(await getPublicVehicleBySlug(acme.tenant.tenantId, "focus-beta")).toBeNull();
     expect(await getPublicVehicleBySlug(acme.tenant.tenantId, "no-such-vehicle-zzzz")).toBeNull();
     expect(await getPublicVehicleBySlug(acme.tenant.tenantId, "e5-acme-reserved-public")).toBeNull();

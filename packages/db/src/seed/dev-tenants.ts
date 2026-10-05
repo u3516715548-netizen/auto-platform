@@ -81,7 +81,12 @@ export async function seedDevTenants(connectionString: string) {
       slug: "acme",
       status: "active",
       plan: "starter",
-      branding: { primaryColor: "#0f766e" },
+      branding: {
+        primaryColor: "#0f766e",
+        templateId: "template-1",
+        phone: "+40700001001",
+        whatsapp: "+40700001001",
+      },
     })
     .onConflictDoNothing({ target: tenants.slug });
 
@@ -92,7 +97,12 @@ export async function seedDevTenants(connectionString: string) {
       slug: "beta",
       status: "active",
       plan: "starter",
-      branding: { primaryColor: "#1d4ed8" },
+      branding: {
+        primaryColor: "#1d4ed8",
+        templateId: "template-1",
+        phone: "+40700002002",
+        whatsapp: "+40700002002",
+      },
     })
     .onConflictDoNothing({ target: tenants.slug });
 
@@ -102,6 +112,33 @@ export async function seedDevTenants(connectionString: string) {
   if (!existingA || !existingB) {
     throw new Error("Failed to resolve seeded tenants acme/beta");
   }
+
+  // Keep Template 1 branding fields current for re-seeds (no migration).
+  await db
+    .update(tenants)
+    .set({
+      branding: {
+        primaryColor: "#0f766e",
+        templateId: "template-1",
+        phone: "+40700001001",
+        whatsapp: "+40700001001",
+      },
+      updatedAt: new Date(),
+    })
+    .where(eq(tenants.id, existingA.id));
+
+  await db
+    .update(tenants)
+    .set({
+      branding: {
+        primaryColor: "#1d4ed8",
+        templateId: "template-1",
+        phone: "+40700002002",
+        whatsapp: "+40700002002",
+      },
+      updatedAt: new Date(),
+    })
+    .where(eq(tenants.id, existingB.id));
 
   await db
     .insert(profiles)
@@ -131,7 +168,33 @@ export async function seedDevTenants(connectionString: string) {
       mileage: 25000,
       price: "18990.00",
       currency: "EUR",
-      specs: { fuel: "diesel" },
+      specs: {},
+      fuel: "diesel",
+      transmission: "manual",
+      bodyType: "hatchback",
+      driveType: "fwd",
+      condition: "used",
+      emissionStandard: "euro_6d",
+      vatRegime: "deductible",
+      accidentStatus: "none",
+      powerHp: 150,
+      engineDisplacementCc: 1968,
+      doors: 5,
+      seats: 5,
+      exteriorColor: "Gri metalizat",
+      interiorColor: "Negru",
+      firstRegistrationYear: 2022,
+      firstRegistrationMonth: 3,
+      priceNegotiable: true,
+      originCountry: "DE",
+      locationCity: "București",
+      warrantyMonths: 12,
+      warrantyNotes: "Garanție dealer 12 luni",
+      hasServiceBook: true,
+      hasServiceHistory: true,
+      description:
+        "Volkswagen Golf 8 din 2022, motor diesel, stare foarte bună, carte de service la zi. Ideal pentru oraș și drumuri lungi.",
+      features: ["abs", "esp", "ac", "nav", "parking_sensors", "carplay"],
     })
     .onConflictDoNothing({ target: [vehicles.tenantId, vehicles.slug] });
 
@@ -147,15 +210,132 @@ export async function seedDevTenants(connectionString: string) {
       mileage: 40000,
       price: "14990.00",
       currency: "EUR",
-      specs: { fuel: "petrol" },
+      specs: {},
+      fuel: "petrol",
+      transmission: "manual",
+      bodyType: "hatchback",
+      driveType: "fwd",
+      condition: "used",
+      emissionStandard: "euro_6d",
+      vatRegime: "included",
+      accidentStatus: "none",
+      powerHp: 125,
+      engineDisplacementCc: 999,
+      doors: 5,
+      seats: 5,
+      exteriorColor: "Albastru",
+      interiorColor: "Gri",
+      firstRegistrationYear: 2021,
+      firstRegistrationMonth: 6,
+      priceNegotiable: false,
+      originCountry: "RO",
+      locationCity: "Cluj-Napoca",
+      warrantyMonths: 6,
+      warrantyNotes: null,
+      hasServiceBook: true,
+      hasServiceHistory: false,
+      description:
+        "Ford Focus 2021, benzină, întreținut, fără accidente declarate. Potrivit pentru familie și navetă zilnică.",
+      features: ["abs", "airbag", "ac", "android_auto"],
     })
     .onConflictDoNothing({ target: [vehicles.tenantId, vehicles.slug] });
+
+  // Draft incomplete — for publish-gate tests (missing fuel/transmission/etc.).
+  await db
+    .insert(vehicles)
+    .values({
+      tenantId: existingA.id,
+      status: "draft",
+      slug: "draft-incomplet-acme",
+      make: "Dacia",
+      model: "Logan",
+      year: 2019,
+      mileage: 80000,
+      price: "7990.00",
+      currency: "EUR",
+      specs: {},
+      features: [],
+    })
+    .onConflictDoNothing({ target: [vehicles.tenantId, vehicles.slug] });
+
+  // Ensure previously seeded available rows get Etapa 6 publish fields (idempotent upsert-by-update).
+  await db
+    .update(vehicles)
+    .set({
+      status: "available",
+      fuel: "diesel",
+      transmission: "manual",
+      bodyType: "hatchback",
+      driveType: "fwd",
+      condition: "used",
+      emissionStandard: "euro_6d",
+      vatRegime: "deductible",
+      accidentStatus: "none",
+      powerHp: 150,
+      engineDisplacementCc: 1968,
+      doors: 5,
+      seats: 5,
+      exteriorColor: "Gri metalizat",
+      interiorColor: "Negru",
+      firstRegistrationYear: 2022,
+      firstRegistrationMonth: 3,
+      priceNegotiable: true,
+      originCountry: "DE",
+      locationCity: "București",
+      warrantyMonths: 12,
+      warrantyNotes: "Garanție dealer 12 luni",
+      hasServiceBook: true,
+      hasServiceHistory: true,
+      description:
+        "Volkswagen Golf 8 din 2022, motor diesel, stare foarte bună, carte de service la zi. Ideal pentru oraș și drumuri lungi.",
+      features: ["abs", "esp", "ac", "nav", "parking_sensors", "carplay"],
+      specs: {},
+      updatedAt: new Date(),
+    })
+    .where(eq(vehicles.slug, "golf-8-acme"));
+
+  await db
+    .update(vehicles)
+    .set({
+      status: "available",
+      fuel: "petrol",
+      transmission: "manual",
+      bodyType: "hatchback",
+      driveType: "fwd",
+      condition: "used",
+      emissionStandard: "euro_6d",
+      vatRegime: "included",
+      accidentStatus: "none",
+      powerHp: 125,
+      engineDisplacementCc: 999,
+      doors: 5,
+      seats: 5,
+      exteriorColor: "Albastru",
+      interiorColor: "Gri",
+      firstRegistrationYear: 2021,
+      firstRegistrationMonth: 6,
+      priceNegotiable: false,
+      originCountry: "RO",
+      locationCity: "Cluj-Napoca",
+      warrantyMonths: 6,
+      hasServiceBook: true,
+      hasServiceHistory: false,
+      description:
+        "Ford Focus 2021, benzină, întreținut, fără accidente declarate. Potrivit pentru familie și navetă zilnică.",
+      features: ["abs", "airbag", "ac", "android_auto"],
+      specs: {},
+      updatedAt: new Date(),
+    })
+    .where(eq(vehicles.slug, "focus-beta"));
 
   const vehicleA = await db.query.vehicles.findFirst({
     where: eq(vehicles.slug, "golf-8-acme"),
   });
   const vehicleB = await db.query.vehicles.findFirst({
     where: eq(vehicles.slug, "focus-beta"),
+  });
+  const vehicleDraft = await db.query.vehicles.findFirst({
+    where: eq(vehicles.slug, "draft-incomplet-acme"),
   });
 
   await writeAuditLog(db, {
@@ -174,6 +354,7 @@ export async function seedDevTenants(connectionString: string) {
     profileB,
     vehicleA,
     vehicleB,
+    vehicleDraft,
   };
 }
 

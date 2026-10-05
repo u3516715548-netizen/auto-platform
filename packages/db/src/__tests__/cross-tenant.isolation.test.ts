@@ -11,6 +11,7 @@
 import { config as loadEnv } from "dotenv";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createDb, type Database } from "../client";
@@ -125,19 +126,30 @@ describe.skipIf(!canRunOnline)(
 
   it("only one active reservation per vehicle", async () => {
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const key1 = `test-active-1-${randomUUID()}`;
+    const key2 = `test-active-2-${randomUUID()}`;
 
+    // Clear any leftover active rows on this vehicle from parallel suites.
     await withTenantContext(db, { profileId: profileA, tenantId: tenantAId }, async (tx) => {
       await tx
-        .insert(reservations)
-        .values({
-          tenantId: tenantAId,
-          vehicleId: vehicleAId,
-          status: "active",
-          expiresAt,
-          createdBy: profileA,
-          idempotencyKey: `test-active-1-${vehicleAId}`,
-        })
-        .onConflictDoNothing();
+        .update(reservations)
+        .set({ status: "cancelled", updatedAt: new Date() })
+        .where(
+          and(
+            eq(reservations.tenantId, tenantAId),
+            eq(reservations.vehicleId, vehicleAId),
+            eq(reservations.status, "active"),
+          ),
+        );
+
+      await tx.insert(reservations).values({
+        tenantId: tenantAId,
+        vehicleId: vehicleAId,
+        status: "active",
+        expiresAt,
+        createdBy: profileA,
+        idempotencyKey: key1,
+      });
     });
 
     await expect(
@@ -148,10 +160,23 @@ describe.skipIf(!canRunOnline)(
           status: "active",
           expiresAt,
           createdBy: profileA,
-          idempotencyKey: `test-active-2-${vehicleAId}`,
+          idempotencyKey: key2,
         }),
       ),
     ).rejects.toThrow();
+
+    await withTenantContext(db, { profileId: profileA, tenantId: tenantAId }, async (tx) => {
+      await tx
+        .update(reservations)
+        .set({ status: "cancelled", updatedAt: new Date() })
+        .where(
+          and(
+            eq(reservations.tenantId, tenantAId),
+            eq(reservations.vehicleId, vehicleAId),
+            eq(reservations.status, "active"),
+          ),
+        );
+    });
   });
 
   it("tenant B context is isolated from tenant A", async () => {

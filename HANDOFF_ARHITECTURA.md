@@ -13,7 +13,14 @@
 | Etapa 3 | finalizată — Auth cookies + tenancy host + guards |
 | Etapa 4 | finalizată (4A–4E) |
 | Etapa 5 | **FINALIZATĂ** (storefront public + migrare `0002`) |
-| Git | repo inițializat, 0 commit-uri |
+| Etapa 6 | **FINALIZATĂ** (6A inventar + 6B admin + 6C storefront) |
+| Etapa 7 | **FINALIZATĂ local** (7A storage + 7B dashboard + 7C galerie publică) |
+| Etapa 8 | **FINALIZATĂ local** (8A query + 8B UI + 8C drawer/SEO/a11y) |
+| Etapa 9 | **FINALIZATĂ local** (9A branding + 9B Template 1 + 9C sticky/settings) |
+| Etapa 10 | **FINALIZATĂ local** (10A anti-spam + 10B dashboard + 10C notificări + 10D polish) |
+| Etapa 11 | **FINALIZATĂ local** (11A contract + 11B dashboard/CTA + 11C polish/docs) |
+| Etapa 12 | **pregătire locală** — Vercel Hobby `VERCEL_DEMO_ONLY` (fără deploy până la aprobare) |
+| Git | commit local `0ee0f6b` (Etape 1–5); modificări E6–E12 necommise |
 | Commit / push / deploy | **interzise fără cerere explicită** |
 
 `.env.local` există local — **nu afișa** conținutul (UUID-uri, `DATABASE_URL`, chei).
@@ -24,8 +31,25 @@ Turborepo + pnpm · Next.js 16 / React 19 / Tailwind 4 · Drizzle + Supabase Pos
 
 ## Următoarea etapă
 
-**Etapa 6+** — după confirmare (vezi roadmap în [`docs/stages/00-project-overview.md`](./docs/stages/00-project-overview.md)).
+**Etapa 12** — hardening / deploy Hobby: [`docs/stages/12-hardening-deploy.md`](./docs/stages/12-hardening-deploy.md) (`VERCEL_DEMO_ONLY`; fără domeniu/Pro/Resend/Upstash/cron).  
+Deploy Vercel: **doar după aprobare explicită** (tu creezi contul + env).  
+Apoi **Etapa 13** template-uri suplimentare.  
+Rezervări: [`docs/stages/11-reservations.md`](./docs/stages/11-reservations.md) (11A–11C done; fără cron real încă).
 
+**Producție email (10C):** set `LEAD_EMAIL_PROVIDER` + provider SDK/API key când există implementare aprobată (în prezent doar noop/log).  
+**Producție rate-limit (10A):** backend distribuit + `LEAD_RATE_LIMIT_SECRET` + `VERCEL`/`TRUSTED_PROXY`.  
+**Hobby demo leads:** `VERCEL_DEMO_DISABLE_PUBLIC_LEADS=true` + Password Protection recomandat.
+
+## Rezumat Etapa 6 (6A + 6B + 6C)
+
+| Item | Conținut | Status |
+|------|----------|--------|
+| Migrare `0003` | Enums + coloane inventar nullable + indexuri | OK |
+| Zod / format | publish schema, features, EUR/km helpers | OK |
+| Seed | available complete + draft incomplet | OK |
+| Create/edit admin | create scurt; edit secțiuni RO; VIN staff | OK |
+| Gate `available` | app-level; listă câmpuri lipsă în RO | OK |
+| Storefront 6C | DTO extins; catalog/detaliu RO; SEO; fără VIN public | OK |
 ## Rezumat Etapa 5
 
 | Item | Conținut | Status |
@@ -42,7 +66,34 @@ Migrare sursă de adevăr: `packages/db/drizzle/0002_tenants_public_storefront_s
 
 Verificat Etapa 5 (post-teste complete): `lint` OK · `typecheck` OK · `db:test` 25/25 · `web test` 53/53 · `web build` OK.
 
-Warning build: Next.js middleware → proxy deprecation (informativ; fără blocaj).
+Verificat Etapa 6 (6A+6B+6C): `lint` OK · `typecheck` OK · `db:test` 28/28 · `web test` 72/72 · `web build` OK (warning Next.js: `middleware` → `proxy`).
+
+Verificat Etapa 7 (7A+7B+7C + galerie UI): `lint` OK · `typecheck` OK · `db:test` 28/28 · `web test` 88/88 · `web build` OK.
+
+## Rezumat Etapa 8 (8A + 8B + 8C)
+
+| Item | Conținut | Status |
+|------|----------|--------|
+| 8A query | parse/serialize URL + Drizzle filtre + pageSize 12 | OK |
+| 8B UI | filtre GET, chips, count, paginare, card cover | OK |
+| 8C mobil | drawer sheet, focus trap, scroll lock, Escape | OK |
+| SEO | `/` index,follow; orice query noindex + canonical `/` | OK |
+| Contract | fără CSV multi-select; fără pageSize în URL | OK |
+
+Verificat Etapa 8 (8A+8B+8C): `lint` OK · `typecheck` OK · `web test` 107/107 · `web build` OK.
+
+## Rezumat Etapa 9 (9A + 9B + 9C)
+
+| Item | Conținut | Status |
+|------|----------|--------|
+| 9A | branding whitelist, registry, tokens | OK |
+| 9B | Template 1 shell/catalog/detail | OK |
+| 9C sticky | mobil Mesaj/Sună/WhatsApp | OK |
+| 9C settings | `/dashboard/settings` — doar **owner** | OK |
+| Audit | `tenant.branding.update` + `changedKeys` (fără numere) | OK |
+| Seed | ACME/BETA template-1 + phone/whatsapp demo | OK |
+
+Verificat Etapa 9 (9A+9B+9C): `lint` OK · `typecheck` OK · `web test` 127/127 · `web build` OK.
 
 ## Rezumat Etapa 4
 
@@ -84,5 +135,9 @@ pnpm --filter @auto-platform/web build
 | [03-auth-multi-tenancy.md](./docs/stages/03-auth-multi-tenancy.md) | Etapa 3 (finalizată) |
 | [04-vehicles-dashboard.md](./docs/stages/04-vehicles-dashboard.md) | Etapa 4 (finalizată) |
 | [05-public-storefront.md](./docs/stages/05-public-storefront.md) | Etapa 5 (**finalizată**) |
+| [06-vehicle-inventory-data.md](./docs/stages/06-vehicle-inventory-data.md) | Etapa 6 (**finalizată**) |
+| [07-vehicle-media.md](./docs/stages/07-vehicle-media.md) | Etapa 7 (**finalizată local**) |
+| [08-public-catalog-search.md](./docs/stages/08-public-catalog-search.md) | Etapa 8 (**finalizată local**) |
+| [09-design-system-template.md](./docs/stages/09-design-system-template.md) | Etapa 9 (**finalizată local**) |
 
 Transversal: [`docs/architecture.md`](./docs/architecture.md) · [`docs/database.md`](./docs/database.md) · [`docs/security.md`](./docs/security.md) · [`docs/auth-tenancy.md`](./docs/auth-tenancy.md).

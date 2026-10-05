@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatMileageKmRo, formatPriceEurRo } from "@auto-platform/types";
 import type { VehicleListItem } from "@/lib/vehicles/list-vehicles";
 import { vehicleEditPath } from "@/lib/dashboard/nav";
 import { vehicleStatusLabel } from "@/lib/vehicles/status-label";
@@ -8,22 +9,6 @@ type VehicleListProps = {
   vehicles: VehicleListItem[];
   canMutate: boolean;
 };
-
-function formatPrice(price: string, currency: string): string {
-  const amount = Number(price);
-  if (Number.isFinite(amount)) {
-    return new Intl.NumberFormat("ro-RO", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  }
-  return `${price} ${currency}`;
-}
-
-function formatMileage(mileage: number): string {
-  return `${new Intl.NumberFormat("ro-RO").format(mileage)} km`;
-}
 
 export function VehicleList({ vehicles, canMutate }: VehicleListProps) {
   return (
@@ -50,13 +35,13 @@ export function VehicleList({ vehicles, canMutate }: VehicleListProps) {
                     {vehicle.make} {vehicle.model}
                   </Link>
                   <p className="mt-1 text-sm text-zinc-600">
-                    {vehicle.year} · {formatMileage(vehicle.mileage)}
+                    {vehicle.year} · {formatMileageKmRo(vehicle.mileage)}
                   </p>
                   <p className="mt-1 break-all font-mono text-xs text-zinc-500">{vehicle.slug}</p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-end">
                   <p className="text-base font-semibold text-zinc-900">
-                    {formatPrice(vehicle.price, vehicle.currency)}
+                    {formatPriceEurRo(vehicle.price)}
                   </p>
                   <span className="inline-flex rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-800">
                     {vehicleStatusLabel(vehicle.status)}

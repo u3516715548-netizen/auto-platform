@@ -16,10 +16,12 @@ const variantClass: Record<FeedbackBannerProps["variant"], string> = {
  */
 export function FeedbackBanner({ variant, children }: FeedbackBannerProps) {
   const role = variant === "error" ? "alert" : "status";
+  const live = variant === "error" ? "assertive" : "polite";
   return (
     <p
       className={`rounded-md border px-3 py-2.5 text-sm leading-6 ${variantClass[variant]}`}
       role={role}
+      aria-live={live}
     >
       {children}
     </p>

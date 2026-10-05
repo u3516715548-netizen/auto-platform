@@ -26,8 +26,8 @@ export type CreateVehicleState = {
 };
 
 /**
- * Creates a vehicle for the current Host tenant.
- * tenant_id is taken only from verified membership — never from FormData.
+ * Creates a draft vehicle for the current Host tenant.
+ * tenant_id from membership only; currency forced EUR.
  */
 export async function createVehicleAction(
   _prev: CreateVehicleState | null,
@@ -52,7 +52,7 @@ export async function createVehicleAction(
     return { error: parsed.error };
   }
 
-  const { make, model, year, mileage, price, currency } = parsed.data;
+  const { make, model, year, mileage, price } = parsed.data;
   const tenantId = session.tenant.tenantId;
   const profileId = session.user.profile.id;
   const baseSlug = parsed.data.slug?.trim() || buildVehicleSlug(make, model, year);
@@ -80,8 +80,9 @@ export async function createVehicleAction(
               year,
               mileage,
               price,
-              currency,
+              currency: "EUR",
               specs: {},
+              features: [],
             })
             .returning({ id: vehicles.id, slug: vehicles.slug });
 
@@ -98,7 +99,6 @@ export async function createVehicleAction(
         throw new Error("SLUG_COLLISION");
       }
 
-      // Defense in depth: confirm row belongs to session tenant.
       const verified = await db.query.vehicles.findFirst({
         where: and(eq(vehicles.id, created.id), eq(vehicles.tenantId, tenantId)),
       });
@@ -117,7 +117,7 @@ export async function createVehicleAction(
           make,
           model,
           year,
-          currency,
+          currency: "EUR",
         },
       });
     });

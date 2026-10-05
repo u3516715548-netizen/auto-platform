@@ -10,7 +10,7 @@ import { tenantPlanEnum, tenantStatusEnum } from "./enums";
  * - `0002_tenants_public_storefront_select.sql`:
  *   `tenants_select_public_storefront` — anon SELECT for status IN (active, trial) only
  *
- * Public DTO whitelist (app layer): name, slug, branding.primaryColor (validated hex).
+ * Public DTO whitelist (app layer): name, slug, branding.primaryColor / templateId / phone / whatsapp (validated).
  * Never expose id / plan / custom_domain / raw branding to the browser.
  */
 export const tenants = pgTable(

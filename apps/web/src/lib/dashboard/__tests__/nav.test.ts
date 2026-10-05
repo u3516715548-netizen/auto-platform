@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   DASHBOARD_NAV,
   isDashboardNavActive,
+  leadDetailPath,
+  leadsPath,
+  reservationDetailPath,
+  reservationsPath,
   vehicleCreatePath,
   vehicleEditPath,
   vehiclesPath,
@@ -24,6 +28,17 @@ describe("dashboard nav paths", () => {
     expect(vehicleEditPath("00000000-0000-4000-8000-000000000001", { saved: "1" })).toContain(
       "saved=1",
     );
+    expect(leadsPath()).toBe("/dashboard/leads");
+    expect(leadDetailPath("00000000-0000-4000-8000-000000000099")).toBe(
+      "/dashboard/leads/00000000-0000-4000-8000-000000000099",
+    );
+    expect(reservationsPath()).toBe("/dashboard/reservations");
+    expect(reservationsPath({ filter: "active" })).toBe(
+      "/dashboard/reservations?filter=active",
+    );
+    expect(reservationDetailPath("00000000-0000-4000-8000-000000000088")).toBe(
+      "/dashboard/reservations/00000000-0000-4000-8000-000000000088",
+    );
   });
 
   it("marks overview active only on exact /dashboard", () => {
@@ -33,9 +48,25 @@ describe("dashboard nav paths", () => {
   });
 
   it("marks vehicles active for list and nested edit paths", () => {
-    const vehicles = DASHBOARD_NAV[1]!;
+    const vehicles = DASHBOARD_NAV.find((i) => i.href === "/dashboard/vehicles")!;
     expect(isDashboardNavActive("/dashboard/vehicles", vehicles)).toBe(true);
     expect(isDashboardNavActive("/dashboard/vehicles/abc", vehicles)).toBe(true);
     expect(isDashboardNavActive("/dashboard", vehicles)).toBe(false);
+  });
+
+  it("includes reservations, leads and settings nav items", () => {
+    const reservations = DASHBOARD_NAV.find((i) => i.href === "/dashboard/reservations");
+    expect(reservations).toBeTruthy();
+    expect(isDashboardNavActive("/dashboard/reservations", reservations!)).toBe(true);
+    expect(isDashboardNavActive("/dashboard/reservations/abc", reservations!)).toBe(true);
+
+    const leads = DASHBOARD_NAV.find((i) => i.href === "/dashboard/leads");
+    expect(leads).toBeTruthy();
+    expect(isDashboardNavActive("/dashboard/leads", leads!)).toBe(true);
+    expect(isDashboardNavActive("/dashboard/leads/abc", leads!)).toBe(true);
+
+    const settings = DASHBOARD_NAV.find((i) => i.href === "/dashboard/settings");
+    expect(settings).toBeTruthy();
+    expect(isDashboardNavActive("/dashboard/settings", settings!)).toBe(true);
   });
 });

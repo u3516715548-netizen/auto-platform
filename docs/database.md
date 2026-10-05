@@ -27,6 +27,9 @@ Located in `packages/db/drizzle/`:
 1. `0000_common_professor_monster.sql` — tables, enums, indexes, FKs
 2. `0001_rls_and_helpers.sql` — `app.*` helpers, RLS enable/force, policies, optional `profiles → auth.users` FK
 3. `0002_tenants_public_storefront_select.sql` — anon SELECT on `tenants` for storefront (`active`\|`trial` only)
+4. `0003_dashing_ikaris.sql` — Etapa 6A vehicle inventory attributes (enums + nullable columns + indexes; legacy `specs.fuel` map)
+
+**Supabase Storage (Etapa 7, manual):** [`packages/db/supabase/vehicle-media-storage.sql`](../packages/db/supabase/vehicle-media-storage.sql) — bucket privat `vehicle-media` + policies staff.
 
 Migrations are the **source of truth** for RLS policies. Drizzle TS schema documents tables/columns; policy comments live on `schema/tenants.ts`.
 

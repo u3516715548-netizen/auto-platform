@@ -8,6 +8,7 @@ import {
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { requireMembership } from "@/lib/auth/require-membership";
 import { loginPath } from "@/lib/auth/auth-redirects";
+import { countNewLeadsForTenant } from "@/lib/leads/count-new-leads";
 
 /**
  * Server-side gate + responsive shell for /dashboard/*.
@@ -33,6 +34,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   }
 
   const { user, tenant, membership } = session;
+  let newLeadsCount = 0;
+  try {
+    newLeadsCount = await countNewLeadsForTenant(session);
+  } catch {
+    newLeadsCount = 0;
+  }
 
   return (
     <DashboardShell
@@ -41,6 +48,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       role={membership.role}
       userEmail={user.profile.email}
       userName={user.profile.name}
+      newLeadsCount={newLeadsCount}
     >
       {children}
     </DashboardShell>

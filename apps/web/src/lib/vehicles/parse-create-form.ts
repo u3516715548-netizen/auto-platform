@@ -5,17 +5,17 @@ export type ParseCreateVehicleResult =
   | { ok: false; error: string };
 
 /**
- * Parses create-vehicle FormData. Ignores / rejects client tenant_id.
+ * Parses create-vehicle FormData. Forces EUR; ignores / rejects client tenant_id.
  */
 export function parseCreateVehicleForm(formData: FormData): ParseCreateVehicleResult {
-  // Explicitly ignore any client-supplied tenant identifiers.
+  // Currency from client is ignored — always EUR.
   const raw = {
     make: formData.get("make"),
     model: formData.get("model"),
     year: formData.get("year"),
     mileage: formData.get("mileage"),
     price: formData.get("price"),
-    currency: formData.get("currency") || "EUR",
+    currency: "EUR",
     slug: formData.get("slug") || undefined,
   };
 
@@ -34,6 +34,7 @@ export function parseCreateVehicleForm(formData: FormData): ParseCreateVehicleRe
     ok: true,
     data: {
       ...parsed.data,
+      currency: "EUR",
       slug,
     },
   };

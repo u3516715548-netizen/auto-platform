@@ -60,6 +60,10 @@ export function VehicleStatusForm({
             </option>
           ))}
         </select>
+        <p className="text-xs leading-5 text-zinc-600">
+          Pentru „Disponibil” sunt obligatorii: combustibil, transmisie, caroserie, stare, putere,
+          descriere și regim TVA.
+        </p>
         {currentStatus === "archived" ? (
           <p className="text-xs leading-5 text-zinc-600">
             Pentru reactivare, alege un status diferit de „Arhivat” (ex. Ciornă sau Disponibil).
@@ -68,6 +72,13 @@ export function VehicleStatusForm({
       </div>
 
       {state?.error ? <FeedbackBanner variant="error">{state.error}</FeedbackBanner> : null}
+      {state?.missingFields && state.missingFields.length > 0 ? (
+        <ul className="list-disc space-y-1 pl-5 text-sm text-red-800">
+          {state.missingFields.map((field) => (
+            <li key={field}>{field}</li>
+          ))}
+        </ul>
+      ) : null}
 
       <Button type="submit" variant="secondary" disabled={pending} className="w-full sm:w-auto">
         {pending ? "Se actualizează…" : "Actualizează status"}

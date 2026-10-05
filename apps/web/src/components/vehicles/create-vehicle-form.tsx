@@ -9,7 +9,6 @@ import {
   type CreateVehicleState,
 } from "@/lib/vehicles/create-vehicle";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
-import { nativeSelectClassName } from "@/lib/ui/form-styles";
 
 const initialState: CreateVehicleState = { error: null };
 
@@ -59,7 +58,7 @@ export function CreateVehicleForm() {
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="mileage">Kilometraj</Label>
+          <Label htmlFor="mileage">Kilometraj (km)</Label>
           <Input
             id="mileage"
             name="mileage"
@@ -74,32 +73,19 @@ export function CreateVehicleForm() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="price">Preț</Label>
-          <Input
-            id="price"
-            name="price"
-            inputMode="decimal"
-            required
-            disabled={pending}
-            placeholder="18990"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="currency">Monedă</Label>
-          <select
-            id="currency"
-            name="currency"
-            disabled={pending}
-            defaultValue="EUR"
-            className={nativeSelectClassName}
-          >
-            <option value="EUR">EUR</option>
-            <option value="RON">RON</option>
-            <option value="USD">USD</option>
-          </select>
-        </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="price">Preț (EUR)</Label>
+        <Input
+          id="price"
+          name="price"
+          inputMode="decimal"
+          required
+          disabled={pending}
+          placeholder="18990"
+        />
+        <p className="text-xs leading-5 text-zinc-500">
+          Se creează ca ciornă. Moneda este fixă: euro (€). Completezi detaliile tehnice la editare.
+        </p>
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -120,7 +106,7 @@ export function CreateVehicleForm() {
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-          {pending ? "Se salvează…" : "Salvează vehicul"}
+          {pending ? "Se salvează…" : "Salvează ciorna"}
         </Button>
         <Link
           href={vehiclesPath()}

@@ -24,7 +24,7 @@ export type UpdateVehicleState = {
 
 /**
  * Updates vehicle fields for the Host tenant only.
- * Never trusts tenant_id or foreign vehicle ownership from the client.
+ * Forces EUR; never trusts tenant_id from the client.
  */
 export async function updateVehicleAction(
   _prev: UpdateVehicleState | null,
@@ -51,7 +51,7 @@ export async function updateVehicleAction(
 
   const tenantId = session.tenant.tenantId;
   const profileId = session.user.profile.id;
-  const { make, model, year, mileage, price, currency, slug } = parsed.data;
+  const data = parsed.data;
 
   try {
     await withTenantContext(getDb(), { profileId, tenantId }, async (db) => {
@@ -66,13 +66,39 @@ export async function updateVehicleAction(
       const updatedRows = await db
         .update(vehicles)
         .set({
-          make,
-          model,
-          year,
-          mileage,
-          price,
-          currency,
-          slug,
+          make: data.make,
+          model: data.model,
+          year: data.year,
+          mileage: data.mileage,
+          price: data.price,
+          currency: "EUR",
+          slug: data.slug,
+          vin: data.vin ?? null,
+          fuel: data.fuel ?? null,
+          transmission: data.transmission ?? null,
+          bodyType: data.bodyType ?? null,
+          driveType: data.driveType ?? null,
+          condition: data.condition ?? null,
+          emissionStandard: data.emissionStandard ?? null,
+          vatRegime: data.vatRegime ?? null,
+          accidentStatus: data.accidentStatus ?? null,
+          powerHp: data.powerHp ?? null,
+          engineDisplacementCc: data.engineDisplacementCc ?? null,
+          doors: data.doors ?? null,
+          seats: data.seats ?? null,
+          exteriorColor: data.exteriorColor ?? null,
+          interiorColor: data.interiorColor ?? null,
+          firstRegistrationYear: data.firstRegistrationYear ?? null,
+          firstRegistrationMonth: data.firstRegistrationMonth ?? null,
+          priceNegotiable: data.priceNegotiable,
+          originCountry: data.originCountry ?? null,
+          locationCity: data.locationCity ?? null,
+          warrantyMonths: data.warrantyMonths ?? null,
+          warrantyNotes: data.warrantyNotes ?? null,
+          hasServiceBook: data.hasServiceBook,
+          hasServiceHistory: data.hasServiceHistory,
+          description: data.description ?? null,
+          features: data.features,
           updatedAt: new Date(),
         })
         .where(and(eq(vehicles.id, idParsed.id), eq(vehicles.tenantId, tenantId)))
@@ -91,11 +117,11 @@ export async function updateVehicleAction(
         entityType: "vehicle",
         entityId: updated.id,
         metadata: {
-          make,
-          model,
-          year,
-          slug,
-          currency,
+          make: data.make,
+          model: data.model,
+          year: data.year,
+          slug: data.slug,
+          currency: "EUR",
           previousSlug: existing.slug,
         },
       });

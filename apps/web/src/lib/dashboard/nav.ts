@@ -12,6 +12,9 @@ export type DashboardNavItem = {
 export const DASHBOARD_NAV: readonly DashboardNavItem[] = [
   { href: "/dashboard", label: "Prezentare", match: "exact" },
   { href: "/dashboard/vehicles", label: "Vehicule", match: "prefix" },
+  { href: "/dashboard/reservations", label: "Rezervări", match: "prefix" },
+  { href: "/dashboard/leads", label: "Lead-uri", match: "prefix" },
+  { href: "/dashboard/settings", label: "Setări", match: "prefix" },
 ] as const;
 
 export function isDashboardNavActive(pathname: string, item: DashboardNavItem): boolean {
@@ -41,6 +44,56 @@ export function vehicleEditPath(
   searchParams?: Record<string, string | undefined>,
 ): string {
   const path = `/dashboard/vehicles/${id}`;
+  if (!searchParams) return path;
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (value) qs.set(key, value);
+  }
+  const serialized = qs.toString();
+  return serialized ? `${path}?${serialized}` : path;
+}
+
+export function leadsPath(searchParams?: Record<string, string | undefined>): string {
+  const path = "/dashboard/leads";
+  if (!searchParams) return path;
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (value) qs.set(key, value);
+  }
+  const serialized = qs.toString();
+  return serialized ? `${path}?${serialized}` : path;
+}
+
+export function leadDetailPath(
+  id: string,
+  searchParams?: Record<string, string | undefined>,
+): string {
+  const path = `/dashboard/leads/${id}`;
+  if (!searchParams) return path;
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (value) qs.set(key, value);
+  }
+  const serialized = qs.toString();
+  return serialized ? `${path}?${serialized}` : path;
+}
+
+export function reservationsPath(searchParams?: Record<string, string | undefined>): string {
+  const path = "/dashboard/reservations";
+  if (!searchParams) return path;
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (value) qs.set(key, value);
+  }
+  const serialized = qs.toString();
+  return serialized ? `${path}?${serialized}` : path;
+}
+
+export function reservationDetailPath(
+  id: string,
+  searchParams?: Record<string, string | undefined>,
+): string {
+  const path = `/dashboard/reservations/${id}`;
   if (!searchParams) return path;
   const qs = new URLSearchParams();
   for (const [key, value] of Object.entries(searchParams)) {

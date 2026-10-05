@@ -7,12 +7,13 @@ export function leadCooldownMs(): number {
   return COOLDOWN_MS;
 }
 
-export function buildLeadCooldownCookieName(vehicleSlug: string, emailNormalized: string): string {
-  const material = `${vehicleSlug}|${emailNormalized || "no-email"}`;
+export function buildLeadCooldownCookieName(vehicleSlug: string, contactKey: string): string {
+  const material = `${vehicleSlug}|${contactKey}`;
   const hash = createHash("sha256").update(material).digest("hex").slice(0, 24);
   return `${COOKIE_PREFIX}${hash}`;
 }
 
+/** @deprecated Use normalizeLeadEmailForStorage from lead-contact */
 export function normalizeLeadEmail(email: string | undefined): string {
   return (email ?? "").trim().toLowerCase();
 }

@@ -9,7 +9,7 @@ export type ParsePublicLeadResult =
         email?: string;
         phone?: string;
         message?: string;
-      };
+      }; // email lowercased; phone E.164 when present
       honeypotTriggered: boolean;
     }
   | { ok: false; error: string };
@@ -24,6 +24,16 @@ export function parsePublicLeadForm(formData: FormData): ParsePublicLeadResult {
 
   const honeypot = String(formData.get("company") ?? "").trim();
   const honeypotTriggered = honeypot.length > 0;
+
+  if (honeypotTriggered) {
+    return {
+      ok: true,
+      honeypotTriggered: true,
+      data: {
+        name: String(formData.get("name") ?? "").trim() || "—",
+      },
+    };
+  }
 
   const parsed = createPublicLeadInputSchema.safeParse({
     name: formData.get("name"),

@@ -10,6 +10,7 @@ type DashboardShellProps = {
   role: MembershipRole;
   userEmail: string;
   userName: string;
+  newLeadsCount?: number;
   children: ReactNode;
 };
 
@@ -23,6 +24,7 @@ export function DashboardShell({
   role,
   userEmail,
   userName,
+  newLeadsCount = 0,
   children,
 }: DashboardShellProps) {
   const roleLabel = membershipRoleLabel(role);
@@ -36,7 +38,7 @@ export function DashboardShell({
           <p className="font-mono text-xs text-zinc-500">{tenantSlug}</p>
         </div>
         <div className="flex flex-1 flex-col gap-4 px-3 py-4">
-          <DashboardNav orientation="vertical" />
+          <DashboardNav orientation="vertical" newLeadsCount={newLeadsCount} />
         </div>
         <div className="mt-auto border-t border-zinc-200 px-4 py-4">
           <p className="truncate text-sm font-medium text-zinc-900">{userName}</p>
@@ -77,7 +79,7 @@ export function DashboardShell({
           </div>
 
           <div className="border-t border-zinc-100 px-3 py-2 sm:px-6 md:hidden">
-            <DashboardNav orientation="horizontal" />
+            <DashboardNav orientation="horizontal" newLeadsCount={newLeadsCount} />
           </div>
         </header>
 

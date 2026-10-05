@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireMembership } from "@/lib/auth/require-membership";
-import { vehiclesPath } from "@/lib/dashboard/nav";
+import { leadsPath, vehiclesPath } from "@/lib/dashboard/nav";
 import { membershipRoleLabel } from "@/lib/dashboard/role-label";
 
 /**
@@ -18,7 +18,7 @@ export default async function DashboardHomePage() {
         </h2>
         <p className="max-w-2xl text-sm leading-6 text-zinc-600">
           Ești autentificat pe dealerul <span className="font-medium text-zinc-800">{tenant.name}</span>.
-          Stocul se gestionează din meniul Vehicule.
+          Gestionează stocul și solicitările din meniu.
         </p>
       </section>
 
@@ -41,17 +41,31 @@ export default async function DashboardHomePage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5">
-        <h3 className="text-base font-semibold text-zinc-900">Stoc vehicule</h3>
-        <p className="mt-1 text-sm leading-6 text-zinc-600">
-          Listează și creează vehicule pentru dealerul curent. Editarea și arhivarea urmează în 4D.
-        </p>
-        <Link
-          href={vehiclesPath()}
-          className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-teal-800 px-4 text-sm font-medium text-white transition-colors hover:bg-teal-900"
-        >
-          Deschide Vehicule
-        </Link>
+      <section className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5">
+          <h3 className="text-base font-semibold text-zinc-900">Stoc vehicule</h3>
+          <p className="mt-1 text-sm leading-6 text-zinc-600">
+            Listează și gestionează vehiculele pentru dealerul curent.
+          </p>
+          <Link
+            href={vehiclesPath()}
+            className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-teal-800 px-4 text-sm font-medium text-white transition-colors hover:bg-teal-900"
+          >
+            Deschide Vehicule
+          </Link>
+        </div>
+        <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5">
+          <h3 className="text-base font-semibold text-zinc-900">Lead-uri</h3>
+          <p className="mt-1 text-sm leading-6 text-zinc-600">
+            Solicitările primite de pe site-ul public.
+          </p>
+          <Link
+            href={leadsPath()}
+            className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-teal-800 px-4 text-sm font-medium text-white transition-colors hover:bg-teal-900"
+          >
+            Deschide Lead-uri
+          </Link>
+        </div>
       </section>
     </div>
   );

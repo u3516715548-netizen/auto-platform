@@ -20,6 +20,126 @@ export const vehicleStatusSchema = z.enum([
 ]);
 export type VehicleStatus = z.infer<typeof vehicleStatusSchema>;
 
+/** Etapa 6 — vehicle attribute enums (DB EN keys; UI labels RO separately). */
+export const vehicleFuelSchema = z.enum([
+  "petrol",
+  "diesel",
+  "hybrid",
+  "plugin_hybrid",
+  "electric",
+  "lpg",
+  "cng",
+  "other",
+]);
+export type VehicleFuel = z.infer<typeof vehicleFuelSchema>;
+
+export const vehicleTransmissionSchema = z.enum([
+  "manual",
+  "automatic",
+  "dct",
+  "cvt",
+  "other",
+]);
+export type VehicleTransmission = z.infer<typeof vehicleTransmissionSchema>;
+
+export const vehicleBodyTypeSchema = z.enum([
+  "hatchback",
+  "sedan",
+  "estate",
+  "suv",
+  "coupe",
+  "convertible",
+  "mpv",
+  "van",
+  "pickup",
+  "other",
+]);
+export type VehicleBodyType = z.infer<typeof vehicleBodyTypeSchema>;
+
+export const vehicleDriveTypeSchema = z.enum(["fwd", "rwd", "awd", "4wd"]);
+export type VehicleDriveType = z.infer<typeof vehicleDriveTypeSchema>;
+
+export const vehicleConditionSchema = z.enum(["new", "used", "demo"]);
+export type VehicleCondition = z.infer<typeof vehicleConditionSchema>;
+
+export const vehicleEmissionSchema = z.enum([
+  "euro_3",
+  "euro_4",
+  "euro_5",
+  "euro_6",
+  "euro_6d",
+  "euro_6e",
+  "ev",
+  "other",
+]);
+export type VehicleEmission = z.infer<typeof vehicleEmissionSchema>;
+
+export const vehicleVatRegimeSchema = z.enum([
+  "deductible",
+  "included",
+  "not_applicable",
+]);
+export type VehicleVatRegime = z.infer<typeof vehicleVatRegimeSchema>;
+
+export const vehicleAccidentStatusSchema = z.enum([
+  "none",
+  "cosmetic",
+  "minor",
+  "major",
+  "unknown",
+]);
+export type VehicleAccidentStatus = z.infer<typeof vehicleAccidentStatusSchema>;
+
+/** Controlled feature allowlist (Etapa 6). Unknown keys rejected by Zod. */
+export const VEHICLE_FEATURE_KEYS = [
+  "abs",
+  "esp",
+  "airbag",
+  "ac",
+  "climate_auto",
+  "leather",
+  "nav",
+  "parking_sensors",
+  "parking_camera",
+  "cruise",
+  "adaptive_cruise",
+  "led_lights",
+  "xenon",
+  "sunroof",
+  "tow_hitch",
+  "keyless",
+  "heated_seats",
+  "android_auto",
+  "carplay",
+] as const;
+export type VehicleFeatureKey = (typeof VEHICLE_FEATURE_KEYS)[number];
+
+export const vehicleFeatureKeySchema = z.enum(VEHICLE_FEATURE_KEYS);
+export const vehicleFeaturesSchema = z.array(vehicleFeatureKeySchema).max(64);
+
+/** Romanian UI labels for feature keys (storefront/dashboard). */
+export const VEHICLE_FEATURE_LABELS_RO: Record<VehicleFeatureKey, string> = {
+  abs: "ABS",
+  esp: "ESP",
+  airbag: "Airbag-uri",
+  ac: "Aer condiționat",
+  climate_auto: "Climatizare automată",
+  leather: "Interior piele",
+  nav: "Navigație",
+  parking_sensors: "Senzori parcare",
+  parking_camera: "Cameră parcare",
+  cruise: "Tempomat",
+  adaptive_cruise: "Tempomat adaptiv",
+  led_lights: "Faruri LED",
+  xenon: "Faruri Xenon",
+  sunroof: "Trapă",
+  tow_hitch: "Cârlig remorcare",
+  keyless: "Keyless",
+  heated_seats: "Scaune încălzite",
+  android_auto: "Android Auto",
+  carplay: "Apple CarPlay",
+};
+
 export const leadStatusSchema = z.enum([
   "new",
   "contacted",
@@ -30,8 +150,59 @@ export const leadStatusSchema = z.enum([
 ]);
 export type LeadStatus = z.infer<typeof leadStatusSchema>;
 
+export const leadIdSchema = z.string().uuid("ID lead invalid");
+
+/** Dashboard list filter buckets (maps onto existing lead_status enum). */
+export const leadListFilterSchema = z.enum(["all", "new", "in_progress", "closed"]);
+export type LeadListFilter = z.infer<typeof leadListFilterSchema>;
+
+export const LEAD_LIST_FILTER_STATUSES: Record<LeadListFilter, readonly LeadStatus[] | null> = {
+  all: null,
+  new: ["new"],
+  in_progress: ["contacted", "qualified"],
+  closed: ["won", "lost", "archived"],
+};
+
+export const updateLeadStatusSchema = z
+  .object({
+    leadId: leadIdSchema,
+    status: leadStatusSchema,
+  })
+  .strict();
+export type UpdateLeadStatusInput = z.infer<typeof updateLeadStatusSchema>;
+
+/** `assignedTo: null` clears assignment; UUID must be revalidated as tenant membership. */
+export const assignLeadSchema = z
+  .object({
+    leadId: leadIdSchema,
+    assignedTo: z.union([z.string().uuid("Membru invalid"), z.null()]),
+  })
+  .strict();
+export type AssignLeadInput = z.infer<typeof assignLeadSchema>;
+
 export const reservationStatusSchema = z.enum(["active", "expired", "cancelled", "converted"]);
 export type ReservationStatus = z.infer<typeof reservationStatusSchema>;
+
+/** Dashboard reservation list filter (exact reservation_status values + all). */
+export const reservationListFilterSchema = z.enum([
+  "all",
+  "active",
+  "expired",
+  "cancelled",
+  "converted",
+]);
+export type ReservationListFilter = z.infer<typeof reservationListFilterSchema>;
+
+export const RESERVATION_LIST_FILTER_STATUSES: Record<
+  ReservationListFilter,
+  readonly ReservationStatus[] | null
+> = {
+  all: null,
+  active: ["active"],
+  expired: ["expired"],
+  cancelled: ["cancelled"],
+  converted: ["converted"],
+};
 
 export const vehicleMediaTypeSchema = z.enum(["image", "video", "document"]);
 export type VehicleMediaType = z.infer<typeof vehicleMediaTypeSchema>;
@@ -42,8 +213,12 @@ export const tenantSlugSchema = z
   .max(63)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug invalid");
 
+/** Kept for future tenant currency settings; vehicle forms use EUR-only in Etapa 6. */
 export const currencySchema = z.enum(["EUR", "RON", "USD"]);
 export type Currency = z.infer<typeof currencySchema>;
+
+/** Etapa 6 vehicle money — EUR only (no selector / conversion). */
+export const vehicleCurrencySchema = z.literal("EUR");
 
 export const auditActionSchema = z.string().min(1).max(120);
 export const entityTypeSchema = z.string().min(1).max(80);
@@ -58,27 +233,53 @@ export const writeAuditLogSchema = z.object({
 });
 export type WriteAuditLogInput = z.infer<typeof writeAuditLogSchema>;
 
-/** Create vehicle — never includes tenant_id (resolved server-side from Host + membership). */
+const priceEurStringSchema = z
+  .string()
+  .trim()
+  .regex(/^\d+(?:[.,]\d{1,2})?$/, "Preț invalid")
+  .transform((value) => value.replace(",", "."));
+
+const mileageKmSchema = z.coerce
+  .number({ invalid_type_error: "Kilometraj invalid" })
+  .int()
+  .min(0, "Kilometrajul nu poate fi negativ")
+  .max(2_000_000, "Kilometraj nerealist");
+
+const yearSchema = z.coerce
+  .number({ invalid_type_error: "An invalid" })
+  .int()
+  .min(1950, "Anul este prea mic")
+  .max(2100, "Anul este prea mare");
+
+/** Free-text colour: normalized, no HTML/script. */
+export const vehicleColorTextSchema = z
+  .string()
+  .trim()
+  .min(1, "Culoarea este obligatorie")
+  .max(60, "Culoarea este prea lungă")
+  .refine((value) => !/[<>]|javascript:|on\w+=/i.test(value), {
+    message: "Culoarea conține caractere nepermise",
+  });
+
+export const vehicleDescriptionSchema = z
+  .string()
+  .trim()
+  .min(20, "Descrierea trebuie să aibă cel puțin 20 de caractere")
+  .max(5000, "Descrierea este prea lungă")
+  .refine((value) => !/<[^>]*>/.test(value), {
+    message: "Descrierea nu poate conține HTML",
+  });
+
+/** Create vehicle — short draft flow. Never includes tenant_id. Currency forced EUR. */
 export const createVehicleInputSchema = z
   .object({
     make: z.string().trim().min(1, "Marca este obligatorie").max(80),
     model: z.string().trim().min(1, "Modelul este obligatoriu").max(80),
-    year: z.coerce
-      .number({ invalid_type_error: "An invalid" })
-      .int()
-      .min(1950, "Anul este prea mic")
-      .max(2100, "Anul este prea mare"),
-    mileage: z.coerce
-      .number({ invalid_type_error: "Kilometraj invalid" })
-      .int()
-      .min(0, "Kilometrajul nu poate fi negativ")
-      .max(2_000_000, "Kilometraj nerealist"),
-    price: z
-      .string()
-      .trim()
-      .regex(/^\d+(?:[.,]\d{1,2})?$/, "Preț invalid")
-      .transform((value) => value.replace(",", ".")),
-    currency: currencySchema.default("EUR"),
+    year: yearSchema,
+    mileage: mileageKmSchema,
+    price: priceEurStringSchema,
+    /** Ignored from client; server persists EUR only. */
+    currency: vehicleCurrencySchema.default("EUR"),
     slug: z.preprocess(
       (value) => {
         if (value === undefined || value === null) return undefined;
@@ -96,33 +297,201 @@ export const createVehicleInputSchema = z
   .strict();
 export type CreateVehicleInput = z.infer<typeof createVehicleInputSchema>;
 
-/** Update vehicle fields — never includes tenant_id. Slug required on edit. */
+/**
+ * Fields required before status can become `available` (Etapa 6).
+ * Validated in app on status transition — not DB NOT NULL.
+ */
+export const vehiclePublishRequiredSchema = z
+  .object({
+    make: z.string().trim().min(1),
+    model: z.string().trim().min(1),
+    year: yearSchema,
+    mileage: mileageKmSchema,
+    price: priceEurStringSchema,
+    fuel: vehicleFuelSchema,
+    transmission: vehicleTransmissionSchema,
+    bodyType: vehicleBodyTypeSchema,
+    condition: vehicleConditionSchema,
+    powerHp: z.coerce
+      .number({ invalid_type_error: "Puterea este invalidă" })
+      .int()
+      .min(1, "Puterea trebuie să fie pozitivă")
+      .max(2000, "Putere nerealistă"),
+    description: vehicleDescriptionSchema,
+    vatRegime: vehicleVatRegimeSchema,
+  })
+  .strict();
+export type VehiclePublishRequired = z.infer<typeof vehiclePublishRequiredSchema>;
+
+export const VEHICLE_PUBLISH_REQUIRED_KEYS = [
+  "make",
+  "model",
+  "year",
+  "mileage",
+  "price",
+  "fuel",
+  "transmission",
+  "bodyType",
+  "condition",
+  "powerHp",
+  "description",
+  "vatRegime",
+] as const;
+
+export const VEHICLE_PUBLISH_REQUIRED_LABELS_RO: Record<
+  (typeof VEHICLE_PUBLISH_REQUIRED_KEYS)[number],
+  string
+> = {
+  make: "Marcă",
+  model: "Model",
+  year: "An model",
+  mileage: "Kilometraj",
+  price: "Preț",
+  fuel: "Combustibil",
+  transmission: "Transmisie",
+  bodyType: "Caroserie",
+  condition: "Stare",
+  powerHp: "Putere (CP)",
+  description: "Descriere",
+  vatRegime: "Regim TVA",
+};
+
+export type PublishReadiness =
+  | { ok: true }
+  | { ok: false; missingLabels: string[] };
+
+/** Assess whether a vehicle row/payload may transition to `available`. */
+export function assessVehiclePublishReady(data: unknown): PublishReadiness {
+  const parsed = vehiclePublishRequiredSchema.safeParse(data);
+  if (parsed.success) return { ok: true };
+
+  const missing = new Set<string>();
+  for (const issue of parsed.error.issues) {
+    const key = issue.path[0];
+    if (
+      typeof key === "string" &&
+      Object.prototype.hasOwnProperty.call(VEHICLE_PUBLISH_REQUIRED_LABELS_RO, key)
+    ) {
+      missing.add(
+        VEHICLE_PUBLISH_REQUIRED_LABELS_RO[
+          key as (typeof VEHICLE_PUBLISH_REQUIRED_KEYS)[number]
+        ],
+      );
+    }
+  }
+  return {
+    ok: false,
+    missingLabels: [...missing],
+  };
+}
+
+const emptyToUndefined = (value: unknown) => {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === "string" && value.trim() === "") return undefined;
+  return value;
+};
+
+const optionalEnum = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess(emptyToUndefined, schema.optional());
+
+const optionalColorSchema = z.preprocess(
+  emptyToUndefined,
+  vehicleColorTextSchema.optional(),
+);
+
+const optionalDescriptionSchema = z.preprocess(emptyToUndefined, vehicleDescriptionSchema.optional());
+
+const optionalVinSchema = z.preprocess(
+  emptyToUndefined,
+  z
+    .string()
+    .trim()
+    .min(5, "VIN prea scurt")
+    .max(32, "VIN prea lung")
+    .regex(/^[A-HJ-NPR-Z0-9]+$/i, "VIN invalid")
+    .optional(),
+);
+
+const optionalInt = (min: number, max: number, message: string) =>
+  z.preprocess(
+    emptyToUndefined,
+    z.coerce
+      .number({ invalid_type_error: message })
+      .int()
+      .min(min, message)
+      .max(max, message)
+      .optional(),
+  );
+
+/** Full edit payload (Etapa 6B). Never includes tenant_id. Currency forced EUR. */
 export const updateVehicleInputSchema = z
   .object({
     make: z.string().trim().min(1, "Marca este obligatorie").max(80),
     model: z.string().trim().min(1, "Modelul este obligatoriu").max(80),
-    year: z.coerce
-      .number({ invalid_type_error: "An invalid" })
-      .int()
-      .min(1950, "Anul este prea mic")
-      .max(2100, "Anul este prea mare"),
-    mileage: z.coerce
-      .number({ invalid_type_error: "Kilometraj invalid" })
-      .int()
-      .min(0, "Kilometrajul nu poate fi negativ")
-      .max(2_000_000, "Kilometraj nerealist"),
-    price: z
-      .string()
-      .trim()
-      .regex(/^\d+(?:[.,]\d{1,2})?$/, "Preț invalid")
-      .transform((value) => value.replace(",", ".")),
-    currency: currencySchema.default("EUR"),
+    year: yearSchema,
+    mileage: mileageKmSchema,
+    price: priceEurStringSchema,
+    currency: vehicleCurrencySchema.default("EUR"),
     slug: z
       .string()
       .trim()
       .min(1, "Slug-ul este obligatoriu")
       .max(80)
       .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug invalid"),
+    vin: optionalVinSchema,
+    fuel: optionalEnum(vehicleFuelSchema),
+    transmission: optionalEnum(vehicleTransmissionSchema),
+    bodyType: optionalEnum(vehicleBodyTypeSchema),
+    driveType: optionalEnum(vehicleDriveTypeSchema),
+    condition: optionalEnum(vehicleConditionSchema),
+    emissionStandard: optionalEnum(vehicleEmissionSchema),
+    vatRegime: optionalEnum(vehicleVatRegimeSchema),
+    accidentStatus: optionalEnum(vehicleAccidentStatusSchema),
+    powerHp: optionalInt(1, 2000, "Putere invalidă"),
+    engineDisplacementCc: optionalInt(1, 10000, "Cilindree invalidă"),
+    doors: optionalInt(1, 10, "Număr de uși invalid"),
+    seats: optionalInt(1, 20, "Număr de locuri invalid"),
+    exteriorColor: optionalColorSchema,
+    interiorColor: optionalColorSchema,
+    firstRegistrationYear: optionalInt(1950, 2100, "An prima înmatriculare invalid"),
+    firstRegistrationMonth: optionalInt(1, 12, "Luna primei înmatriculări este invalidă"),
+    priceNegotiable: z.boolean().default(false),
+    originCountry: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .trim()
+        .length(2, "Țara trebuie să fie cod ISO pe 2 litere")
+        .regex(/^[A-Za-z]{2}$/, "Țara trebuie să fie cod ISO pe 2 litere")
+        .transform((value) => value.toUpperCase())
+        .optional(),
+    ),
+    locationCity: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .trim()
+        .min(1)
+        .max(80)
+        .refine((value) => !/[<>]/.test(value), { message: "Oraș invalid" })
+        .optional(),
+    ),
+    warrantyMonths: optionalInt(0, 120, "Garanție (luni) invalidă"),
+    warrantyNotes: z.preprocess(
+      emptyToUndefined,
+      z
+        .string()
+        .trim()
+        .max(500, "Notele de garanție sunt prea lungi")
+        .refine((value) => !/<[^>]*>/.test(value), {
+          message: "Notele de garanție nu pot conține HTML",
+        })
+        .optional(),
+    ),
+    hasServiceBook: z.boolean().default(false),
+    hasServiceHistory: z.boolean().default(false),
+    description: optionalDescriptionSchema,
+    features: vehicleFeaturesSchema.default([]),
   })
   .strict();
 export type UpdateVehicleInput = z.infer<typeof updateVehicleInputSchema>;
@@ -136,28 +505,304 @@ export type UpdateVehicleStatusInput = z.infer<typeof updateVehicleStatusSchema>
 
 export const vehicleIdSchema = z.string().uuid("ID vehicul invalid");
 
-/** Public branding — only approved keys (Etapa 5). */
+export const reservationIdSchema = z.string().uuid("ID rezervare invalid");
+
+/** Optional client retry key — UUID only; server generates when absent. */
+export const reservationIdempotencyKeySchema = z
+  .string()
+  .uuid("Cheie de idempotency invalidă");
+
+export const createReservationInputSchema = z
+  .object({
+    vehicleId: vehicleIdSchema,
+    idempotencyKey: reservationIdempotencyKeySchema.optional(),
+  })
+  .strict();
+export type CreateReservationInput = z.infer<typeof createReservationInputSchema>;
+
+export const cancelReservationInputSchema = z
+  .object({
+    reservationId: reservationIdSchema,
+  })
+  .strict();
+export type CancelReservationInput = z.infer<typeof cancelReservationInputSchema>;
+
+export const convertReservationInputSchema = z
+  .object({
+    reservationId: reservationIdSchema,
+  })
+  .strict();
+export type ConvertReservationInput = z.infer<typeof convertReservationInputSchema>;
+
+/** Etapa 7 — vehicle image media (v1: images only). */
+export const VEHICLE_MEDIA_MAX_IMAGES = 20;
+export const VEHICLE_MEDIA_MAX_BYTES = 5 * 1024 * 1024;
+export const VEHICLE_MEDIA_SIGNED_URL_TTL_SEC = 3600;
+
+export const vehicleImageMimeSchema = z.enum([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+export type VehicleImageMime = z.infer<typeof vehicleImageMimeSchema>;
+
+export const vehicleMediaIdSchema = z.string().uuid("ID media invalid");
+
+export const vehicleMediaAltTextSchema = z
+  .string()
+  .trim()
+  .max(160, "Text alternativ prea lung")
+  .refine((value) => !/<[^>]*>/.test(value), {
+    message: "Text alternativ invalid",
+  });
+
+export const requestVehicleMediaUploadSchema = z
+  .object({
+    vehicleId: vehicleIdSchema,
+    contentType: vehicleImageMimeSchema,
+    byteSize: z
+      .number()
+      .int()
+      .min(1, "Fișier gol")
+      .max(VEHICLE_MEDIA_MAX_BYTES, "Fișierul depășește 5 MB"),
+  })
+  .strict();
+export type RequestVehicleMediaUploadInput = z.infer<typeof requestVehicleMediaUploadSchema>;
+
+export const confirmVehicleMediaUploadSchema = z
+  .object({
+    vehicleId: vehicleIdSchema,
+    mediaId: vehicleMediaIdSchema,
+    altText: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      vehicleMediaAltTextSchema.optional(),
+    ),
+  })
+  .strict();
+export type ConfirmVehicleMediaUploadInput = z.infer<typeof confirmVehicleMediaUploadSchema>;
+
+export const reorderVehicleMediaSchema = z
+  .object({
+    vehicleId: vehicleIdSchema,
+    orderedMediaIds: z
+      .array(vehicleMediaIdSchema)
+      .min(1, "Ordinea imaginilor este invalidă")
+      .max(VEHICLE_MEDIA_MAX_IMAGES),
+  })
+  .strict();
+export type ReorderVehicleMediaInput = z.infer<typeof reorderVehicleMediaSchema>;
+
+export const deleteVehicleMediaSchema = z
+  .object({
+    vehicleId: vehicleIdSchema,
+    mediaId: vehicleMediaIdSchema,
+  })
+  .strict();
+export type DeleteVehicleMediaInput = z.infer<typeof deleteVehicleMediaSchema>;
+
+export const updateVehicleMediaAltTextSchema = z
+  .object({
+    vehicleId: vehicleIdSchema,
+    mediaId: vehicleMediaIdSchema,
+    altText: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? null : value),
+      vehicleMediaAltTextSchema.nullable(),
+    ),
+  })
+  .strict();
+export type UpdateVehicleMediaAltTextInput = z.infer<typeof updateVehicleMediaAltTextSchema>;
+
+/** Public branding — only approved keys (Etapa 5 / Etapa 9A). */
 export const primaryColorHexSchema = z
   .string()
   .trim()
   .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Culoare invalidă");
 
+/** Template 1 fallback accent when branding.primaryColor is missing/invalid. */
+export const TEMPLATE_1_FALLBACK_PRIMARY_COLOR = "#2563eb" as const;
+
+/** Selectable storefront template IDs (update allowlist). Future IDs stay out until ready. */
+export const STOREFRONT_TEMPLATE_IDS = ["template-1"] as const;
+export type StorefrontTemplateId = (typeof STOREFRONT_TEMPLATE_IDS)[number];
+export const DEFAULT_STOREFRONT_TEMPLATE_ID = "template-1" as const satisfies StorefrontTemplateId;
+
+export const storefrontTemplateIdSchema = z.enum(STOREFRONT_TEMPLATE_IDS);
+
+const PUBLIC_CONTACT_INPUT_MAX = 40;
+
+/**
+ * Normalizes RO / E.164-ish contact numbers to `+` E.164 form.
+ * Rejects URLs (WhatsApp must be a number, not a wa.me link).
+ * Returns null when invalid.
+ */
+export function normalizePublicContactNumber(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > PUBLIC_CONTACT_INPUT_MAX) return null;
+  if (/https?:\/\//i.test(trimmed) || /wa\.me\//i.test(trimmed) || /[a-zA-Z]/.test(trimmed)) {
+    return null;
+  }
+
+  let digits = trimmed.replace(/[^\d+]/g, "");
+  if (!digits) return null;
+  if ((digits.match(/\+/g) ?? []).length > 1) return null;
+  if (digits.includes("+") && !digits.startsWith("+")) return null;
+
+  if (digits.startsWith("00")) {
+    digits = `+${digits.slice(2)}`;
+  }
+
+  // Romanian national mobile: 07xxxxxxxx → +407xxxxxxxx
+  if (/^07\d{8}$/.test(digits)) {
+    digits = `+40${digits.slice(1)}`;
+  } else if (/^407\d{8}$/.test(digits)) {
+    digits = `+${digits}`;
+  }
+
+  // E.164: + and 8–15 digits total country+national
+  if (!/^\+[1-9]\d{7,14}$/.test(digits)) return null;
+  return digits;
+}
+
+function contactNumberSchema(label: string) {
+  return z
+    .string()
+    .trim()
+    .min(1, `${label} este obligatoriu`)
+    .max(PUBLIC_CONTACT_INPUT_MAX, `${label} este prea lung`)
+    .transform((value, ctx) => {
+      const normalized = normalizePublicContactNumber(value);
+      if (!normalized) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${label} invalid` });
+        return z.NEVER;
+      }
+      return normalized;
+    });
+}
+
+export const publicPhoneSchema = contactNumberSchema("Telefon");
+export const publicWhatsappSchema = contactNumberSchema("WhatsApp");
+
+/**
+ * Strict branding write contract (dashboard 9C / 10C). Unknown keys are rejected.
+ * `phone` / `whatsapp` use null to clear.
+ * `leadNotificationEmails` is staff-only (never in PublicTenantView).
+ */
+export const leadNotificationEmailAddressSchema = z
+  .string()
+  .trim()
+  .email("Email notificare invalid")
+  .max(160, "Email notificare prea lung")
+  .transform((value) => value.toLowerCase());
+
+/**
+ * Max 3 notification emails: trim, lowercase, dedupe, empty allowed.
+ * Input should be an array of strings (not a CSV blob).
+ */
+export const leadNotificationEmailsSchema = z.preprocess((value) => {
+  if (!Array.isArray(value)) return value;
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") continue;
+    const normalized = item.trim().toLowerCase();
+    if (!normalized) continue;
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    out.push(normalized);
+  }
+  return out;
+}, z.array(z.string().email("Email notificare invalid").max(160)).max(3, "Maximum 3 adrese de notificare"));
+
+export type LeadNotificationEmails = z.infer<typeof leadNotificationEmailsSchema>;
+
+export const tenantBrandingUpdateSchema = z
+  .object({
+    primaryColor: primaryColorHexSchema,
+    templateId: storefrontTemplateIdSchema,
+    phone: z.union([publicPhoneSchema, z.null()]),
+    whatsapp: z.union([publicWhatsappSchema, z.null()]),
+    leadNotificationEmails: leadNotificationEmailsSchema,
+  })
+  .strict();
+export type TenantBrandingUpdateInput = z.infer<typeof tenantBrandingUpdateSchema>;
+
+const emptyFormFieldToUndefined = (value: unknown) =>
+  typeof value === "string" && value.trim() === "" ? undefined : value;
+
+/** Optional lead email — trim, lowercase, max 160. */
+export const publicLeadEmailFieldSchema = z.preprocess(
+  emptyFormFieldToUndefined,
+  z
+    .string()
+    .trim()
+    .email("Email invalid")
+    .max(160, "Email prea lung")
+    .transform((value) => value.toLowerCase())
+    .optional(),
+);
+
+/** Optional lead phone — same normalization rules as public dealer contact numbers. */
+export const publicLeadPhoneFieldSchema = z.preprocess(
+  emptyFormFieldToUndefined,
+  z
+    .string()
+    .trim()
+    .max(PUBLIC_CONTACT_INPUT_MAX, "Telefon prea lung")
+    .optional()
+    .transform((value, ctx) => {
+      if (value === undefined) return undefined;
+      const normalized = normalizePublicContactNumber(value);
+      if (!normalized) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Telefon invalid" });
+        return z.NEVER;
+      }
+      return normalized;
+    }),
+);
+
 /** Public lead form — never includes tenant_id or vehicle_id from client trust. */
 export const createPublicLeadInputSchema = z
   .object({
     name: z.string().trim().min(1, "Numele este obligatoriu").max(120),
-    email: z.preprocess(
-      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-      z.string().trim().email("Email invalid").max(160).optional(),
-    ),
-    phone: z.preprocess(
-      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-      z.string().trim().max(40).optional(),
-    ),
+    email: publicLeadEmailFieldSchema,
+    phone: publicLeadPhoneFieldSchema,
     message: z.preprocess(
-      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-      z.string().trim().max(2000).optional(),
+      emptyFormFieldToUndefined,
+      z.string().trim().max(2000, "Mesaj prea lung").optional(),
     ),
   })
-  .strict();
+  .strict()
+  .superRefine((data, ctx) => {
+    if (!data.email && !data.phone) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Introdu un email sau un telefon valid.",
+        path: ["email"],
+      });
+    }
+  });
 export type CreatePublicLeadInput = z.infer<typeof createPublicLeadInputSchema>;
+
+/**
+ * Formats a EUR amount for Romanian storefront/dashboard: `12.900 €`.
+ * Accepts numeric string or number; invalid input returns a safe fallback.
+ */
+export function formatPriceEurRo(price: string | number): string {
+  const amount = typeof price === "number" ? price : Number(String(price).replace(",", "."));
+  if (!Number.isFinite(amount)) {
+    return `${price} €`;
+  }
+  return `${new Intl.NumberFormat("ro-RO", {
+    maximumFractionDigits: 0,
+  }).format(amount)} €`;
+}
+
+/**
+ * Formats kilometres for Romanian UI: `145.000 km`.
+ */
+export function formatMileageKmRo(mileageKm: number): string {
+  if (!Number.isFinite(mileageKm)) {
+    return `${mileageKm} km`;
+  }
+  return `${new Intl.NumberFormat("ro-RO").format(Math.trunc(mileageKm))} km`;
+}

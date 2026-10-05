@@ -1,10 +1,15 @@
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { getDb, tenants } from "@auto-platform/db";
+import type { StorefrontTemplateId } from "@auto-platform/types";
 import { getRootDomain } from "@/lib/supabase/env";
 import { resolveTenantSlugFromHost } from "@/lib/tenant/resolve-tenant-from-host";
+import {
+  isVercelDemoPublicLeadsDisabledFromRequest,
+  resolveVercelDemoTenantSlugFromRequest,
+} from "@/lib/tenant/vercel-demo-only";
 import { clearPublicSessionGucs } from "./clear-public-session";
-import { parsePublicPrimaryColor } from "./public-dto";
+import { parsePublicBranding } from "./public-dto";
 
 /** Server-only public tenant (includes id/status for server logic). */
 export type PublicTenantRecord = {
@@ -12,14 +17,23 @@ export type PublicTenantRecord = {
   slug: string;
   name: string;
   status: "active" | "trial";
-  primaryColor: string | null;
+  primaryColor: string;
+  templateId: StorefrontTemplateId;
+  phone?: string;
+  whatsapp?: string;
 };
 
-/** Safe client-facing tenant view — no id, no raw branding, no status. */
+/**
+ * Safe client-facing tenant view — no id, no raw branding, no status.
+ * primaryColor / templateId always resolved with Template 1 fallbacks.
+ */
 export type PublicTenantView = {
   slug: string;
   name: string;
-  primaryColor: string | null;
+  primaryColor: string;
+  templateId: StorefrontTemplateId;
+  phone?: string;
+  whatsapp?: string;
   /** Whether public lead form is allowed (active only). */
   leadsEnabled: boolean;
 };
@@ -33,6 +47,9 @@ export type ResolvePublicTenantResult =
  * Resolves a public storefront tenant from Host.
  * Does not set staff session GUCs (keeps app.current_profile_id NULL for RLS).
  * Never trusts client tenant_id.
+ *
+ * VERCEL_DEMO_ONLY: on Hobby apex Host only, may load a single server-env slug.
+ * Missing/inactive demo slug → not_found (fail-closed), never another tenant.
  */
 export async function resolvePublicTenantFromHost(): Promise<ResolvePublicTenantResult> {
   const headerStore = await headers();
@@ -41,6 +58,10 @@ export async function resolvePublicTenantFromHost(): Promise<ResolvePublicTenant
   const resolved = resolveTenantSlugFromHost(host, rootDomain);
 
   if (resolved.kind === "apex") {
+    const demoSlug = resolveVercelDemoTenantSlugFromRequest(host, rootDomain);
+    if (demoSlug) {
+      return loadPublicTenantBySlug(demoSlug);
+    }
     return { kind: "apex" };
   }
   if (resolved.kind === "invalid") {
@@ -85,6 +106,8 @@ export async function loadPublicTenantBySlug(
     return { kind: "not_found" };
   }
 
+  const branding = parsePublicBranding(row.branding);
+
   return {
     kind: "ok",
     tenant: {
@@ -92,18 +115,43 @@ export async function loadPublicTenantBySlug(
       slug: row.slug,
       name: row.name,
       status: row.status,
-      primaryColor: parsePublicPrimaryColor(row.branding),
+      primaryColor: branding.primaryColor,
+      templateId: branding.templateId,
+      ...(branding.phone ? { phone: branding.phone } : {}),
+      ...(branding.whatsapp ? { whatsapp: branding.whatsapp } : {}),
     },
   };
 }
 
-export function toPublicTenantView(tenant: PublicTenantRecord): PublicTenantView {
+export function toPublicTenantView(
+  tenant: PublicTenantRecord,
+  options?: { publicLeadsDisabled?: boolean },
+): PublicTenantView {
+  const publicLeadsDisabled = options?.publicLeadsDisabled === true;
   return {
     slug: tenant.slug,
     name: tenant.name,
     primaryColor: tenant.primaryColor,
-    leadsEnabled: tenant.status === "active",
+    templateId: tenant.templateId,
+    ...(tenant.phone ? { phone: tenant.phone } : {}),
+    ...(tenant.whatsapp ? { whatsapp: tenant.whatsapp } : {}),
+    leadsEnabled: tenant.status === "active" && !publicLeadsDisabled,
   };
+}
+
+/**
+ * Builds the public tenant view including VERCEL_DEMO_ONLY lead disable (server Host/env).
+ * Call from Server Components / actions only.
+ */
+export async function toPublicTenantViewForRequest(
+  tenant: PublicTenantRecord,
+): Promise<PublicTenantView> {
+  const headerStore = await headers();
+  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
+  const rootDomain = getRootDomain();
+  return toPublicTenantView(tenant, {
+    publicLeadsDisabled: isVercelDemoPublicLeadsDisabledFromRequest(host, rootDomain),
+  });
 }
 
 /** True when public catalog/detail must 404/deny (invalid or suspended host). */

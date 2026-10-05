@@ -42,7 +42,15 @@ SaaS B2B2C pentru dealeri auto: fiecare dealer (tenant) are storefront public, d
 | 2 — Supabase + Drizzle + RLS | [02-supabase-drizzle-rls.md](./02-supabase-drizzle-rls.md) | **finalizată** |
 | 3 — Auth + multi-tenancy web | [03-auth-multi-tenancy.md](./03-auth-multi-tenancy.md) | **finalizată** |
 | 4 — Vehicles + dashboard | [04-vehicles-dashboard.md](./04-vehicles-dashboard.md) | **finalizată** |
-| 5 — Public storefront | [05-public-storefront.md](./05-public-storefront.md) | **neîncepută** |
+| 5 — Public storefront | [05-public-storefront.md](./05-public-storefront.md) | **finalizată** |
+| 6 — Vehicle inventory data | [06-vehicle-inventory-data.md](./06-vehicle-inventory-data.md) | **Finalizată (6A–6C)** |
+| 7 — Vehicle media / gallery | [07-vehicle-media.md](./07-vehicle-media.md) | **Finalizată local (7A–7C)** |
+| 8 — Public catalog search | [08-public-catalog-search.md](./08-public-catalog-search.md) | **Finalizată local (8A–8C)** |
+| 9 — Design system + Template 1 | [09-design-system-template.md](./09-design-system-template.md) | **Finalizată local (9A–9C)** |
+| 10 — Public leads | [10-public-leads.md](./10-public-leads.md) | **Finalizată local (10A–10D)** |
+| 11 — Reservations | [11-reservations.md](./11-reservations.md) | **Finalizată local (11A–11C)** |
+| 12 — Hardening / deploy | [12-hardening-deploy.md](./12-hardening-deploy.md) | **pregătire Hobby demo (fără deploy)** |
+| 13 — Extra storefront templates | — | ulterioară |
 
 ## Scope exclus (momentan)
 

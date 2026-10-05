@@ -34,3 +34,47 @@ textarea:focus-visible,
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+
+@keyframes catalog-drawer-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.catalog-filter-drawer-panel {
+  animation: catalog-drawer-up 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalog-filter-drawer-panel {
+    animation: none;
+  }
+}
+
+/**
+ * Template 1 design tokens — scoped to storefront shell only (Etapa 9A).
+ * --sf-accent is set inline from validated PublicTenantView.primaryColor.
+ */
+.storefront-template-1 {
+  --sf-bg: #f4f4f5;
+  --sf-surface: #ffffff;
+  --sf-text: #18181b;
+  --sf-text-muted: #71717a;
+  --sf-border: #e4e4e7;
+  --sf-radius-sm: 0.5rem;
+  --sf-radius: 0.75rem;
+  --sf-radius-lg: 1rem;
+  --sf-space-1: 0.25rem;
+  --sf-space-2: 0.5rem;
+  --sf-space-3: 0.75rem;
+  --sf-space-4: 1rem;
+  --sf-space-5: 1.25rem;
+  --sf-space-6: 1.5rem;
+  --sf-space-8: 2rem;
+  background: var(--sf-bg);
+  color: var(--sf-text);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}

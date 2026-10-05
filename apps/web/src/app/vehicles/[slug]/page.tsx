@@ -4,13 +4,25 @@ import { notFound } from "next/navigation";
 import {
   resolvePublicTenantFromHost,
   shouldDenyPublicStorefront,
-  toPublicTenantView,
+  toPublicTenantViewForRequest,
 } from "@/lib/storefront/resolve-public-tenant";
-import { getPublicVehicleBySlug } from "@/lib/storefront/public-vehicles";
+import {
+  getPublicVehicleBySlug,
+  getPublicVehicleDetailBySlug,
+} from "@/lib/storefront/public-vehicles";
+import {
+  buildPublicVehicleDetailDescription,
+  buildPublicVehicleDetailTitle,
+} from "@/lib/storefront/public-dto";
 import { parseVehicleSlugParam } from "@/lib/storefront/parse-public-lead";
 import { publicCatalogPath } from "@/lib/storefront/paths";
+import { STOREFRONT_CONTACT_ANCHOR_ID } from "@/lib/storefront/storefront-contact-links";
 import { PublicStorefrontShell } from "@/components/storefront/public-shell";
 import { PublicLeadForm } from "@/components/storefront/public-lead-form";
+import { PublicVehicleDetail } from "@/components/storefront/public-vehicle-detail";
+
+/** Always read fresh inventory — reserved/sold → 404, never stale public detail. */
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -28,8 +40,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "Vehicul indisponibil" };
   }
   return {
-    title: `${vehicle.make} ${vehicle.model} (${vehicle.year}) — ${resolved.tenant.name}`,
-    description: `${vehicle.make} ${vehicle.model}, ${vehicle.year}, ${vehicle.mileage} km la ${resolved.tenant.name}.`,
+    title: buildPublicVehicleDetailTitle(vehicle, resolved.tenant.name),
+    description: buildPublicVehicleDetailDescription(vehicle),
   };
 }
 
@@ -45,52 +57,36 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const vehicle = await getPublicVehicleBySlug(resolved.tenant.tenantId, slug);
+  const vehicle = await getPublicVehicleDetailBySlug(resolved.tenant.tenantId, slug);
   if (!vehicle) {
     notFound();
   }
 
-  const tenantView = toPublicTenantView(resolved.tenant);
-  const accent = tenantView.primaryColor ?? "#0f766e";
-  const priceLabel = formatPrice(vehicle.price, vehicle.currency);
-  const specEntries = Object.entries(vehicle.specs);
+  const tenantView = await toPublicTenantViewForRequest(resolved.tenant);
+  const accent = tenantView.primaryColor;
 
   return (
-    <PublicStorefrontShell tenant={tenantView}>
-      <div className="mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <Link
-            href={publicCatalogPath()}
-            className="text-sm font-medium underline-offset-2 hover:underline"
-            style={{ color: accent }}
-          >
-            ← Înapoi la catalog
-          </Link>
-          <h2 className="break-words text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
-            {vehicle.make} {vehicle.model}
-          </h2>
-          <p className="text-sm text-zinc-600">
-            {vehicle.year} · {new Intl.NumberFormat("ro-RO").format(vehicle.mileage)} km
-          </p>
-          <p className="text-2xl font-semibold text-zinc-900">{priceLabel}</p>
-        </div>
+    <PublicStorefrontShell
+      tenant={tenantView}
+      stickySurface="detail"
+      mainClassName="pb-28 md:pb-8"
+    >
+      <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-6 sm:gap-8">
+        <Link
+          href={publicCatalogPath()}
+          className="inline-flex min-h-11 w-fit items-center text-sm font-medium underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+          style={{ color: accent }}
+        >
+          ← Înapoi la catalog
+        </Link>
 
-        {specEntries.length > 0 ? (
-          <dl className="grid gap-3 rounded-lg border border-zinc-200 bg-white p-4 sm:grid-cols-2">
-            {specEntries.map(([key, value]) => (
-              <div key={key}>
-                <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">{key}</dt>
-                <dd className="mt-1 text-sm text-zinc-900">{String(value)}</dd>
-              </div>
-            ))}
-          </dl>
-        ) : null}
+        <PublicVehicleDetail vehicle={vehicle} images={vehicle.images} accent={accent} />
 
-        <section className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5">
-          <h3 className="mb-1 text-base font-semibold text-zinc-900">Sunt interesat</h3>
-          <p className="mb-4 text-sm leading-6 text-zinc-600">
-            Lasă datele de contact și te vom contacta în legătură cu acest vehicul.
-          </p>
+        <section
+          id={STOREFRONT_CONTACT_ANCHOR_ID}
+          aria-labelledby="lead-form-heading"
+          className="scroll-mt-28 rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)] bg-[var(--sf-surface)] p-4 sm:p-5"
+        >
           <PublicLeadForm
             vehicleSlug={vehicle.slug}
             accent={accent}
@@ -101,16 +97,4 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
       </div>
     </PublicStorefrontShell>
   );
-}
-
-function formatPrice(price: string, currency: string): string {
-  const amount = Number(price);
-  if (Number.isFinite(amount)) {
-    return new Intl.NumberFormat("ro-RO", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  }
-  return `${price} ${currency}`;
 }
