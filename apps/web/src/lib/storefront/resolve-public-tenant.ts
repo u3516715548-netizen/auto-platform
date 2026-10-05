@@ -5,8 +5,8 @@ import type { StorefrontTemplateId } from "@auto-platform/types";
 import { getRootDomain } from "@/lib/supabase/env";
 import { resolveTenantSlugFromHost } from "@/lib/tenant/resolve-tenant-from-host";
 import {
-  isVercelDemoPublicLeadsDisabledFromRequest,
-  resolveVercelDemoTenantSlugFromRequest,
+  isHobbyDemoPublicLeadsDisabledFromRequest,
+  resolveHobbyDemoTenantSlugFromRequest,
 } from "@/lib/tenant/vercel-demo-only";
 import { clearPublicSessionGucs } from "./clear-public-session";
 import { parsePublicBranding } from "./public-dto";
@@ -48,7 +48,7 @@ export type ResolvePublicTenantResult =
  * Does not set staff session GUCs (keeps app.current_profile_id NULL for RLS).
  * Never trusts client tenant_id.
  *
- * VERCEL_DEMO_ONLY: on Hobby apex Host only, may load a single server-env slug.
+ * HOBBY_DEMO_ONLY: on Hobby apex Host only, may load a single server-env slug.
  * Missing/inactive demo slug → not_found (fail-closed), never another tenant.
  */
 export async function resolvePublicTenantFromHost(): Promise<ResolvePublicTenantResult> {
@@ -58,7 +58,7 @@ export async function resolvePublicTenantFromHost(): Promise<ResolvePublicTenant
   const resolved = resolveTenantSlugFromHost(host, rootDomain);
 
   if (resolved.kind === "apex") {
-    const demoSlug = resolveVercelDemoTenantSlugFromRequest(host, rootDomain);
+    const demoSlug = resolveHobbyDemoTenantSlugFromRequest(host, rootDomain);
     if (demoSlug) {
       return loadPublicTenantBySlug(demoSlug);
     }
@@ -140,7 +140,7 @@ export function toPublicTenantView(
 }
 
 /**
- * Builds the public tenant view including VERCEL_DEMO_ONLY lead disable (server Host/env).
+ * Builds the public tenant view including HOBBY_DEMO lead disable (server Host/env).
  * Call from Server Components / actions only.
  */
 export async function toPublicTenantViewForRequest(
@@ -150,7 +150,7 @@ export async function toPublicTenantViewForRequest(
   const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
   const rootDomain = getRootDomain();
   return toPublicTenantView(tenant, {
-    publicLeadsDisabled: isVercelDemoPublicLeadsDisabledFromRequest(host, rootDomain),
+    publicLeadsDisabled: isHobbyDemoPublicLeadsDisabledFromRequest(host, rootDomain),
   });
 }
 

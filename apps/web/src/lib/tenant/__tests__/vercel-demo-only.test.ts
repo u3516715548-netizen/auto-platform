@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
-  isVercelDemoOnlyEnvironmentActive,
-  isVercelDemoPublicLeadsDisabled,
+  isHobbyDemoOnlyEnvironmentActive,
+  isHobbyDemoPublicLeadsDisabled,
   isVercelHobbyAppHostname,
-  resolveVercelDemoTenantSlug,
-  type VercelDemoOnlyEnvInput,
+  resolveHobbyDemoTenantSlug,
+  type HobbyDemoEnvInput,
 } from "../vercel-demo-only";
 
 const DEMO_HOST = "proiect.vercel.app";
 
-function baseDemoInput(overrides: Partial<VercelDemoOnlyEnvInput> = {}): VercelDemoOnlyEnvInput {
+function baseDemoInput(overrides: Partial<HobbyDemoEnvInput> = {}): HobbyDemoEnvInput {
   return {
     vercel: "1",
-    vercelDemoOnly: "true",
-    vercelDemoTenantSlug: "acme",
-    vercelDemoDisablePublicLeads: undefined,
+    hobbyDemoOnly: "true",
+    hobbyDemoTenantSlug: "acme",
+    hobbyDemoDisablePublicLeads: undefined,
     vercelUrl: DEMO_HOST,
     vercelProjectProductionUrl: DEMO_HOST,
     host: DEMO_HOST,
@@ -23,10 +23,10 @@ function baseDemoInput(overrides: Partial<VercelDemoOnlyEnvInput> = {}): VercelD
   };
 }
 
-describe("VERCEL_DEMO_ONLY gate", () => {
+describe("HOBBY_DEMO_ONLY gate", () => {
   it("does not activate locally (VERCEL unset / localhost)", () => {
     expect(
-      resolveVercelDemoTenantSlug(
+      resolveHobbyDemoTenantSlug(
         baseDemoInput({
           vercel: undefined,
           host: "localhost:3000",
@@ -36,7 +36,7 @@ describe("VERCEL_DEMO_ONLY gate", () => {
       ),
     ).toBeNull();
     expect(
-      isVercelDemoOnlyEnvironmentActive(
+      isHobbyDemoOnlyEnvironmentActive(
         baseDemoInput({
           vercel: undefined,
           host: "acme.localhost:3000",
@@ -46,15 +46,15 @@ describe("VERCEL_DEMO_ONLY gate", () => {
     ).toBe(false);
   });
 
-  it("does not activate when VERCEL_DEMO_ONLY flag is missing", () => {
-    expect(resolveVercelDemoTenantSlug(baseDemoInput({ vercelDemoOnly: undefined }))).toBeNull();
-    expect(resolveVercelDemoTenantSlug(baseDemoInput({ vercelDemoOnly: "1" }))).toBeNull();
-    expect(resolveVercelDemoTenantSlug(baseDemoInput({ vercelDemoOnly: "TRUE" }))).toBeNull();
+  it("does not activate when HOBBY_DEMO_ONLY flag is missing", () => {
+    expect(resolveHobbyDemoTenantSlug(baseDemoInput({ hobbyDemoOnly: undefined }))).toBeNull();
+    expect(resolveHobbyDemoTenantSlug(baseDemoInput({ hobbyDemoOnly: "1" }))).toBeNull();
+    expect(resolveHobbyDemoTenantSlug(baseDemoInput({ hobbyDemoOnly: "TRUE" }))).toBeNull();
   });
 
   it("does not activate on Host outside allowed Vercel deployment hostnames", () => {
     expect(
-      resolveVercelDemoTenantSlug(
+      resolveHobbyDemoTenantSlug(
         baseDemoInput({
           host: "evil.vercel.app",
           rootDomain: "evil.vercel.app",
@@ -62,7 +62,7 @@ describe("VERCEL_DEMO_ONLY gate", () => {
       ),
     ).toBeNull();
     expect(
-      resolveVercelDemoTenantSlug(
+      resolveHobbyDemoTenantSlug(
         baseDemoInput({
           host: "attacker.example",
           rootDomain: "attacker.example",
@@ -74,7 +74,7 @@ describe("VERCEL_DEMO_ONLY gate", () => {
 
   it("does not activate on custom / real production domains", () => {
     expect(
-      resolveVercelDemoTenantSlug(
+      resolveHobbyDemoTenantSlug(
         baseDemoInput({
           host: "domeniu.ro",
           rootDomain: "domeniu.ro",
@@ -89,7 +89,7 @@ describe("VERCEL_DEMO_ONLY gate", () => {
 
   it("does not activate when ROOT_DOMAIN is a wildcard parent (host ≠ root)", () => {
     expect(
-      resolveVercelDemoTenantSlug(
+      resolveHobbyDemoTenantSlug(
         baseDemoInput({
           host: DEMO_HOST,
           rootDomain: "vercel.app",
@@ -99,13 +99,13 @@ describe("VERCEL_DEMO_ONLY gate", () => {
   });
 
   it("activates only when every Hobby demo condition is met", () => {
-    expect(resolveVercelDemoTenantSlug(baseDemoInput())).toBe("acme");
-    expect(isVercelDemoOnlyEnvironmentActive(baseDemoInput())).toBe(true);
+    expect(resolveHobbyDemoTenantSlug(baseDemoInput())).toBe("acme");
+    expect(isHobbyDemoOnlyEnvironmentActive(baseDemoInput())).toBe(true);
   });
 
   it("accepts production URL alias when it matches Host", () => {
     expect(
-      resolveVercelDemoTenantSlug(
+      resolveHobbyDemoTenantSlug(
         baseDemoInput({
           vercelUrl: "other-preview.vercel.app",
           vercelProjectProductionUrl: DEMO_HOST,
@@ -115,25 +115,24 @@ describe("VERCEL_DEMO_ONLY gate", () => {
   });
 
   it("fail-closed on missing / invalid demo slug (never another tenant)", () => {
-    expect(resolveVercelDemoTenantSlug(baseDemoInput({ vercelDemoTenantSlug: undefined }))).toBeNull();
-    expect(resolveVercelDemoTenantSlug(baseDemoInput({ vercelDemoTenantSlug: "" }))).toBeNull();
-    expect(resolveVercelDemoTenantSlug(baseDemoInput({ vercelDemoTenantSlug: "Acme!" }))).toBeNull();
-    expect(resolveVercelDemoTenantSlug(baseDemoInput({ vercelDemoTenantSlug: "a" }))).toBeNull();
+    expect(resolveHobbyDemoTenantSlug(baseDemoInput({ hobbyDemoTenantSlug: undefined }))).toBeNull();
+    expect(resolveHobbyDemoTenantSlug(baseDemoInput({ hobbyDemoTenantSlug: "" }))).toBeNull();
+    expect(resolveHobbyDemoTenantSlug(baseDemoInput({ hobbyDemoTenantSlug: "Acme!" }))).toBeNull();
+    expect(resolveHobbyDemoTenantSlug(baseDemoInput({ hobbyDemoTenantSlug: "a" }))).toBeNull();
     expect(
-      resolveVercelDemoTenantSlug(baseDemoInput({ vercelDemoTenantSlug: "not a slug" })),
+      resolveHobbyDemoTenantSlug(baseDemoInput({ hobbyDemoTenantSlug: "not a slug" })),
     ).toBeNull();
   });
 
   it("never takes tenant from query/path/client-shaped fields (API has no such inputs)", () => {
-    const withOnlyServerFields = baseDemoInput({ vercelDemoTenantSlug: "acme" });
-    expect(resolveVercelDemoTenantSlug(withOnlyServerFields)).toBe("acme");
-    // Spoofed host that is not the deployment URL must not unlock the configured slug.
+    const withOnlyServerFields = baseDemoInput({ hobbyDemoTenantSlug: "acme" });
+    expect(resolveHobbyDemoTenantSlug(withOnlyServerFields)).toBe("acme");
     expect(
-      resolveVercelDemoTenantSlug(
+      resolveHobbyDemoTenantSlug(
         baseDemoInput({
           host: "beta.vercel.app",
           rootDomain: "beta.vercel.app",
-          vercelDemoTenantSlug: "acme",
+          hobbyDemoTenantSlug: "acme",
         }),
       ),
     ).toBeNull();
@@ -149,32 +148,32 @@ describe("Host-based tenancy remains independent", () => {
   });
 });
 
-describe("VERCEL_DEMO_DISABLE_PUBLIC_LEADS", () => {
+describe("HOBBY_DEMO_DISABLE_PUBLIC_LEADS", () => {
   it("is off when flag missing even if demo gate is open", () => {
-    expect(isVercelDemoPublicLeadsDisabled(baseDemoInput())).toBe(false);
+    expect(isHobbyDemoPublicLeadsDisabled(baseDemoInput())).toBe(false);
     expect(
-      isVercelDemoPublicLeadsDisabled(baseDemoInput({ vercelDemoDisablePublicLeads: "1" })),
+      isHobbyDemoPublicLeadsDisabled(baseDemoInput({ hobbyDemoDisablePublicLeads: "1" })),
     ).toBe(false);
   });
 
   it("blocks only when demo environment is active and flag is exactly true", () => {
     expect(
-      isVercelDemoPublicLeadsDisabled(
-        baseDemoInput({ vercelDemoDisablePublicLeads: "true" }),
+      isHobbyDemoPublicLeadsDisabled(
+        baseDemoInput({ hobbyDemoDisablePublicLeads: "true" }),
       ),
     ).toBe(true);
     expect(
-      isVercelDemoPublicLeadsDisabled(
+      isHobbyDemoPublicLeadsDisabled(
         baseDemoInput({
-          vercelDemoDisablePublicLeads: "true",
+          hobbyDemoDisablePublicLeads: "true",
           vercel: undefined,
         }),
       ),
     ).toBe(false);
     expect(
-      isVercelDemoPublicLeadsDisabled(
+      isHobbyDemoPublicLeadsDisabled(
         baseDemoInput({
-          vercelDemoDisablePublicLeads: "true",
+          hobbyDemoDisablePublicLeads: "true",
           host: "localhost:3000",
           rootDomain: "localhost:3000",
           vercelUrl: undefined,

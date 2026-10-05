@@ -24,7 +24,7 @@ import { parsePublicLeadForm, parseVehicleSlugParam } from "@/lib/storefront/par
 import { resolvePublicTenantFromHost } from "@/lib/storefront/resolve-public-tenant";
 import { getPublicVehicleIdForLead } from "@/lib/storefront/public-vehicles";
 import { getRootDomain } from "@/lib/supabase/env";
-import { isVercelDemoPublicLeadsDisabledFromRequest } from "@/lib/tenant/vercel-demo-only";
+import { isHobbyDemoPublicLeadsDisabledFromRequest } from "@/lib/tenant/vercel-demo-only";
 
 export type CreatePublicLeadState = {
   error: string | null;
@@ -57,7 +57,7 @@ function rateLimitScope(tenantId: string, ipHash: string) {
  * Ignores any client-supplied tenant_id / vehicle_id.
  * Email notification is best-effort after a successful insert.
  *
- * VERCEL_DEMO_DISABLE_PUBLIC_LEADS: blocks insert with a neutral response (no DB write).
+ * HOBBY_DEMO_DISABLE_PUBLIC_LEADS: blocks insert with a neutral response (no DB write).
  */
 export async function createPublicLeadAction(
   vehicleSlugRaw: string,
@@ -72,7 +72,7 @@ export async function createPublicLeadAction(
   const headerStore = await headers();
   const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
   const rootDomain = getRootDomain();
-  if (isVercelDemoPublicLeadsDisabledFromRequest(host, rootDomain)) {
+  if (isHobbyDemoPublicLeadsDisabledFromRequest(host, rootDomain)) {
     return { error: NEUTRAL_TRIAL, success: false };
   }
 

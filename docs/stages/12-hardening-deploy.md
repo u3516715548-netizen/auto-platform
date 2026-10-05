@@ -11,14 +11,16 @@ Deploy gratuit pe **Vercel Hobby** pentru demo pe telefon / prezentare:
 - fără Resend, Upstash sau cron real;
 - **fără** schimbarea contractelor E5–E11 (Host-based tenancy local/producție).
 
-## Strategia A — `VERCEL_DEMO_ONLY` (recomandată)
+## Strategia A — `HOBBY_DEMO_ONLY` (recomandată)
 
 Pe URL-ul apex generat (`https://proiect.vercel.app`) aplicația poate randa **un singur** tenant demo, cu slug setat **doar** server-side:
 
 ```bash
-VERCEL_DEMO_ONLY=true
-VERCEL_DEMO_TENANT_SLUG=acme
+HOBBY_DEMO_ONLY=true
+HOBBY_DEMO_TENANT_SLUG=acme
 ```
+
+**Important:** nu folosi prefixul `VERCEL_DEMO_*` — Vercel rezervă `VERCEL_` și blochează valorile user („Populated by System”).
 
 Local și producție reală rămân strict Host-based:
 
@@ -32,11 +34,11 @@ beta.localhost:3000
 
 ### Gate (toate obligatorii)
 
-Fallback-ul `resolveVercelDemoTenantSlug` este activ **numai** când:
+Fallback-ul `resolveHobbyDemoTenantSlug` este activ **numai** când:
 
 1. `VERCEL === "1"` (setat de platformă);
-2. `VERCEL_DEMO_ONLY === "true"`;
-3. `VERCEL_DEMO_TENANT_SLUG` trece `tenantSlugSchema`;
+2. `HOBBY_DEMO_ONLY === "true"`;
+3. `HOBBY_DEMO_TENANT_SLUG` trece `tenantSlugSchema`;
 4. Host-ul curent este **exact** un hostname din `VERCEL_URL` / `VERCEL_PROJECT_PRODUCTION_URL`;
 5. `NEXT_PUBLIC_ROOT_DOMAIN` = același Host apex `*.vercel.app` (nu domeniu real cu wildcard).
 
@@ -53,7 +55,7 @@ Implementare: `apps/web/src/lib/tenant/vercel-demo-only.ts` (server-only).
 | `LEAD_EMAIL_PROVIDER=noop` | fără email real |
 | Rate limit in-memory | **demo-only** / single-node; nu e protecție multi-instance |
 | Cron / `reservation.expire` | dezactivat (lazy expiry rămâne) |
-| `VERCEL_DEMO_DISABLE_PUBLIC_LEADS=true` | UI: formular dezactivat + sticky „Mesaj” ascuns; Server Action: răspuns neutru, **fără insert** |
+| `HOBBY_DEMO_DISABLE_PUBLIC_LEADS=true` | UI: formular dezactivat + sticky „Mesaj” ascuns; Server Action: răspuns neutru, **fără insert** |
 
 Sună / WhatsApp rămân dacă branding-ul demo le are. Dashboard-ul de lead-uri **nu** e afectat.
 
@@ -76,9 +78,9 @@ Sună / WhatsApp rămân dacă branding-ul demo le are. Dashboard-ul de lead-uri
 | `SUPABASE_SERVICE_ROLE_KEY` | semnare media / galerie |
 | `LEAD_EMAIL_PROVIDER` | `noop` pe demo |
 | `LEAD_RATE_LIMIT_SECRET` | pepper hash IP (recomandat pe URL public) |
-| `VERCEL_DEMO_ONLY` | `true` doar pe Hobby demo |
-| `VERCEL_DEMO_TENANT_SLUG` | slug tenant seed (ex. `acme`) |
-| `VERCEL_DEMO_DISABLE_PUBLIC_LEADS` | `true` pentru a bloca formularul public |
+| `HOBBY_DEMO_ONLY` | `true` doar pe Hobby demo |
+| `HOBBY_DEMO_TENANT_SLUG` | slug tenant seed (ex. `acme`) |
+| `HOBBY_DEMO_DISABLE_PUBLIC_LEADS` | `true` pentru a bloca formularul public |
 
 Platformă (setate de Vercel, nu le copiezi manual de obicei): `VERCEL`, `VERCEL_URL`, `VERCEL_PROJECT_PRODUCTION_URL`.
 
@@ -106,7 +108,7 @@ Platformă (setate de Vercel, nu le copiezi manual de obicei): `VERCEL`, `VERCEL
 6. Environment Variables (Production + Preview): lista de mai sus — **tu** lipești valorile reale din Supabase / seed.
 7. După primul deploy: în Project → Domains / Deployment găsești URL-ul `*.vercel.app`.
 8. Verifică: catalog pe apex, login `/login`, dashboard, galerie, filtre, rezervări; lead public **dezactivat** dacă ai setat flag-ul.
-9. Oprește demo: Project Settings → Pause / Remove Project, sau șterge `VERCEL_DEMO_*` + redeploy; opțional **Deployment Protection → Password**.
+9. Oprește demo: Project Settings → Pause / Remove Project, sau șterge `HOBBY_DEMO_*` + redeploy; opțional **Deployment Protection** off.
 
 ### Limitări Hobby demo
 

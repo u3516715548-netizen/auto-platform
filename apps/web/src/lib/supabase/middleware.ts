@@ -2,14 +2,14 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 import { dashboardPath } from "@/lib/auth/auth-redirects";
 import { resolveTenantSlugFromHost } from "@/lib/tenant/resolve-tenant-from-host";
-import { resolveVercelDemoTenantSlugFromRequest } from "@/lib/tenant/vercel-demo-only";
+import { resolveHobbyDemoTenantSlugFromRequest } from "@/lib/tenant/vercel-demo-only";
 
 /**
  * Refresh Auth cookies and attach tenant slug hint from Host.
  * Redirects use relative paths so the current Host is preserved
  * (acme.localhost → acme dashboard, never apex localhost).
  *
- * VERCEL_DEMO_ONLY: may attach the server-env demo slug on Hobby apex Host only.
+ * HOBBY_DEMO_ONLY: may attach the server-env demo slug on Hobby apex Host only.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
@@ -53,7 +53,7 @@ export async function updateSession(request: NextRequest) {
     if (resolved.kind === "tenant") {
       response.headers.set("x-tenant-slug", resolved.slug);
     } else if (resolved.kind === "apex") {
-      const demoSlug = resolveVercelDemoTenantSlugFromRequest(host, rootDomain);
+      const demoSlug = resolveHobbyDemoTenantSlugFromRequest(host, rootDomain);
       if (demoSlug) {
         response.headers.set("x-tenant-slug", demoSlug);
       }

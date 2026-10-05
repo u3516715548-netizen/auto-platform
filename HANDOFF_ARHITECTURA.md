@@ -19,7 +19,7 @@
 | Etapa 9 | **FINALIZATĂ local** (9A branding + 9B Template 1 + 9C sticky/settings) |
 | Etapa 10 | **FINALIZATĂ local** (10A anti-spam + 10B dashboard + 10C notificări + 10D polish) |
 | Etapa 11 | **FINALIZATĂ local** (11A contract + 11B dashboard/CTA + 11C polish/docs) |
-| Etapa 12 | **pregătire locală** — Vercel Hobby `VERCEL_DEMO_ONLY` (fără deploy până la aprobare) |
+| Etapa 12 | **Hobby demo** — `HOBBY_DEMO_*` pe Vercel (fără `VERCEL_DEMO_*`) |
 | Git | commit local `0ee0f6b` (Etape 1–5); modificări E6–E12 necommise |
 | Commit / push / deploy | **interzise fără cerere explicită** |
 
@@ -31,14 +31,14 @@ Turborepo + pnpm · Next.js 16 / React 19 / Tailwind 4 · Drizzle + Supabase Pos
 
 ## Următoarea etapă
 
-**Etapa 12** — hardening / deploy Hobby: [`docs/stages/12-hardening-deploy.md`](./docs/stages/12-hardening-deploy.md) (`VERCEL_DEMO_ONLY`; fără domeniu/Pro/Resend/Upstash/cron).  
-Deploy Vercel: **doar după aprobare explicită** (tu creezi contul + env).  
+**Etapa 12** — hardening / deploy Hobby: [`docs/stages/12-hardening-deploy.md`](./docs/stages/12-hardening-deploy.md) (`HOBBY_DEMO_*`; fără domeniu/Pro/Resend/Upstash/cron).  
+Deploy Vercel: env pe dashboard + Redeploy.  
 Apoi **Etapa 13** template-uri suplimentare.  
 Rezervări: [`docs/stages/11-reservations.md`](./docs/stages/11-reservations.md) (11A–11C done; fără cron real încă).
 
 **Producție email (10C):** set `LEAD_EMAIL_PROVIDER` + provider SDK/API key când există implementare aprobată (în prezent doar noop/log).  
 **Producție rate-limit (10A):** backend distribuit + `LEAD_RATE_LIMIT_SECRET` + `VERCEL`/`TRUSTED_PROXY`.  
-**Hobby demo leads:** `VERCEL_DEMO_DISABLE_PUBLIC_LEADS=true` + Password Protection recomandat.
+**Hobby demo leads:** `HOBBY_DEMO_DISABLE_PUBLIC_LEADS=true`; Deployment Protection off pentru demo public.
 
 ## Rezumat Etapa 6 (6A + 6B + 6C)
 

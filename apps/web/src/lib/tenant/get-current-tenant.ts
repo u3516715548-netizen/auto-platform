@@ -4,7 +4,7 @@ import { TenantResolutionError, type TenantContext } from "@auto-platform/core";
 import { getDb, tenants } from "@auto-platform/db";
 import { getRootDomain } from "@/lib/supabase/env";
 import { requireTenantSlugFromHost, resolveTenantSlugFromHost } from "./resolve-tenant-from-host";
-import { resolveVercelDemoTenantSlugFromRequest } from "./vercel-demo-only";
+import { resolveHobbyDemoTenantSlugFromRequest } from "./vercel-demo-only";
 
 export type CurrentTenant = TenantContext & {
   name: string;
@@ -20,7 +20,7 @@ function requestHost(headerStore: Awaited<ReturnType<typeof headers>>): string {
  * Resolve tenant from the request Host header (server-side).
  * Does not trust client-supplied tenant_id.
  *
- * VERCEL_DEMO_ONLY: on Hobby apex Host only, may load a single server-env slug.
+ * HOBBY_DEMO_ONLY: on Hobby apex Host only, may load a single server-env slug.
  * Local / production Host-based tenancy is unchanged.
  */
 export async function getCurrentTenant(): Promise<CurrentTenant | null> {
@@ -37,7 +37,7 @@ export async function getCurrentTenant(): Promise<CurrentTenant | null> {
   }
 
   // apex — optional Vercel Hobby demo fallback (fail-closed if slug missing / invalid)
-  const demoSlug = resolveVercelDemoTenantSlugFromRequest(host, rootDomain);
+  const demoSlug = resolveHobbyDemoTenantSlugFromRequest(host, rootDomain);
   if (demoSlug) {
     return loadTenantBySlug(demoSlug);
   }
@@ -56,7 +56,7 @@ export async function requireCurrentTenant(): Promise<CurrentTenant> {
   if (resolved.kind === "tenant") {
     slug = resolved.slug;
   } else if (resolved.kind === "apex") {
-    const demoSlug = resolveVercelDemoTenantSlugFromRequest(host, rootDomain);
+    const demoSlug = resolveHobbyDemoTenantSlugFromRequest(host, rootDomain);
     if (!demoSlug) {
       throw new TenantResolutionError("Tenant slug required; apex host has no tenant");
     }

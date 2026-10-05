@@ -1,23 +1,26 @@
 /**
- * VERCEL_DEMO_ONLY — temporary Hobby demo tenancy on a single apex Host.
+ * HOBBY_DEMO_* — temporary Vercel Hobby demo tenancy on a single apex Host.
  *
  * NOT for production. Local / real multi-tenant Host resolution stays unchanged.
  * Never reads tenant from query, path, cookie, body, or any client-controlled input.
  *
- * Active only when ALL gates pass (see isVercelDemoOnlyEnvironmentActive).
+ * Note: custom env vars MUST NOT use the `VERCEL_` prefix — Vercel reserves it
+ * (UI shows "Populated by System" and blocks user values).
+ *
+ * Active only when ALL gates pass (see isHobbyDemoOnlyEnvironmentActive).
  */
 
 import { tenantSlugSchema } from "@auto-platform/types";
 
-export type VercelDemoOnlyEnvInput = {
+export type HobbyDemoEnvInput = {
   /** process.env.VERCEL — platform sets "1" on Vercel */
   vercel?: string | null;
-  /** process.env.VERCEL_DEMO_ONLY — must be exactly "true" */
-  vercelDemoOnly?: string | null;
-  /** process.env.VERCEL_DEMO_TENANT_SLUG — server-only demo slug */
-  vercelDemoTenantSlug?: string | null;
-  /** process.env.VERCEL_DEMO_DISABLE_PUBLIC_LEADS — must be exactly "true" to disable */
-  vercelDemoDisablePublicLeads?: string | null;
+  /** process.env.HOBBY_DEMO_ONLY — must be exactly "true" */
+  hobbyDemoOnly?: string | null;
+  /** process.env.HOBBY_DEMO_TENANT_SLUG — server-only demo slug */
+  hobbyDemoTenantSlug?: string | null;
+  /** process.env.HOBBY_DEMO_DISABLE_PUBLIC_LEADS — must be exactly "true" to disable */
+  hobbyDemoDisablePublicLeads?: string | null;
   /** process.env.VERCEL_URL — deployment host without protocol */
   vercelUrl?: string | null;
   /** process.env.VERCEL_PROJECT_PRODUCTION_URL — production alias host */
@@ -53,7 +56,7 @@ export function isVercelHobbyAppHostname(host: string): boolean {
   return label.length > 0 && !label.includes(".");
 }
 
-function collectAllowedVercelDeploymentHosts(input: VercelDemoOnlyEnvInput): Set<string> {
+function collectAllowedVercelDeploymentHosts(input: HobbyDemoEnvInput): Set<string> {
   const allowed = new Set<string>();
   for (const raw of [input.vercelUrl, input.vercelProjectProductionUrl]) {
     if (!raw?.trim()) continue;
@@ -69,11 +72,11 @@ function collectAllowedVercelDeploymentHosts(input: VercelDemoOnlyEnvInput): Set
  * Environment + Host gate for Hobby demo (does not require a valid tenant slug).
  * Fail-closed: any missing/invalid condition → false.
  */
-export function isVercelDemoOnlyEnvironmentActive(input: VercelDemoOnlyEnvInput): boolean {
+export function isHobbyDemoOnlyEnvironmentActive(input: HobbyDemoEnvInput): boolean {
   if (input.vercel !== "1") {
     return false;
   }
-  if (input.vercelDemoOnly !== "true") {
+  if (input.hobbyDemoOnly !== "true") {
     return false;
   }
 
@@ -112,12 +115,12 @@ export function isVercelDemoOnlyEnvironmentActive(input: VercelDemoOnlyEnvInput)
  * slug is missing / slug fails strict validation.
  * Never defaults to another tenant.
  */
-export function resolveVercelDemoTenantSlug(input: VercelDemoOnlyEnvInput): string | null {
-  if (!isVercelDemoOnlyEnvironmentActive(input)) {
+export function resolveHobbyDemoTenantSlug(input: HobbyDemoEnvInput): string | null {
+  if (!isHobbyDemoOnlyEnvironmentActive(input)) {
     return null;
   }
 
-  const raw = input.vercelDemoTenantSlug?.trim() ?? "";
+  const raw = input.hobbyDemoTenantSlug?.trim() ?? "";
   if (!raw) {
     return null;
   }
@@ -134,20 +137,20 @@ export function resolveVercelDemoTenantSlug(input: VercelDemoOnlyEnvInput): stri
  * When true, public lead create (UI + Server Action) must be disabled on this Hobby demo.
  * Local / production Host-based flows stay unchanged when flags are absent.
  */
-export function isVercelDemoPublicLeadsDisabled(input: VercelDemoOnlyEnvInput): boolean {
+export function isHobbyDemoPublicLeadsDisabled(input: HobbyDemoEnvInput): boolean {
   return (
-    isVercelDemoOnlyEnvironmentActive(input) &&
-    input.vercelDemoDisablePublicLeads === "true"
+    isHobbyDemoOnlyEnvironmentActive(input) &&
+    input.hobbyDemoDisablePublicLeads === "true"
   );
 }
 
 /** Reads process.env for server call sites — never import from client components. */
-export function readVercelDemoOnlyEnvFromProcess(host: string, rootDomain: string): VercelDemoOnlyEnvInput {
+export function readHobbyDemoOnlyEnvFromProcess(host: string, rootDomain: string): HobbyDemoEnvInput {
   return {
     vercel: process.env.VERCEL,
-    vercelDemoOnly: process.env.VERCEL_DEMO_ONLY,
-    vercelDemoTenantSlug: process.env.VERCEL_DEMO_TENANT_SLUG,
-    vercelDemoDisablePublicLeads: process.env.VERCEL_DEMO_DISABLE_PUBLIC_LEADS,
+    hobbyDemoOnly: process.env.HOBBY_DEMO_ONLY,
+    hobbyDemoTenantSlug: process.env.HOBBY_DEMO_TENANT_SLUG,
+    hobbyDemoDisablePublicLeads: process.env.HOBBY_DEMO_DISABLE_PUBLIC_LEADS,
     vercelUrl: process.env.VERCEL_URL,
     vercelProjectProductionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL,
     host,
@@ -155,16 +158,25 @@ export function readVercelDemoOnlyEnvFromProcess(host: string, rootDomain: strin
   };
 }
 
-export function resolveVercelDemoTenantSlugFromRequest(
+export function resolveHobbyDemoTenantSlugFromRequest(
   host: string,
   rootDomain: string,
 ): string | null {
-  return resolveVercelDemoTenantSlug(readVercelDemoOnlyEnvFromProcess(host, rootDomain));
+  return resolveHobbyDemoTenantSlug(readHobbyDemoOnlyEnvFromProcess(host, rootDomain));
 }
 
-export function isVercelDemoPublicLeadsDisabledFromRequest(
+export function isHobbyDemoPublicLeadsDisabledFromRequest(
   host: string,
   rootDomain: string,
 ): boolean {
-  return isVercelDemoPublicLeadsDisabled(readVercelDemoOnlyEnvFromProcess(host, rootDomain));
+  return isHobbyDemoPublicLeadsDisabled(readHobbyDemoOnlyEnvFromProcess(host, rootDomain));
 }
+
+/** @deprecated Use Hobby* names — kept temporarily for import path stability. */
+export {
+  isHobbyDemoOnlyEnvironmentActive as isVercelDemoOnlyEnvironmentActive,
+  resolveHobbyDemoTenantSlug as resolveVercelDemoTenantSlug,
+  isHobbyDemoPublicLeadsDisabled as isVercelDemoPublicLeadsDisabled,
+  resolveHobbyDemoTenantSlugFromRequest as resolveVercelDemoTenantSlugFromRequest,
+  isHobbyDemoPublicLeadsDisabledFromRequest as isVercelDemoPublicLeadsDisabledFromRequest,
+};
