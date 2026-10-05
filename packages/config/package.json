@@ -1,0 +1,17 @@
+{
+  "name": "@auto-platform/config",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/nextjs.json": "./tsconfig/nextjs.json",
+    "./tsconfig/library.json": "./tsconfig/library.json",
+    "./eslint/base": "./eslint/base.mjs",
+    "./prettier": "./prettier/index.js"
+  },
+  "files": [
+    "tsconfig/*.json",
+    "eslint/*",
+    "prettier/*.js"
+  ]
+}

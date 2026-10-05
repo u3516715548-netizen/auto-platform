@@ -1,0 +1,30 @@
+{
+  "extends": "../../packages/config/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@auto-platform/ui": ["../../packages/ui/src/index.ts"],
+      "@auto-platform/ui/*": ["../../packages/ui/src/*"],
+      "@auto-platform/types": ["../../packages/types/src/index.ts"],
+      "@auto-platform/types/*": ["../../packages/types/src/*"],
+      "@auto-platform/core": ["../../packages/core/src/index.ts"],
+      "@auto-platform/core/*": ["../../packages/core/src/*"],
+      "@auto-platform/db": ["../../packages/db/src/index.ts"],
+      "@auto-platform/db/*": ["../../packages/db/src/*"]
+    },
+    "allowJs": true,
+    "incremental": true,
+    "jsx": "preserve",
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules", "src/**/*.test.ts", "vitest.config.ts", ".next/dev"]
+}

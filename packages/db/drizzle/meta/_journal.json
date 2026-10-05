@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791034578944,
+      "tag": "0000_common_professor_monster",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791034585417,
+      "tag": "0001_rls_and_helpers",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791180000000,
+      "tag": "0002_tenants_public_storefront_select",
+      "breakpoints": true
+    }
+  ]
+}

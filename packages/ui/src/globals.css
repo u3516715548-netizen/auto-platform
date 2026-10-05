@@ -1,0 +1,8 @@
+/* Shared base tokens — apps/web poate importa Tailwind + shadcn peste acestea. */
+:root {
+  --ap-bg: #f8fafc;
+  --ap-fg: #0f172a;
+  --ap-muted: #64748b;
+  --ap-accent: #0f766e;
+  --ap-border: #e2e8f0;
+}

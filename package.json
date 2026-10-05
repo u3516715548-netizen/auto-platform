@@ -1,0 +1,29 @@
+{
+  "name": "auto-platform",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,css}\"",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @auto-platform/db generate",
+    "db:migrate": "pnpm --filter @auto-platform/db migrate",
+    "db:studio": "pnpm --filter @auto-platform/db studio",
+    "db:seed": "pnpm --filter @auto-platform/db seed",
+    "db:test": "pnpm --filter @auto-platform/db test",
+    "test": "pnpm db:test"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.71.0"
+  }
+}

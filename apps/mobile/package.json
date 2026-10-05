@@ -1,0 +1,15 @@
+{
+  "name": "@auto-platform/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node ./scripts/placeholder.mjs",
+    "start": "node ./scripts/placeholder.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "node ./scripts/placeholder.mjs"
+  },
+  "devDependencies": {
+    "@auto-platform/config": "workspace:*",
+    "typescript": "^5.8.2"
+  }
+}

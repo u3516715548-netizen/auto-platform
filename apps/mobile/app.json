@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Auto Platform Mobile",
+    "slug": "auto-platform-mobile",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "platforms": ["ios", "android"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.autoplatform.mobile.placeholder"
+    },
+    "android": {
+      "package": "com.autoplatform.mobile.placeholder"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "REPLACE_WHEN_PREMIUM_PHASE"
+      },
+      "note": "Placeholder only — no white-label builds in foundation phase"
+    }
+  }
+}
