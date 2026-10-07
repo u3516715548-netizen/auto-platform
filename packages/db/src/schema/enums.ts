@@ -88,6 +88,17 @@ export const leadStatusEnum = pgEnum("lead_status", [
   "lost",
   "archived",
 ]);
+
+/** Etapa 17 — email notification delivery outcome (separate from CRM `lead_status`). */
+export const leadNotificationStatusEnum = pgEnum("lead_notification_status", [
+  "pending",
+  "skipped",
+  "not_configured",
+  "no_recipients",
+  "sent",
+  "failed",
+]);
+
 export const reservationStatusEnum = pgEnum("reservation_status", [
   "active",
   "expired",

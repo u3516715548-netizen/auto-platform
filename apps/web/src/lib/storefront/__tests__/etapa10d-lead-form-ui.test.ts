@@ -31,11 +31,13 @@ describe("Etapa 10D — public lead form UI contract", () => {
   it("keeps Romanian conversion copy and contact hint", () => {
     expect(LEAD_FORM_COPY.heading).toMatch(/Solicită informații/i);
     expect(LEAD_FORM_COPY.contactHint).toBe(
-      "Completează cel puțin e-mailul sau telefonul.",
+      "E-mailul este obligatoriu. Telefonul este opțional.",
     );
+    expect(LEAD_FORM_COPY.consent).toMatch(/Sunt de acord/i);
     expect(LEAD_FORM_COPY.submit).toBe("Trimite solicitarea");
     expect(LEAD_FORM_COPY.success).toMatch(/Solicitarea a fost trimisă/);
     expect(LEAD_FORM_COPY.privacy).not.toMatch(/GDPR|juridic|avocat/i);
+    expect(LEAD_FORM_COPY.consent).not.toMatch(/http|https|\.ro\//i);
     expect(LEAD_FORM_HEADING_ID).toBe("lead-form-heading");
     expect(STOREFRONT_CONTACT_ANCHOR_ID).toBe("contact");
   });

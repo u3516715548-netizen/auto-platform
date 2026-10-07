@@ -402,16 +402,23 @@ describe.skipIf(!canRunOnline)(
           email: "e5-public-lead@example.test",
           source: "storefront",
           status: "new",
+          consentAt: new Date(),
+          consentVersion: "v1",
+          notificationStatus: "pending",
         })
         .returning({
           id: leads.id,
           tenantId: leads.tenantId,
           vehicleId: leads.vehicleId,
+          consentAt: leads.consentAt,
+          notificationStatus: leads.notificationStatus,
         });
 
       expect(inserted?.tenantId).toBe(tenantAId);
       expect(inserted?.vehicleId).toBe(vehicleAId);
       expect(inserted?.vehicleId).not.toBe(vehicleBId);
+      expect(inserted?.consentAt).toBeTruthy();
+      expect(inserted?.notificationStatus).toBe("pending");
       // Leave fixture lead (no DELETE policy on leads); unique name/email per run not required for assertion.
     });
 
@@ -436,8 +443,73 @@ describe.skipIf(!canRunOnline)(
           name: "Should Fail Trial",
           source: "storefront",
           status: "new",
+          consentAt: new Date(),
+          consentVersion: "v1",
         }),
       ).rejects.toThrow();
+    });
+
+    it("finalize_lead_notification updates only matching lead+tenant notification columns", async () => {
+      await clearTenantSession(db);
+
+      const [row] = await db
+        .insert(leads)
+        .values({
+          tenantId: tenantAId,
+          vehicleId: vehicleAId,
+          name: "E17 Notify Lead",
+          email: "e17-notify@example.test",
+          source: "storefront",
+          status: "new",
+          consentAt: new Date(),
+          consentVersion: "v1",
+          notificationStatus: "pending",
+        })
+        .returning({ id: leads.id });
+
+      expect(row?.id).toBeTruthy();
+
+      const [ok] = await db.execute<{ finalize_lead_notification: boolean }>(
+        sql`select app.finalize_lead_notification(
+          ${row!.id}::uuid,
+          ${tenantAId}::uuid,
+          'not_configured'::public.lead_notification_status,
+          'not_configured'
+        ) as finalize_lead_notification`,
+      );
+      expect(ok?.finalize_lead_notification).toBe(true);
+
+      const [updated] = await db
+        .select({
+          notificationStatus: leads.notificationStatus,
+          notificationReason: leads.notificationReason,
+          status: leads.status,
+        })
+        .from(leads)
+        .where(eq(leads.id, row!.id))
+        .limit(1);
+
+      expect(updated?.notificationStatus).toBe("not_configured");
+      expect(updated?.notificationReason).toBe("not_configured");
+      expect(updated?.status).toBe("new");
+
+      // Cross-tenant finalize must not update
+      const [cross] = await db.execute<{ finalize_lead_notification: boolean }>(
+        sql`select app.finalize_lead_notification(
+          ${row!.id}::uuid,
+          ${tenantBId}::uuid,
+          'failed'::public.lead_notification_status,
+          'provider_error'
+        ) as finalize_lead_notification`,
+      );
+      expect(cross?.finalize_lead_notification).toBe(false);
+
+      const [still] = await db
+        .select({ notificationStatus: leads.notificationStatus })
+        .from(leads)
+        .where(eq(leads.id, row!.id))
+        .limit(1);
+      expect(still?.notificationStatus).toBe("not_configured");
     });
 
     it("leads public insert policy still requires tenant status active", async () => {

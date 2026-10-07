@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { Button, Label } from "@auto-platform/ui";
 import {
   createPublicLeadAction,
@@ -32,9 +32,11 @@ export function PublicLeadForm({
 }: PublicLeadFormProps) {
   const boundAction = createPublicLeadAction.bind(null, vehicleSlug);
   const [state, formAction, pending] = useActionState(boundAction, initialState);
+  const [consent, setConsent] = useState(false);
   const color = accent ?? "var(--sf-accent)";
   const hintId = useId();
   const privacyId = useId();
+  const consentId = useId();
   const statusRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -117,6 +119,7 @@ export function PublicLeadForm({
               name="email"
               type="email"
               inputMode="email"
+              required
               disabled={pending}
               autoComplete="email"
               placeholder={LEAD_FORM_COPY.emailPlaceholder}
@@ -156,6 +159,26 @@ export function PublicLeadForm({
           />
         </div>
 
+        <label htmlFor={consentId} className="flex items-start gap-3 text-sm leading-5 text-[var(--sf-text)]">
+          <input
+            id={consentId}
+            name="consent"
+            type="checkbox"
+            value="true"
+            required
+            checked={consent}
+            disabled={pending}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-0.5 size-5 shrink-0 rounded border-[var(--sf-border)] accent-[var(--sf-accent)]"
+          />
+          <span>
+            {LEAD_FORM_COPY.consent}{" "}
+            <span id={privacyId} className="text-[var(--sf-text-muted)]">
+              {LEAD_FORM_COPY.privacy}
+            </span>
+          </span>
+        </label>
+
         {/* Honeypot — CSS-hidden, not type=hidden; keep name="company" */}
         <div className="absolute -left-[9999px] top-auto h-0 w-0 overflow-hidden" aria-hidden="true">
           <label htmlFor="company">Company</label>
@@ -171,15 +194,12 @@ export function PublicLeadForm({
         <div className="flex flex-col gap-3 pb-2 sm:pb-0">
           <Button
             type="submit"
-            disabled={pending}
+            disabled={pending || !consent}
             className="min-h-11 w-full sm:w-auto"
             style={{ backgroundColor: color }}
           >
             {pending ? LEAD_FORM_COPY.submitting : LEAD_FORM_COPY.submit}
           </Button>
-          <p id={privacyId} className="text-xs leading-5 text-[var(--sf-text-muted)]">
-            {LEAD_FORM_COPY.privacy}
-          </p>
         </div>
       </form>
     </div>

@@ -8,9 +8,11 @@ export const LEAD_FORM_HEADING_ID = "lead-form-heading" as const;
 export const LEAD_FORM_COPY = {
   heading: "Solicită informații despre acest vehicul",
   intro: "Completează formularul și dealerul te va contacta cu detalii despre acest vehicul.",
-  contactHint: "Completează cel puțin e-mailul sau telefonul.",
+  contactHint: "E-mailul este obligatoriu. Telefonul este opțional.",
   privacy:
     "Datele tale sunt folosite doar pentru a răspunde solicitării. Nu le publicăm pe site.",
+  consent:
+    "Sunt de acord ca datele din acest formular să fie folosite doar pentru a răspunde solicitării despre acest vehicul.",
   submit: "Trimite solicitarea",
   submitting: "Se trimite…",
   success: "Solicitarea a fost trimisă. Dealerul te va contacta în curând.",

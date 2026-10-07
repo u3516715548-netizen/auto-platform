@@ -729,16 +729,16 @@ export type TenantBrandingUpdateInput = z.infer<typeof tenantBrandingUpdateSchem
 const emptyFormFieldToUndefined = (value: unknown) =>
   typeof value === "string" && value.trim() === "" ? undefined : value;
 
-/** Optional lead email — trim, lowercase, max 160. */
+/** Required lead email — trim, lowercase, max 160 (Etapa 17). */
 export const publicLeadEmailFieldSchema = z.preprocess(
   emptyFormFieldToUndefined,
   z
-    .string()
+    .string({ required_error: "Emailul este obligatoriu" })
     .trim()
+    .min(1, "Emailul este obligatoriu")
     .email("Email invalid")
     .max(160, "Email prea lung")
-    .transform((value) => value.toLowerCase())
-    .optional(),
+    .transform((value) => value.toLowerCase()),
 );
 
 /** Optional lead phone — same normalization rules as public dealer contact numbers. */
@@ -760,7 +760,10 @@ export const publicLeadPhoneFieldSchema = z.preprocess(
     }),
 );
 
-/** Public lead form — never includes tenant_id or vehicle_id from client trust. */
+/**
+ * Public lead form — never includes tenant_id or vehicle_id from client trust.
+ * Etapa 17: email + consent required; phone optional.
+ */
 export const createPublicLeadInputSchema = z
   .object({
     name: z.string().trim().min(1, "Numele este obligatoriu").max(120),
@@ -770,18 +773,25 @@ export const createPublicLeadInputSchema = z
       emptyFormFieldToUndefined,
       z.string().trim().max(2000, "Mesaj prea lung").optional(),
     ),
+    consent: z.literal(true, {
+      errorMap: () => ({ message: "Consimțământul este obligatoriu" }),
+    }),
   })
-  .strict()
-  .superRefine((data, ctx) => {
-    if (!data.email && !data.phone) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Introdu un email sau un telefon valid.",
-        path: ["email"],
-      });
-    }
-  });
+  .strict();
 export type CreatePublicLeadInput = z.infer<typeof createPublicLeadInputSchema>;
+
+export const leadNotificationStatusSchema = z.enum([
+  "pending",
+  "skipped",
+  "not_configured",
+  "no_recipients",
+  "sent",
+  "failed",
+]);
+export type LeadNotificationStatus = z.infer<typeof leadNotificationStatusSchema>;
+
+/** Consent copy version stamped on new public leads. */
+export const PUBLIC_LEAD_CONSENT_VERSION = "v1" as const;
 
 /**
  * Formats a EUR amount for Romanian storefront/dashboard: `12.900 €`.

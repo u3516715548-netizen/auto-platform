@@ -1,7 +1,10 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+import { sql } from "drizzle-orm";
 import { cookies, headers } from "next/headers";
 import { getDb, leads } from "@auto-platform/db";
+import { PUBLIC_LEAD_CONSENT_VERSION } from "@auto-platform/types";
 import { hasRecentLeadForContact } from "@/lib/leads/lead-contact-dedup";
 import { buildLeadContactKey } from "@/lib/leads/lead-contact";
 import { loadLeadNotificationEmailsForTenant } from "@/lib/leads/load-notification-emails";
@@ -13,7 +16,11 @@ import {
   getTrustedClientIp,
   hashClientIpForRateLimit,
 } from "@/lib/leads/trusted-client-ip";
-import { maybeNotifyAfterPublicLeadInsert } from "@/lib/notifications/lead-email";
+import { mapLeadNotifyResultToPersistence } from "@/lib/notifications/map-lead-notification-status";
+import {
+  maybeNotifyAfterPublicLeadInsert,
+  type LeadEmailNotifyResult,
+} from "@/lib/notifications/lead-email";
 import { clearPublicSessionGucs } from "@/lib/storefront/clear-public-session";
 import {
   buildLeadCooldownCookieName,
@@ -55,7 +62,8 @@ function rateLimitScope(tenantId: string, ipHash: string) {
 /**
  * Creates a storefront lead for the Host tenant + page vehicle slug.
  * Ignores any client-supplied tenant_id / vehicle_id.
- * Email notification is best-effort after a successful insert.
+ * Email notification is best-effort; outcome is persisted on the lead row.
+ * Public response never exposes notification status, ids, or technical reasons.
  *
  * HOBBY_DEMO_DISABLE_PUBLIC_LEADS: blocks insert with a neutral response (no DB write).
  */
@@ -116,6 +124,10 @@ export async function createPublicLeadAction(
     return { error: null, success: true };
   }
 
+  if (!parsed.data.consent) {
+    return { error: "Consimțământul este obligatoriu", success: false };
+  }
+
   const contactKey = buildLeadContactKey(parsed.data.email, parsed.data.phone);
   const cookieName = buildLeadCooldownCookieName(slug, contactKey);
   const cookieStore = await cookies();
@@ -151,7 +163,8 @@ export async function createPublicLeadAction(
     }
   }
 
-  let insertedLeadId: string | null = null;
+  const leadId = randomUUID();
+  const consentAt = new Date();
 
   try {
     const db = getDb();
@@ -160,20 +173,25 @@ export async function createPublicLeadAction(
     const inserted = await db
       .insert(leads)
       .values({
+        id: leadId,
         tenantId: tenant.tenantId,
         vehicleId,
         name: parsed.data.name,
-        email: parsed.data.email ?? null,
+        email: parsed.data.email,
         phone: parsed.data.phone ?? null,
         message: parsed.data.message ?? null,
         source: "storefront",
         status: "new",
         assignedTo: null,
+        consentAt,
+        consentVersion: PUBLIC_LEAD_CONSENT_VERSION,
+        notificationStatus: "pending",
+        notificationAttemptedAt: null,
+        notificationReason: null,
       })
-      .returning({ id: leads.id });
+      .returning({ id: leads.id, tenantId: leads.tenantId });
 
-    insertedLeadId = inserted[0]?.id ?? null;
-    if (!insertedLeadId) {
+    if (!inserted[0]?.id || inserted[0].tenantId !== tenant.tenantId) {
       return { error: NEUTRAL_ERROR, success: false };
     }
 
@@ -192,11 +210,16 @@ export async function createPublicLeadAction(
   }
 
   // Best-effort notification — never affects public success response.
+  let notifyResult: LeadEmailNotifyResult = {
+    attempted: false,
+    sent: false,
+    reason: "no_recipients",
+  };
   try {
     const recipients = await loadLeadNotificationEmailsForTenant(tenant.tenantId);
-    await maybeNotifyAfterPublicLeadInsert({
+    notifyResult = await maybeNotifyAfterPublicLeadInsert({
       tenantId: tenant.tenantId,
-      leadId: insertedLeadId,
+      leadId,
       recipients,
       lead: {
         name: parsed.data.name,
@@ -206,7 +229,26 @@ export async function createPublicLeadAction(
       },
     });
   } catch {
-    // swallow — lead already persisted
+    notifyResult = { attempted: true, sent: false, reason: "provider_error" };
+  }
+
+  const persistence = mapLeadNotifyResultToPersistence(notifyResult);
+
+  // Persist notification outcome via narrow SECURITY DEFINER helper (staff-only UPDATE RLS).
+  // Touches only notification_* for this leadId + tenantId; never fails the public response.
+  try {
+    const db = getDb();
+    await clearPublicSessionGucs(db);
+    await db.execute(
+      sql`select app.finalize_lead_notification(
+        ${leadId}::uuid,
+        ${tenant.tenantId}::uuid,
+        ${persistence.notificationStatus}::public.lead_notification_status,
+        ${persistence.notificationReason}
+      )`,
+    );
+  } catch {
+    // Lead already saved — notification status may remain pending; never fail the user.
   }
 
   return { error: null, success: true };

@@ -29,11 +29,12 @@ function form(entries: Record<string, string>): FormData {
   return data;
 }
 
-describe("Etapa 10A — contact contract", () => {
-  it("accepts email-only, phone-only, and both with normalization", () => {
+describe("Etapa 10A — contact contract (updated Etapa 17: email + consent required)", () => {
+  it("accepts email (+ optional phone) with consent and normalization", () => {
     const emailOnly = createPublicLeadInputSchema.safeParse({
       name: "Ana",
       email: "  Ana@Example.COM ",
+      consent: true,
     });
     expect(emailOnly.success).toBe(true);
     if (emailOnly.success) {
@@ -44,16 +45,15 @@ describe("Etapa 10A — contact contract", () => {
     const phoneOnly = createPublicLeadInputSchema.safeParse({
       name: "Ana",
       phone: "0722 123 456",
+      consent: true,
     });
-    expect(phoneOnly.success).toBe(true);
-    if (phoneOnly.success) {
-      expect(phoneOnly.data.phone).toBe("+40722123456");
-    }
+    expect(phoneOnly.success).toBe(false);
 
     const both = createPublicLeadInputSchema.safeParse({
       name: "Ana",
       email: "ana@test.ro",
       phone: "+40 722 999 888",
+      consent: true,
     });
     expect(both.success).toBe(true);
     if (both.success) {
@@ -62,30 +62,45 @@ describe("Etapa 10A — contact contract", () => {
     }
   });
 
-  it("rejects no contact, invalid email without phone, invalid phone without email", () => {
+  it("rejects missing email/consent and invalid contact fields", () => {
     expect(createPublicLeadInputSchema.safeParse({ name: "Ana" }).success).toBe(false);
     expect(
-      createPublicLeadInputSchema.safeParse({ name: "Ana", email: "not-an-email" }).success,
+      createPublicLeadInputSchema.safeParse({
+        name: "Ana",
+        email: "not-an-email",
+        consent: true,
+      }).success,
     ).toBe(false);
     expect(
-      createPublicLeadInputSchema.safeParse({ name: "Ana", phone: "https://evil.test/x" }).success,
+      createPublicLeadInputSchema.safeParse({
+        name: "Ana",
+        email: "ana@test.ro",
+        phone: "https://evil.test/x",
+        consent: true,
+      }).success,
     ).toBe(false);
     expect(
       createPublicLeadInputSchema.safeParse({
         name: "Ana",
         email: "bad",
         phone: "123",
+        consent: true,
       }).success,
     ).toBe(false);
   });
 
-  it("parsePublicLeadForm normalizes contact fields", () => {
+  it("parsePublicLeadForm normalizes contact fields with consent", () => {
     const parsed = parsePublicLeadForm(
-      form({ name: "Ana", email: "Ana@Example.COM", phone: "0722123456" }),
+      form({
+        name: "Ana",
+        email: "Ana@Example.COM",
+        phone: "0722123456",
+        consent: "true",
+      }),
     );
     expect(parsed).toMatchObject({
       ok: true,
-      data: { email: "ana@example.com", phone: "+40722123456" },
+      data: { email: "ana@example.com", phone: "+40722123456", consent: true },
     });
   });
 

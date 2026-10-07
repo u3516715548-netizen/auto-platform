@@ -253,17 +253,22 @@ describe("public lead parse + anti-abuse", () => {
     ).toBe(false);
   });
 
-  it("Zod validates name/email/phone/message bounds and requires contact", () => {
+  it("Zod validates name/email/phone/message/consent (email + consent required)", () => {
     expect(createPublicLeadInputSchema.safeParse({ name: "" }).success).toBe(false);
-    expect(createPublicLeadInputSchema.safeParse({ name: "Ana", email: "bad" }).success).toBe(
-      false,
-    );
+    expect(
+      createPublicLeadInputSchema.safeParse({
+        name: "Ana",
+        email: "bad",
+        consent: true,
+      }).success,
+    ).toBe(false);
     expect(
       createPublicLeadInputSchema.safeParse({
         name: "Ana",
         email: "",
         phone: "",
         message: "",
+        consent: true,
       }).success,
     ).toBe(false);
     expect(
@@ -271,25 +276,41 @@ describe("public lead parse + anti-abuse", () => {
         name: "Ana",
         email: "ana@example.com",
         message: "",
+        consent: true,
       }).success,
     ).toBe(true);
     expect(
       createPublicLeadInputSchema.safeParse({
         name: "Ana",
+        email: "ana@example.com",
         message: "x".repeat(2001),
         phone: "0722123456",
+        consent: true,
+      }).success,
+    ).toBe(false);
+    expect(
+      createPublicLeadInputSchema.safeParse({
+        name: "Ana",
+        email: "ana@example.com",
+        consent: false,
       }).success,
     ).toBe(false);
   });
 
   it("parses valid lead and flags honeypot without failing schema", () => {
     const ok = parsePublicLeadForm(
-      form({ name: "Ana", email: "ana@example.com", phone: "", message: "" }),
+      form({
+        name: "Ana",
+        email: "ana@example.com",
+        phone: "",
+        message: "",
+        consent: "true",
+      }),
     );
     expect(ok).toMatchObject({
       ok: true,
       honeypotTriggered: false,
-      data: { name: "Ana", email: "ana@example.com", phone: undefined },
+      data: { name: "Ana", email: "ana@example.com", phone: undefined, consent: true },
     });
 
     const bot = parsePublicLeadForm(form({ name: "Bot", company: "spam-co" }));

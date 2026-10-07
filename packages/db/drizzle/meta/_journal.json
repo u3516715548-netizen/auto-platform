@@ -29,6 +29,20 @@
       "when": 1791200000000,
       "tag": "0003_dashing_ikaris",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791220000000,
+      "tag": "0004_lead_consent_notification",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791221000000,
+      "tag": "0005_finalize_lead_notification",
+      "breakpoints": true
     }
   ]
 }

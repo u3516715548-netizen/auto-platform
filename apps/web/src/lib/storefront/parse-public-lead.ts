@@ -6,13 +6,21 @@ export type ParsePublicLeadResult =
       ok: true;
       data: {
         name: string;
-        email?: string;
+        email: string;
         phone?: string;
         message?: string;
+        consent: true;
       }; // email lowercased; phone E.164 when present
       honeypotTriggered: boolean;
     }
   | { ok: false; error: string };
+
+/** Checkbox FormData: "on" / "true" / "1" → true; anything else → false. */
+export function parseConsentCheckbox(raw: FormDataEntryValue | null): boolean {
+  if (raw === null || raw === undefined) return false;
+  const value = String(raw).trim().toLowerCase();
+  return value === "on" || value === "true" || value === "1";
+}
 
 /**
  * Parses public lead FormData. Ignores/rejects client tenant_id and vehicle_id.
@@ -31,15 +39,20 @@ export function parsePublicLeadForm(formData: FormData): ParsePublicLeadResult {
       honeypotTriggered: true,
       data: {
         name: String(formData.get("name") ?? "").trim() || "—",
+        email: "honeypot@invalid.local",
+        consent: true,
       },
     };
   }
+
+  const consent = parseConsentCheckbox(formData.get("consent"));
 
   const parsed = createPublicLeadInputSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email") ?? undefined,
     phone: formData.get("phone") ?? undefined,
     message: formData.get("message") ?? undefined,
+    consent: consent ? true : false,
   });
 
   if (!parsed.success) {
@@ -55,6 +68,7 @@ export function parsePublicLeadForm(formData: FormData): ParsePublicLeadResult {
       email: parsed.data.email,
       phone: parsed.data.phone,
       message: parsed.data.message,
+      consent: parsed.data.consent,
     },
   };
 }
