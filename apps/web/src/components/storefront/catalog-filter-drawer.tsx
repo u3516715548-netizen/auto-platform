@@ -72,8 +72,8 @@ const DEFAULT_BRANDS = [
 ];
 
 /**
- * Homepage mobile filter chrome — quick pills open dedicated sheets;
- * „Toate filtrele” opens the full drawer.
+ * Catalog filter chrome (all breakpoints) — tabs, search, quick pills;
+ * „Toate filtrele” opens the advanced drawer (mobile sheet / desktop panel).
  */
 export function CatalogFilterDrawer({
   query,
@@ -161,10 +161,10 @@ export function CatalogFilterDrawer({
       : "Cutie · km · TVA · scaune · dotări";
 
   return (
-    <div className="md:hidden">
-      <div className="sf-solid-card flex flex-col gap-3 rounded-2xl border border-[var(--sf-border)] p-3">
+    <div>
+      <div className="sf-solid-card flex flex-col gap-3 rounded-2xl border border-[var(--sf-border)] p-3 md:gap-4 md:p-5">
         <div
-          className="flex rounded-full bg-[var(--sf-surface-muted)] p-1"
+          className="flex rounded-full bg-[var(--sf-surface-muted)] p-1 md:max-w-md"
           role="presentation"
         >
           <span className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full bg-white px-3 text-sm font-semibold text-[var(--sf-text)] shadow-sm">
@@ -229,8 +229,12 @@ export function CatalogFilterDrawer({
           ) : null}
         </form>
 
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" className={`${pillClass} col-span-2`} onClick={() => setSheet("brand")}>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
+          <button
+            type="button"
+            className={`${pillClass} col-span-2 md:col-span-1`}
+            onClick={() => setSheet("brand")}
+          >
             <IconGrid size={16} />
             Brand
           </button>
@@ -250,27 +254,26 @@ export function CatalogFilterDrawer({
             <IconCalendar size={16} />
             An
           </button>
-        </div>
-
-        <button
-          ref={triggerRef}
-          type="button"
-          className="inline-flex min-h-14 w-full items-center gap-3 rounded-2xl px-4 text-left text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
-          style={{ backgroundColor: "var(--sf-accent)" }}
-          aria-expanded={open}
-          aria-controls={panelId}
-          aria-haspopup="dialog"
-          onClick={openDrawer}
-        >
-          <IconSliders size={18} />
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold">Toate filtrele</span>
-            <span className="mt-0.5 block truncate text-xs font-medium text-white/85">
-              {triggerHint}
+          <button
+            ref={triggerRef}
+            type="button"
+            className="col-span-2 inline-flex min-h-12 w-full items-center gap-3 rounded-2xl px-4 text-left text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] md:col-span-1 md:min-h-12"
+            style={{ backgroundColor: "var(--sf-accent)" }}
+            aria-expanded={open}
+            aria-controls={panelId}
+            aria-haspopup="dialog"
+            onClick={openDrawer}
+          >
+            <IconSliders size={18} />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold">Toate filtrele</span>
+              <span className="mt-0.5 block truncate text-xs font-medium text-white/85">
+                {triggerHint}
+              </span>
             </span>
-          </span>
-          <IconChevronRight size={18} />
-        </button>
+            <IconChevronRight size={18} />
+          </button>
+        </div>
       </div>
 
       {sheet ? (
@@ -286,7 +289,7 @@ export function CatalogFilterDrawer({
       ) : null}
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-stretch justify-center md:hidden">
+        <div className="fixed inset-0 z-50 flex items-stretch justify-end">
           <button
             type="button"
             className="absolute inset-0 bg-zinc-900/45 motion-safe:transition-opacity motion-safe:duration-200 motion-reduce:transition-none"
@@ -300,7 +303,7 @@ export function CatalogFilterDrawer({
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            className="catalog-filter-drawer-panel relative z-10 flex h-full w-full flex-col bg-white outline-none"
+            className="catalog-filter-drawer-panel relative z-10 flex h-full w-full max-w-[480px] flex-col bg-white shadow-xl outline-none"
           >
             <div className="flex shrink-0 items-center gap-2 border-b border-[var(--sf-border)] px-3 py-3">
               <button
@@ -333,7 +336,7 @@ export function CatalogFilterDrawer({
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-4 py-4 pb-28">
               <CatalogFilters
                 query={query}
-                idPrefix="catalog-mobile"
+                idPrefix="catalog-drawer"
                 formId={`${panelId}-form`}
                 submitLabel="Vezi Rezultatele"
                 hideActions

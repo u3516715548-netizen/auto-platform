@@ -8,6 +8,7 @@ import {
   ilike,
   inArray,
   lte,
+  ne,
   or,
   type SQL,
 } from "drizzle-orm";
@@ -20,6 +21,7 @@ import {
   type PublicVehicleCatalogDto,
   type PublicVehicleDetailDto,
 } from "./public-vehicle-media";
+import { filterPublicAlternativeRows } from "./public-vehicle-alternatives";
 import {
   CATALOG_PAGE_SIZE,
   clampCatalogPage,
@@ -312,6 +314,43 @@ export async function getPublicVehicleDetailBySlug(
 
   const dto = toPublicVehicleDto(row);
   return attachPublicDetailImages(tenantId, dto, row.id);
+}
+
+export { filterPublicAlternativeRows } from "./public-vehicle-alternatives";
+
+/**
+ * Other available vehicles from the same tenant (for detail “Alte alternative”).
+ * Excludes current slug; never cross-tenant.
+ */
+export async function listPublicVehicleAlternatives(
+  tenantId: string,
+  excludeSlug: string,
+  limit = 8,
+): Promise<PublicVehicleCatalogDto[]> {
+  const safeLimit = Math.min(8, Math.max(0, Math.floor(limit)));
+  if (safeLimit === 0 || !excludeSlug) return [];
+
+  const db = getDb();
+  await clearPublicSessionGucs(db);
+
+  const rows = await db
+    .select(publicVehicleSelect)
+    .from(vehicles)
+    .where(
+      and(
+        eq(vehicles.tenantId, tenantId),
+        eq(vehicles.status, "available"),
+        ne(vehicles.slug, excludeSlug),
+      ),
+    )
+    .orderBy(desc(vehicles.createdAt), asc(vehicles.id))
+    .limit(safeLimit);
+
+  const dtos = filterPublicAlternativeRows(rows, tenantId, excludeSlug).map((row) =>
+    toPublicVehicleDto(row),
+  );
+
+  return attachPublicCoverImages(tenantId, dtos);
 }
 
 /** Server-only: resolve vehicle id for lead attribution (never expose to client DTO). */

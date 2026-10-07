@@ -15,6 +15,7 @@ describe("Etapa 8A catalog query parse", () => {
     const q = parseCatalogSearchParams({});
     expect(q).toEqual({
       q: null,
+      make: [],
       priceMin: null,
       priceMax: null,
       yearMin: null,
@@ -98,6 +99,7 @@ describe("Etapa 8A catalog query parse", () => {
   it("serializes shareable href without defaults or secrets", () => {
     const href = buildCatalogHref({
       q: "golf",
+      make: [],
       priceMin: 10000,
       priceMax: null,
       yearMin: null,

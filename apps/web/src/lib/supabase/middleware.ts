@@ -62,9 +62,10 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isDashboard = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+  const isTemplatePreview = pathname === "/storefront-template-preview";
   const isLogin = pathname === "/login" || pathname.startsWith("/login/");
 
-  if (isDashboard && !user) {
+  if ((isDashboard || isTemplatePreview) && !user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     redirectUrl.search = "";

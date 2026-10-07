@@ -31,14 +31,14 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden bg-zinc-50 md:flex-row">
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-zinc-200 bg-white md:flex">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-zinc-200 bg-white md:flex lg:w-64">
         <div className="flex flex-col gap-1 border-b border-zinc-200 px-4 py-5">
           <p className="text-xs font-medium tracking-wide text-teal-800 uppercase">Auto Platform</p>
           <p className="truncate text-base font-semibold tracking-tight text-zinc-900">{tenantName}</p>
           <p className="font-mono text-xs text-zinc-500">{tenantSlug}</p>
         </div>
-        <div className="flex flex-1 flex-col gap-4 px-3 py-4">
-          <DashboardNav orientation="vertical" newLeadsCount={newLeadsCount} />
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-4">
+          <DashboardNav orientation="vertical" role={role} newLeadsCount={newLeadsCount} />
         </div>
         <div className="mt-auto border-t border-zinc-200 px-4 py-4">
           <p className="truncate text-sm font-medium text-zinc-900">{userName}</p>
@@ -79,11 +79,11 @@ export function DashboardShell({
           </div>
 
           <div className="border-t border-zinc-100 px-3 py-2 sm:px-6 md:hidden">
-            <DashboardNav orientation="horizontal" newLeadsCount={newLeadsCount} />
+            <DashboardNav orientation="horizontal" role={role} newLeadsCount={newLeadsCount} />
           </div>
         </header>
 
-        <main className="mx-auto w-full min-w-0 max-w-5xl flex-1 px-3 py-5 sm:px-6 sm:py-8">
+        <main className="w-full min-w-0 max-w-5xl flex-1 px-3 py-5 sm:px-6 sm:py-8">
           {children}
         </main>
       </div>

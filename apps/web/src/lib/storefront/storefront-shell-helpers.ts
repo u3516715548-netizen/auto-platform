@@ -1,5 +1,5 @@
 import type { PublicTenantView } from "@/lib/storefront/resolve-public-tenant";
-import { getStorefrontTemplate } from "@/lib/storefront/templates/registry";
+import { resolveStorefrontLayoutId } from "@/lib/storefront/templates/registry";
 import { publicCatalogPath } from "@/lib/storefront/paths";
 import {
   buildStorefrontTelHref,
@@ -21,9 +21,8 @@ export function resolveStorefrontHeaderCta(tenant: PublicTenantView): {
   return { href: catalogHref, label: "Vezi stocul" };
 }
 
-export function resolveStorefrontShellClass(templateId: PublicTenantView["templateId"]): string {
-  const template = getStorefrontTemplate(templateId);
-  return `storefront-${template.id}`;
+export function resolveStorefrontShellClass(templateId: string): string {
+  return `storefront-${resolveStorefrontLayoutId(templateId)}`;
 }
 
 export function storefrontFooterContactLinks(tenant: PublicTenantView): Array<{

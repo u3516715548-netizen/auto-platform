@@ -18,7 +18,6 @@ import {
 } from "@/lib/storefront/catalog-seo";
 import { PublicStorefrontShell } from "@/components/storefront/public-shell";
 import { PublicVehicleList } from "@/components/storefront/public-vehicle-list";
-import { CatalogFilters } from "@/components/storefront/catalog-filters";
 import { CatalogFilterDrawer } from "@/components/storefront/catalog-filter-drawer";
 import { CatalogActiveFilters } from "@/components/storefront/catalog-active-filters";
 import { CatalogPagination } from "@/components/storefront/catalog-pagination";
@@ -142,7 +141,7 @@ export default async function RootPage({ searchParams }: PageProps) {
 
   return (
     <PublicStorefrontShell tenant={tenantView} stickySurface="catalog">
-      <div className="sf-glow-ambient flex min-w-0 flex-col gap-4 sm:gap-6">
+      <div className="sf-glow-ambient flex min-w-0 flex-col gap-4">
         <h2 className="sr-only">Vehicule disponibile</h2>
 
         <CatalogFilterDrawer
@@ -152,15 +151,6 @@ export default async function RootPage({ searchParams }: PageProps) {
           yearFloor={yearFloor}
           yearCeiling={yearCeiling}
         />
-        <div className="hidden md:block">
-          <CatalogFilters
-            query={query}
-            idPrefix="catalog-desktop"
-            submitLabel="Vezi Rezultatele"
-            className="sf-solid-card flex flex-col gap-4 rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)] p-4 sm:p-5"
-          />
-        </div>
-        <CatalogActiveFilters query={query} />
 
         {listError ? <FeedbackBanner variant="error">{listError}</FeedbackBanner> : null}
 
@@ -206,6 +196,8 @@ export default async function RootPage({ searchParams }: PageProps) {
             </div>
           </div>
         ) : null}
+
+        <CatalogActiveFilters query={query} />
 
         {!listError && total === 0 ? (
           <div className="rounded-[var(--sf-radius-lg)] border border-dashed border-[var(--sf-border)] bg-white px-4 py-10 text-center">

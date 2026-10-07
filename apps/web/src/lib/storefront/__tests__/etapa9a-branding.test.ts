@@ -13,7 +13,9 @@ import {
   STOREFRONT_TEMPLATE_REGISTRY,
   getStorefrontTemplate,
   isStorefrontTemplateReady,
+  listPreviewableStorefrontTemplates,
   listSelectableStorefrontTemplates,
+  resolvePreviewableTemplateId,
   resolveStorefrontTemplateId,
 } from "../templates/registry";
 import { toPublicTenantView, type PublicTenantRecord } from "../resolve-public-tenant";
@@ -127,14 +129,25 @@ describe("Etapa 9A public branding parse", () => {
 });
 
 describe("Etapa 9A template registry", () => {
-  it("only template-1 is ready and selectable", () => {
-    expect(STOREFRONT_TEMPLATE_REGISTRY).toEqual([
+  it("only template-1 is ready and selectable; template-2 is coming soon", () => {
+    expect(
+      STOREFRONT_TEMPLATE_REGISTRY.map((t) => ({ id: t.id, labelRo: t.labelRo, status: t.status })),
+    ).toEqual([
       { id: "template-1", labelRo: "Template 1", status: "ready" },
+      { id: "template-2", labelRo: "Template 2", status: "coming_soon" },
     ]);
+    expect(STOREFRONT_TEMPLATE_REGISTRY.every((t) => t.descriptionRo.length > 0)).toBe(true);
     expect(isStorefrontTemplateReady("template-1")).toBe(true);
     expect(isStorefrontTemplateReady("template-2")).toBe(false);
     expect(listSelectableStorefrontTemplates().map((t) => t.id)).toEqual(["template-1"]);
     expect(getStorefrontTemplate("missing").id).toBe("template-1");
     expect(getStorefrontTemplate("template-1").status).toBe("ready");
+    expect(getStorefrontTemplate("template-2").status).toBe("coming_soon");
+    expect(listPreviewableStorefrontTemplates().map((t) => t.id)).toEqual([
+      "template-1",
+      "template-2",
+    ]);
+    expect(resolvePreviewableTemplateId("template-2")).toBe("template-2");
+    expect(resolvePreviewableTemplateId("evil")).toBe("template-1");
   });
 });

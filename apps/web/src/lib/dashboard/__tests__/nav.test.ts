@@ -54,19 +54,26 @@ describe("dashboard nav paths", () => {
     expect(isDashboardNavActive("/dashboard", vehicles)).toBe(false);
   });
 
-  it("includes reservations, leads and settings nav items", () => {
+  it("includes reservations, leads and settings nav items with icons", () => {
     const reservations = DASHBOARD_NAV.find((i) => i.href === "/dashboard/reservations");
     expect(reservations).toBeTruthy();
+    expect(reservations!.icon).toBe("reservations");
     expect(isDashboardNavActive("/dashboard/reservations", reservations!)).toBe(true);
     expect(isDashboardNavActive("/dashboard/reservations/abc", reservations!)).toBe(true);
 
     const leads = DASHBOARD_NAV.find((i) => i.href === "/dashboard/leads");
     expect(leads).toBeTruthy();
+    expect(leads!.icon).toBe("leads");
     expect(isDashboardNavActive("/dashboard/leads", leads!)).toBe(true);
     expect(isDashboardNavActive("/dashboard/leads/abc", leads!)).toBe(true);
 
     const settings = DASHBOARD_NAV.find((i) => i.href === "/dashboard/settings");
     expect(settings).toBeTruthy();
+    expect(settings!.icon).toBe("settings");
+    expect(settings!.settingsGroup).toBe(true);
     expect(isDashboardNavActive("/dashboard/settings", settings!)).toBe(true);
+    expect(isDashboardNavActive("/dashboard/settings/general", settings!)).toBe(true);
+    expect(isDashboardNavActive("/dashboard/settings/customization", settings!)).toBe(true);
   });
 });
+

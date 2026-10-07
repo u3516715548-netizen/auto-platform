@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 import type { VehicleFeatureKey } from "@auto-platform/types";
 import type { PublicVehicleDto } from "@/lib/storefront/public-dto";
@@ -19,6 +21,8 @@ import type { PublicVehicleImageDto } from "@/lib/storefront/public-gallery-help
 import { PublicVehicleGallery } from "./public-vehicle-gallery";
 import { VehicleFinancePanel } from "./vehicle-finance-panel";
 import { VehicleListActions } from "./vehicle-list-actions";
+import { VehicleShareButton } from "./vehicle-share-button";
+import { VehicleDetailSectionNav } from "./vehicle-detail-section-nav";
 import {
   IconBattery,
   IconBolt,
@@ -360,11 +364,13 @@ function SectionHeading({
   title,
   subtitle,
   color,
+  headingId,
 }: {
   num: string;
   title: string;
   subtitle: string;
   color: string;
+  headingId?: string;
 }) {
   return (
     <div className="flex flex-col items-center text-center">
@@ -372,7 +378,9 @@ function SectionHeading({
         {num}
       </p>
       <div className="mt-1 mb-2 h-0.5 w-8 rounded-full" style={{ backgroundColor: color }} />
-      <h2 className="text-xl font-bold text-[var(--sf-text)]">{title}</h2>
+      <h2 id={headingId} className="text-xl font-bold text-[var(--sf-text)]">
+        {title}
+      </h2>
       <p className="mt-1 max-w-md text-sm text-[var(--sf-text-muted)]">{subtitle}</p>
     </div>
   );
@@ -461,25 +469,29 @@ export function PublicVehicleDetail({
       />
 
       <header className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-          <p className="text-3xl font-bold tracking-tight text-[var(--sf-text)] sm:text-4xl">
-            {formatPublicVehiclePrice(vehicle)}
-          </p>
-          {vatLabel ? (
-            <p className="pb-1 text-xs font-semibold tracking-wide text-[var(--sf-success)] uppercase">
-              {vatLabel}
-            </p>
-          ) : null}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+              <p className="text-3xl font-bold tracking-tight text-[var(--sf-text)] sm:text-4xl">
+                {formatPublicVehiclePrice(vehicle)}
+              </p>
+              {vatLabel ? (
+                <p className="pb-1 text-xs font-semibold tracking-wide text-[var(--sf-success)] uppercase">
+                  {vatLabel}
+                </p>
+              ) : null}
+            </div>
+            {vehicle.priceNegotiable ? (
+              <p className="mt-1 text-sm font-medium" style={{ color }}>
+                Preț negociabil
+              </p>
+            ) : null}
+            <h1 className="break-words pt-1 text-2xl font-bold tracking-tight text-[var(--sf-text)] sm:text-3xl">
+              {vehicle.make} {vehicle.model}
+            </h1>
+          </div>
+          <VehicleShareButton title={vehicleLabel} />
         </div>
-        {vehicle.priceNegotiable ? (
-          <p className="text-sm font-medium" style={{ color }}>
-            Preț negociabil
-          </p>
-        ) : null}
-
-        <h1 className="break-words pt-1 text-2xl font-bold tracking-tight text-[var(--sf-text)] sm:text-3xl">
-          {vehicle.make} {vehicle.model}
-        </h1>
         {vehicle.locationCity ? (
           <p className="flex items-center gap-1.5 text-sm text-[var(--sf-text-muted)]">
             <IconLocation size={14} />
@@ -536,14 +548,27 @@ export function PublicVehicleDetail({
         </section>
       ) : null}
 
-      <VehicleFinancePanel vehiclePrice={vehicle.price} leadsEnabled={leadsEnabled} />
+      <VehicleDetailSectionNav />
 
-      <section className="flex flex-col gap-4" aria-labelledby="tech-heading">
+      <section
+        id="vehicle-section-finance"
+        className="scroll-mt-28"
+        aria-labelledby="finance-heading"
+      >
+        <VehicleFinancePanel vehiclePrice={vehicle.price} leadsEnabled={leadsEnabled} />
+      </section>
+
+      <section
+        id="vehicle-section-tech"
+        className="scroll-mt-28 flex flex-col gap-4"
+        aria-labelledby="tech-heading"
+      >
         <SectionHeading
           num="02"
           title="Tehnic"
           subtitle="Specificații tehnice și dotări pentru acest exemplar."
           color="#2563eb"
+          headingId="tech-heading"
         />
 
         {techTiles.length > 0 ? (
@@ -582,29 +607,38 @@ export function PublicVehicleDetail({
         ) : null}
       </section>
 
-      {vehicle.description ? (
-        <section className="flex flex-col gap-3">
-          <SectionHeading
-            num="03"
-            title="Descriere"
-            subtitle="Detalii complete despre acest vehicul."
-            color="#7c3aed"
-          />
-          <div className="rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)] bg-white p-4 sm:p-5">
+      <section
+        id="vehicle-section-description"
+        className="scroll-mt-28 flex flex-col gap-3"
+        aria-labelledby="description-heading"
+      >
+        <SectionHeading
+          num="03"
+          title="Descriere"
+          subtitle="Detalii complete despre acest vehicul."
+          color="#7c3aed"
+          headingId="description-heading"
+        />
+        <div className="rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)] bg-white p-4 sm:p-5">
+          {vehicle.description ? (
             <p className="text-sm leading-6 whitespace-pre-wrap text-[var(--sf-text-muted)]">
               {vehicle.description}
             </p>
-            {vehicle.locationCity ? (
-              <p className="mt-4 flex items-center gap-1.5 border-t border-[var(--sf-border)] pt-3 text-sm text-[var(--sf-text)]">
-                <span style={{ color: "var(--sf-accent)" }} aria-hidden>
-                  <IconLocation size={14} />
-                </span>
-                {vehicle.locationCity}
-              </p>
-            ) : null}
-          </div>
-        </section>
-      ) : null}
+          ) : (
+            <p className="text-sm leading-6 text-[var(--sf-text-muted)]">
+              Descrierea pentru acest vehicul va fi adăugată în curând.
+            </p>
+          )}
+          {vehicle.locationCity ? (
+            <p className="mt-4 flex items-center gap-1.5 border-t border-[var(--sf-border)] pt-3 text-sm text-[var(--sf-text)]">
+              <span style={{ color: "var(--sf-accent)" }} aria-hidden>
+                <IconLocation size={14} />
+              </span>
+              {vehicle.locationCity}
+            </p>
+          ) : null}
+        </div>
+      </section>
     </div>
   );
 }

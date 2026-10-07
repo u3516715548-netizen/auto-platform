@@ -99,6 +99,30 @@ export function parsePriceEurNumber(price: string): number {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
+/** Catalog card estimate horizon (months). Not a bank offer. */
+export const ESTIMATE_MONTHLY_RATE_MONTHS = 60;
+
+/**
+ * Simple catalog estimate: vehicle price ÷ 60 months, rounded to whole EUR.
+ * Returns null when there is no public price.
+ */
+export function estimateMonthlyRateEur(price: string | number | null | undefined): number | null {
+  if (price == null || price === "") return null;
+  const n = typeof price === "number" ? price : parsePriceEurNumber(price);
+  if (!(n > 0)) return null;
+  return Math.round(n / ESTIMATE_MONTHLY_RATE_MONTHS);
+}
+
+/** Display: `482 EUR/lună` (Romanian grouping). */
+export function formatEstimateMonthlyRateEur(monthlyEur: number): string {
+  if (!Number.isFinite(monthlyEur) || monthlyEur <= 0) return "";
+  const amount = new Intl.NumberFormat("ro-RO", { maximumFractionDigits: 0 }).format(monthlyEur);
+  return `${amount} EUR/lună`;
+}
+
+export const ESTIMATE_MONTHLY_RATE_NOTE =
+  "Estimare pentru 60 luni. Condițiile finale depind de finanțator.";
+
 /**
  * Fixed-rate monthly payment (annuity).
  * principalEur = vehicle price − down payment; annualRatePercent e.g. 4.9; months ≥ 1.

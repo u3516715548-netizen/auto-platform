@@ -179,7 +179,7 @@ export function CatalogQuickSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:hidden">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
       <button
         type="button"
         className="absolute inset-0 bg-zinc-900/45"
@@ -190,7 +190,7 @@ export function CatalogQuickSheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-[var(--sf-border)] bg-white shadow-xl"
+        className="relative z-10 flex max-h-[88dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl border border-[var(--sf-border)] bg-white shadow-xl sm:rounded-2xl"
       >
         <div className="flex shrink-0 flex-col items-center px-4 pt-3 pb-2">
           <span className="mb-3 h-1 w-10 rounded-full bg-zinc-300" aria-hidden />

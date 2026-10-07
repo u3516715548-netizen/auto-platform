@@ -9,6 +9,7 @@ import {
 import {
   getPublicVehicleBySlug,
   getPublicVehicleDetailBySlug,
+  listPublicVehicleAlternatives,
 } from "@/lib/storefront/public-vehicles";
 import {
   buildPublicVehicleDetailDescription,
@@ -20,6 +21,7 @@ import { STOREFRONT_CONTACT_ANCHOR_ID } from "@/lib/storefront/storefront-contac
 import { PublicStorefrontShell } from "@/components/storefront/public-shell";
 import { PublicLeadForm } from "@/components/storefront/public-lead-form";
 import { PublicVehicleDetail } from "@/components/storefront/public-vehicle-detail";
+import { VehicleAlternativesCarousel } from "@/components/storefront/vehicle-alternatives-carousel";
 import { VehicleSaveHeaderButton } from "@/components/storefront/vehicle-list-actions";
 import { IconChevronLeft } from "@/components/storefront/icons";
 import { toStorefrontVehicleLite } from "@/lib/storefront/storefront-vehicle-lite";
@@ -72,6 +74,11 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
     ...vehicle,
     coverImage: cover ? { url: cover.url, altText: cover.altText } : null,
   });
+  const alternatives = await listPublicVehicleAlternatives(
+    resolved.tenant.tenantId,
+    vehicle.slug,
+    8,
+  );
 
   return (
     <PublicStorefrontShell
@@ -114,6 +121,12 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
           />
         </section>
       </div>
+
+      {alternatives.length > 0 ? (
+        <div className="sf-glow-ambient mx-auto mt-8 w-full min-w-0 max-w-6xl">
+          <VehicleAlternativesCarousel vehicles={alternatives} />
+        </div>
+      ) : null}
     </PublicStorefrontShell>
   );
 }

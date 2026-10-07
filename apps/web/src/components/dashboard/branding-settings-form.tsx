@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { Button, Input, Label } from "@auto-platform/ui";
 import {
@@ -7,23 +8,20 @@ import {
   type UpdateTenantBrandingState,
 } from "@/lib/tenant/update-tenant-branding";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
-import { nativeSelectClassName } from "@/lib/ui/form-styles";
 import type { StaffBrandingSettings } from "@/lib/tenant/get-tenant-branding";
-import type { StorefrontTemplateDefinition } from "@/lib/storefront/templates/registry";
 
 const initialState: UpdateTenantBrandingState = { error: null, success: false };
 
 type BrandingSettingsFormProps = {
   branding: StaffBrandingSettings;
-  templates: StorefrontTemplateDefinition[];
   readOnly: boolean;
 };
 
-export function BrandingSettingsForm({
-  branding,
-  templates,
-  readOnly,
-}: BrandingSettingsFormProps) {
+/**
+ * Preferințe: accent color, public contact, lead notification emails.
+ * Template selection lives under Personalizare → Teme.
+ */
+export function BrandingSettingsForm({ branding, readOnly }: BrandingSettingsFormProps) {
   const [state, formAction, pending] = useActionState(
     updateTenantBrandingAction,
     initialState,
@@ -36,9 +34,7 @@ export function BrandingSettingsForm({
         <FeedbackBanner variant="error">{state.error}</FeedbackBanner>
       ) : null}
       {state?.success ? (
-        <FeedbackBanner variant="success">
-          Branding-ul a fost salvat.
-        </FeedbackBanner>
+        <FeedbackBanner variant="success">Preferințele au fost salvate.</FeedbackBanner>
       ) : null}
 
       {readOnly ? (
@@ -47,8 +43,22 @@ export function BrandingSettingsForm({
         </FeedbackBanner>
       ) : null}
 
+      {/* Preserve active template when saving preferences */}
+      <input type="hidden" name="templateId" value={branding.templateId} />
+
+      <p className="text-sm text-zinc-600">
+        Tema storefront se alege la{" "}
+        <Link
+          href="/dashboard/settings/customization/themes"
+          className="font-medium text-teal-800 underline-offset-2 hover:underline"
+        >
+          Teme
+        </Link>
+        .
+      </p>
+
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="branding-primaryColor">Culoare principală</Label>
+        <Label htmlFor="branding-primaryColor">Culoare accent</Label>
         <div className="flex flex-wrap items-center gap-3">
           <input
             id="branding-primaryColor-picker"
@@ -60,7 +70,7 @@ export function BrandingSettingsForm({
                 : branding.primaryColor
             }
             className="h-11 w-14 cursor-pointer rounded-md border border-zinc-200 bg-white p-1 disabled:cursor-not-allowed"
-            aria-label="Selector culoare principală"
+            aria-label="Selector culoare accent"
             onChange={(event) => {
               const text = document.getElementById(
                 "branding-primaryColor",
@@ -83,23 +93,6 @@ export function BrandingSettingsForm({
         <p id="branding-primaryColor-hint" className="text-xs text-zinc-500">
           Hex valid, ex. #2563eb. Este singura culoare personalizabilă per dealer.
         </p>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="branding-templateId">Template storefront</Label>
-        <select
-          id="branding-templateId"
-          name="templateId"
-          disabled={readOnly || pending}
-          defaultValue={branding.templateId}
-          className={nativeSelectClassName}
-        >
-          {templates.map((tpl) => (
-            <option key={tpl.id} value={tpl.id}>
-              {tpl.labelRo}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -166,7 +159,7 @@ export function BrandingSettingsForm({
 
       {!readOnly ? (
         <Button type="submit" disabled={pending} className="min-h-11 w-fit">
-          {pending ? "Se salvează…" : "Salvează branding"}
+          {pending ? "Se salvează…" : "Salvează preferințele"}
         </Button>
       ) : null}
     </form>

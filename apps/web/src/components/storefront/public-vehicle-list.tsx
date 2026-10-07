@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { PublicVehicleCatalogDto } from "@/lib/storefront/public-vehicles";
 import { publicVehiclePath } from "@/lib/storefront/paths";
 import {
@@ -11,10 +12,19 @@ import {
   VEHICLE_VAT_REGIME_LABELS_RO,
 } from "@/lib/vehicles/vehicle-field-labels";
 import { toStorefrontVehicleLite } from "@/lib/storefront/storefront-vehicle-lite";
-import { VehicleListActions } from "@/components/storefront/vehicle-list-actions";
+import { VehicleCardRate } from "@/components/storefront/vehicle-card-rate";
+import {
+  VehicleCardCompareButton,
+  VehicleListActions,
+} from "@/components/storefront/vehicle-list-actions";
 
 type PublicVehicleListProps = {
   vehicles: PublicVehicleCatalogDto[];
+  /**
+   * Demo / embedded preview: open vehicle in-place instead of navigating via Link.
+   * Live storefront leaves this unset.
+   */
+  onSelectSlug?: (slug: string) => void;
 };
 
 function buildSpecLine(vehicle: PublicVehicleCatalogDto): string {
@@ -28,41 +38,77 @@ function buildSpecLine(vehicle: PublicVehicleCatalogDto): string {
   return parts.join(" · ");
 }
 
-function buildTags(vehicle: PublicVehicleCatalogDto): string[] {
-  const tags: string[] = [formatPublicVehicleMileage(vehicle)];
-  if (vehicle.transmission) {
-    tags.push(VEHICLE_TRANSMISSION_LABELS_RO[vehicle.transmission]);
+function CardNav({
+  href,
+  onSelectSlug,
+  slug,
+  className,
+  children,
+  ariaLabel,
+}: {
+  href: string;
+  onSelectSlug?: (slug: string) => void;
+  slug: string;
+  className?: string;
+  children: ReactNode;
+  ariaLabel?: string;
+}) {
+  if (onSelectSlug) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={() => onSelectSlug(slug)}
+        aria-label={ariaLabel}
+      >
+        {children}
+      </button>
+    );
   }
-  if (vehicle.locationCity) {
-    tags.push(vehicle.locationCity);
-  }
-  return tags;
+  return (
+    <Link
+      href={href}
+      className={className}
+      aria-label={ariaLabel}
+    >
+      {children}
+    </Link>
+  );
 }
 
 /**
  * Template 1 catalog cards.
  * Actions sit outside the Link (no nested interactive elements) so navigation stays reliable.
  */
-export function PublicVehicleList({ vehicles }: PublicVehicleListProps) {
+export function PublicVehicleList({ vehicles, onSelectSlug }: PublicVehicleListProps) {
   return (
-    <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+    <ul className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
       {vehicles.map((vehicle) => {
         const href = publicVehiclePath(vehicle.slug);
         const title = `${vehicle.make} ${vehicle.model}`;
-        const tags = buildTags(vehicle);
         const vatLabel = vehicle.vatRegime
           ? VEHICLE_VAT_REGIME_LABELS_RO[vehicle.vatRegime]
           : null;
         const lite = toStorefrontVehicleLite(vehicle);
+        const mileageTag = formatPublicVehicleMileage(vehicle);
+        const transmissionTag = vehicle.transmission
+          ? VEHICLE_TRANSMISSION_LABELS_RO[vehicle.transmission]
+          : null;
 
         return (
           <li key={vehicle.slug} className="min-w-0">
             <article className="sf-solid-card group relative flex h-full flex-col overflow-hidden rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)]">
               <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-[var(--sf-radius-lg)] bg-[var(--sf-surface-muted)]">
-                <Link
+                <CardNav
                   href={href}
-                  className="absolute inset-0 block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
-                  aria-label={title}
+                  onSelectSlug={onSelectSlug}
+                  slug={vehicle.slug}
+                  className={
+                    onSelectSlug
+                      ? "absolute inset-0 block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                      : "absolute inset-0 block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                  }
+                  ariaLabel={title}
                 >
                   {vehicle.coverImage?.url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -76,7 +122,7 @@ export function PublicVehicleList({ vehicles }: PublicVehicleListProps) {
                       Imagine indisponibilă
                     </span>
                   )}
-                </Link>
+                </CardNav>
                 {vehicle.condition === "new" ? (
                   <span
                     className="pointer-events-none absolute top-3 left-3 z-[1] rounded-md px-2 py-1 text-[11px] font-bold tracking-wide text-white uppercase"
@@ -88,23 +134,30 @@ export function PublicVehicleList({ vehicles }: PublicVehicleListProps) {
                 <VehicleListActions vehicle={lite} variant="card" />
               </div>
 
-              <Link
-                href={href}
-                className="flex flex-1 flex-col gap-1.5 p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
-              >
-                <h3 className="text-lg font-bold tracking-tight text-[var(--sf-text)]">
-                  {title}
-                </h3>
+              <div className="flex flex-1 flex-col gap-1.5 p-3">
+                <CardNav
+                  href={href}
+                  onSelectSlug={onSelectSlug}
+                  slug={vehicle.slug}
+                  className="text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                >
+                  <h3 className="text-lg font-bold tracking-tight text-[var(--sf-text)]">
+                    {title}
+                  </h3>
+                </CardNav>
 
-                <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-                  <p className="text-2xl font-bold tracking-tight text-[var(--sf-text)]">
-                    {formatPublicVehiclePrice(vehicle)}
-                  </p>
-                  {vatLabel ? (
-                    <p className="pb-0.5 text-xs font-semibold tracking-wide text-[var(--sf-success)] uppercase">
-                      {vatLabel}
+                <div className="flex items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-2xl font-bold tracking-tight text-[var(--sf-text)]">
+                      {formatPublicVehiclePrice(vehicle)}
                     </p>
-                  ) : null}
+                    {vatLabel ? (
+                      <p className="text-xs font-semibold tracking-wide text-[var(--sf-success)] uppercase">
+                        {vatLabel}
+                      </p>
+                    ) : null}
+                  </div>
+                  <VehicleCardRate price={vehicle.price} />
                 </div>
 
                 {vehicle.priceNegotiable ? (
@@ -113,21 +166,29 @@ export function PublicVehicleList({ vehicles }: PublicVehicleListProps) {
                   </p>
                 ) : null}
 
-                <p className="text-sm text-[var(--sf-text-muted)]">{buildSpecLine(vehicle)}</p>
+                <CardNav
+                  href={href}
+                  onSelectSlug={onSelectSlug}
+                  slug={vehicle.slug}
+                  className="text-left text-sm text-[var(--sf-text-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                >
+                  {buildSpecLine(vehicle)}
+                </CardNav>
 
-                {tags.length > 0 ? (
-                  <div className="mt-1 flex flex-wrap gap-1.5">
-                    {tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full bg-[var(--sf-surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--sf-text)]"
-                      >
-                        {tag}
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 flex-wrap gap-1.5">
+                    <span className="rounded-full bg-[var(--sf-surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--sf-text)]">
+                      {mileageTag}
+                    </span>
+                    {transmissionTag ? (
+                      <span className="rounded-full bg-[var(--sf-surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--sf-text)]">
+                        {transmissionTag}
                       </span>
-                    ))}
+                    ) : null}
                   </div>
-                ) : null}
-              </Link>
+                  <VehicleCardCompareButton vehicle={lite} />
+                </div>
+              </div>
             </article>
           </li>
         );

@@ -262,7 +262,7 @@ export function catalogQueryHasFilters(query: CatalogQuery): boolean {
 export function catalogQueryToSearchParams(query: CatalogQuery): URLSearchParams {
   const sp = new URLSearchParams();
   if (query.q) sp.set("q", query.q);
-  for (const v of query.make) sp.append("make", v);
+  for (const v of query.make ?? []) sp.append("make", v);
   if (query.priceMin !== null) sp.set("priceMin", String(query.priceMin));
   if (query.priceMax !== null) sp.set("priceMax", String(query.priceMax));
   if (query.yearMin !== null) sp.set("yearMin", String(query.yearMin));

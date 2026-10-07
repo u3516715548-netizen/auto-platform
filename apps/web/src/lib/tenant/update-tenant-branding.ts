@@ -87,7 +87,9 @@ export async function updateTenantBrandingAction(
     };
   }
 
-  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/settings/customization/preferences");
+  revalidatePath("/dashboard/settings/customization/themes");
+  revalidatePath("/dashboard/settings/company");
   revalidatePath("/");
   revalidatePath("/vehicles", "layout");
 

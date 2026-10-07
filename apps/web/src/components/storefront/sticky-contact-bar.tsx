@@ -56,7 +56,7 @@ export function StickyContactBar({ actions }: StickyContactBarProps) {
         aria-label="Contact rapid"
         className="pointer-events-auto border-t border-[var(--sf-border)] bg-white/95 px-3 py-2.5 shadow-[0_-8px_24px_rgba(24,24,27,0.08)] backdrop-blur-md"
       >
-        <ul className="mx-auto flex max-w-6xl items-center gap-2">
+        <ul className="mx-auto flex w-full max-w-[1200px] items-center gap-2">
           {ordered.map((action) => {
             const isPrimary = action.kind === "message";
             const isWhatsApp = action.kind === "whatsapp";

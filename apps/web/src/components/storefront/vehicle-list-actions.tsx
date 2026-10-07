@@ -12,12 +12,13 @@ import type { StorefrontVehicleLite } from "@/lib/storefront/storefront-vehicle-
 
 type VehicleListActionsProps = {
   vehicle: StorefrontVehicleLite;
-  /** Overlay on card image (reference layout). */
+  /** Overlay on card image — save only (compare is on the tags row). */
   variant?: "card" | "detail";
 };
 
 /**
- * Compară + Salvează — stopPropagation so parent Link still navigates only on card body.
+ * Salvate on card image / Compară+Salvează on detail.
+ * Compare on catalog cards uses VehicleCardCompareButton (tags row).
  */
 export function VehicleListActions({ vehicle, variant = "card" }: VehicleListActionsProps) {
   const { isSaved, isCompared, toggleSaved, toggleCompare } = useStorefrontLists();
@@ -60,29 +61,50 @@ export function VehicleListActions({ vehicle, variant = "card" }: VehicleListAct
     <>
       <button
         type="button"
-        onClick={onCompare}
-        className="absolute bottom-3 left-3 z-10 inline-flex min-h-9 items-center gap-1.5 rounded-full bg-black/55 px-3 text-xs font-semibold text-white backdrop-blur-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        onClick={onSave}
+        className="absolute top-3 right-3 z-10 inline-flex size-9 items-center justify-center rounded-full bg-white/95 text-[var(--sf-accent)] shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+        aria-pressed={saved}
+        aria-label={saved ? "Elimină din salvate" : "Salvează"}
+      >
+        {saved ? <IconBookmarkFilled size={16} /> : <IconBookmark size={16} />}
+      </button>
+    </>
+  );
+}
+
+/** Compact Compară control for the catalog card tags row. */
+export function VehicleCardCompareButton({ vehicle }: { vehicle: StorefrontVehicleLite }) {
+  const { isCompared, toggleCompare } = useStorefrontLists();
+  const [hint, setHint] = useState<string | null>(null);
+  const compared = isCompared(vehicle.slug);
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const result = toggleCompare(vehicle);
+          setHint(result.message ?? null);
+        }}
+        className={`inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] ${
+          compared
+            ? "bg-[var(--sf-accent)] text-white"
+            : "border border-[var(--sf-border)] bg-white text-[var(--sf-text)]"
+        }`}
         aria-pressed={compared}
         aria-label={compared ? "Elimină din comparație" : "Adaugă la comparație"}
       >
         <IconCompare size={14} />
         Compară
       </button>
-      <button
-        type="button"
-        onClick={onSave}
-        className="absolute right-3 bottom-3 z-10 inline-flex size-9 items-center justify-center rounded-full bg-white/95 text-[var(--sf-accent)] shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
-        aria-pressed={saved}
-        aria-label={saved ? "Elimină din salvate" : "Salvează"}
-      >
-        {saved ? <IconBookmarkFilled size={16} /> : <IconBookmark size={16} />}
-      </button>
       {hint ? (
-        <p className="absolute top-3 right-3 z-10 max-w-[70%] rounded-md bg-white/95 px-2 py-1 text-[11px] font-medium text-[var(--sf-danger)] shadow-sm">
+        <p className="absolute right-0 bottom-full mb-1 w-max max-w-[12rem] rounded-md bg-white px-2 py-1 text-[11px] font-medium text-[var(--sf-danger)] shadow-sm ring-1 ring-[var(--sf-border)]">
           {hint}
         </p>
       ) : null}
-    </>
+    </div>
   );
 }
 

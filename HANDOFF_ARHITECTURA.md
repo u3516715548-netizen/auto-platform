@@ -19,11 +19,20 @@
 | Etapa 9 | **FINALIZATĂ local** (9A branding + 9B Template 1 + 9C sticky/settings) |
 | Etapa 10 | **FINALIZATĂ local** (10A anti-spam + 10B dashboard + 10C notificări + 10D polish) |
 | Etapa 11 | **FINALIZATĂ local** (11A contract + 11B dashboard/CTA + 11C polish/docs) |
-| Etapa 12 | **Hobby demo** — `HOBBY_DEMO_*` pe Vercel (fără `VERCEL_DEMO_*`) |
-| Git | commit local `0ee0f6b` (Etape 1–5); modificări E6–E12 necommise |
+| Etapa 12 | **Hobby demo pe Vercel** — `HOBBY_DEMO_*`; deploy automat din `master` |
+| Storefront UI | **Refine** — quick sheets, Compară/Salvate, Finanțare, Tehnic+Dotări |
+| Git | `master` @ `5f86187` — *Refine storefront UI and add quick sheets* (pushed) |
 | Commit / push / deploy | **interzise fără cerere explicită** |
 
 `.env.local` există local — **nu afișa** conținutul (UUID-uri, `DATABASE_URL`, chei).
+
+### Ultima sesiune (5–6 oct 2026)
+
+- Filtre homepage: Brand / Caroserie / Combustibil / Preț / An → sheet dedicat + Continuă (`catalog-quick-sheets.tsx`, `make[]` în `CatalogQuery`).
+- Detaliu: 01 Finanțare (sumă max = preț), 02 Tehnic+Dotări, 03 Descriere (centrate).
+- Compară (2–4, localStorage), Salvate, iconuri storefront.
+- Build local OK → commit `5f86187` → `git push origin master` → Vercel auto-deploy.
+- Canvas handoff: `.cursor/projects/.../canvases/project-handoff.canvas.tsx`
 
 ## Stack curent
 
@@ -31,10 +40,8 @@ Turborepo + pnpm · Next.js 16 / React 19 / Tailwind 4 · Drizzle + Supabase Pos
 
 ## Următoarea etapă
 
-**Etapa 12** — hardening / deploy Hobby: [`docs/stages/12-hardening-deploy.md`](./docs/stages/12-hardening-deploy.md) (`HOBBY_DEMO_*`; fără domeniu/Pro/Resend/Upstash/cron).  
-Deploy Vercel: env pe dashboard + Redeploy.  
-Apoi **Etapa 13** template-uri suplimentare.  
-Rezervări: [`docs/stages/11-reservations.md`](./docs/stages/11-reservations.md) (11A–11C done; fără cron real încă).
+Verificare vizuală pe Vercel a UI-ului refine. Apoi **Etapa 13** template-uri suplimentare, sau hardening (middleware→proxy, rate-limit distribuit, email leads).  
+Rezervări: fără cron real încă — [`docs/stages/11-reservations.md`](./docs/stages/11-reservations.md).
 
 **Producție email (10C):** set `LEAD_EMAIL_PROVIDER` + provider SDK/API key când există implementare aprobată (în prezent doar noop/log).  
 **Producție rate-limit (10A):** backend distribuit + `LEAD_RATE_LIMIT_SECRET` + `VERCEL`/`TRUSTED_PROXY`.  

@@ -32,7 +32,7 @@ type CatalogFiltersProps = {
   showReset?: boolean;
   /** Form id so an external sticky submit can target this form. */
   formId?: string;
-  /** Hide bottom actions — used when the drawer owns a sticky „Vezi Rezultatele”. */
+  /** Hide bottom actions — used when the drawer owns a sticky „Aplică filtrele”. */
   hideActions?: boolean;
 };
 

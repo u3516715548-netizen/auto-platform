@@ -2,19 +2,40 @@
  * Dashboard navigation — relative paths only (preserve dealer Host).
  */
 
+export type DashboardPrimaryIconName =
+  | "overview"
+  | "vehicles"
+  | "reservations"
+  | "leads"
+  | "settings";
+
 export type DashboardNavItem = {
   href: string;
   label: string;
+  icon: DashboardPrimaryIconName;
   /** exact = only `/dashboard`; prefix = `/dashboard/vehicles…` */
   match: "exact" | "prefix";
+  /** Expandable settings tree under this item. */
+  settingsGroup?: boolean;
 };
 
 export const DASHBOARD_NAV: readonly DashboardNavItem[] = [
-  { href: "/dashboard", label: "Prezentare", match: "exact" },
-  { href: "/dashboard/vehicles", label: "Vehicule", match: "prefix" },
-  { href: "/dashboard/reservations", label: "Rezervări", match: "prefix" },
-  { href: "/dashboard/leads", label: "Lead-uri", match: "prefix" },
-  { href: "/dashboard/settings", label: "Setări", match: "prefix" },
+  { href: "/dashboard", label: "Prezentare", icon: "overview", match: "exact" },
+  { href: "/dashboard/vehicles", label: "Vehicule", icon: "vehicles", match: "prefix" },
+  {
+    href: "/dashboard/reservations",
+    label: "Rezervări",
+    icon: "reservations",
+    match: "prefix",
+  },
+  { href: "/dashboard/leads", label: "Lead-uri", icon: "leads", match: "prefix" },
+  {
+    href: "/dashboard/settings",
+    label: "Setări",
+    icon: "settings",
+    match: "prefix",
+    settingsGroup: true,
+  },
 ] as const;
 
 export function isDashboardNavActive(pathname: string, item: DashboardNavItem): boolean {
