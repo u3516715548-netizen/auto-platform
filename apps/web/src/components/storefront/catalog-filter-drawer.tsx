@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import type { CatalogQuery } from "@/lib/storefront/catalog-query";
+
+const MOBILE_NAV_CLEARANCE =
+  "calc(4.5rem + env(safe-area-inset-bottom, 0px))";
 import {
   catalogQueryHasFilterChips,
   countActiveCatalogFilters,
@@ -142,6 +145,20 @@ export function CatalogFilterDrawer({
     };
   }, [mobileOverlayOpen]);
 
+  // Raise sticky filter chrome above results while any sheet/drawer is open
+  // (otherwise CatalogScrollCollapse z-0 traps fixed overlays under the grid).
+  const chromeElevated = open || sheet != null;
+  useEffect(() => {
+    if (!chromeElevated) {
+      delete document.body.dataset.sfCatalogOverlay;
+      return;
+    }
+    document.body.dataset.sfCatalogOverlay = "open";
+    return () => {
+      delete document.body.dataset.sfCatalogOverlay;
+    };
+  }, [chromeElevated]);
+
   useEffect(() => {
     if (!open || isMdUp) return;
 
@@ -221,7 +238,10 @@ export function CatalogFilterDrawer({
       : "Cutie · km · TVA · scaune · dotări";
 
   return (
-    <div ref={filtersRootRef} className="relative z-30">
+    <div
+      ref={filtersRootRef}
+      className={`relative ${mobileOverlayOpen ? "z-[100]" : "z-30"}`}
+    >
       <div className="sf-solid-card flex flex-col gap-3 rounded-2xl border border-[var(--sf-border)] p-3 md:gap-4 md:p-5">
         <div
           className="mx-auto flex w-full max-w-md rounded-full bg-[var(--sf-surface-muted)] p-1"
@@ -446,14 +466,12 @@ export function CatalogFilterDrawer({
 
       {open && !isMdUp ? (
         <div
-          className="fixed inset-0 z-[60] flex items-end justify-center"
-          style={{
-            paddingBottom: "calc(4.5rem + env(safe-area-inset-bottom, 0px))",
-          }}
+          className="fixed inset-x-0 top-0 z-[80] flex items-end justify-center"
+          style={{ bottom: MOBILE_NAV_CLEARANCE }}
         >
           <button
             type="button"
-            className="absolute inset-0 bg-zinc-900/45 motion-safe:transition-opacity motion-safe:duration-200 motion-reduce:transition-none"
+            className="catalog-filter-drawer-backdrop absolute inset-0 bg-zinc-900/45"
             aria-label="Închide filtrele"
             onClick={close}
           />
@@ -464,10 +482,10 @@ export function CatalogFilterDrawer({
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-[var(--sf-border)] bg-white shadow-xl outline-none"
+            className="catalog-filter-drawer-panel relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-[var(--sf-border)] bg-white shadow-xl outline-none"
             style={{
-              height: "min(80dvh, calc(100dvh - 5.5rem - env(safe-area-inset-bottom, 0px)))",
-              maxHeight: "min(80dvh, calc(100dvh - 5.5rem - env(safe-area-inset-bottom, 0px)))",
+              height: "min(80dvh, 100%)",
+              maxHeight: "min(80dvh, 100%)",
             }}
           >
             <div className="relative flex shrink-0 items-center gap-2 border-b border-[var(--sf-border)] px-3 pt-4 pb-3">
@@ -514,7 +532,7 @@ export function CatalogFilterDrawer({
               />
             </div>
 
-            <div className="sticky bottom-0 z-20 shrink-0 border-t border-[var(--sf-border)] bg-white px-4 pt-3 pb-3 shadow-[0_-6px_16px_rgba(24,24,27,0.08)]">
+            <div className="sticky bottom-0 z-20 shrink-0 border-t border-[var(--sf-border)] bg-white px-4 py-3 shadow-[0_-6px_16px_rgba(24,24,27,0.08)]">
               <button
                 type="submit"
                 form={`${panelId}-form`}

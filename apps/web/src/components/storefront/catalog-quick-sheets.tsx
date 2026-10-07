@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useState, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { useRouter } from "next/navigation";
 import type { VehicleBodyType, VehicleFuel } from "@auto-platform/types";
 import {
@@ -11,6 +17,7 @@ import {
   IconBattery,
   IconBolt,
   IconCloud,
+  IconClose,
   IconConvertible,
   IconCoupe,
   IconDrop,
@@ -25,6 +32,10 @@ import {
   IconSuv,
   IconVan,
 } from "@/components/storefront/icons";
+
+/** Space reserved for the mobile tab bar so sheets sit above it. */
+const MOBILE_NAV_CLEARANCE =
+  "calc(4.5rem + env(safe-area-inset-bottom, 0px))";
 
 export type QuickSheetKind = "brand" | "body" | "fuel" | "price" | "year";
 
@@ -111,7 +122,7 @@ function formatEur(n: number): string {
 
 /**
  * Dedicated bottom sheets for Brand / Caroserie / Combustibil / Preț / An.
- * Only the selected filter is shown — Continuă applies and closes.
+ * Only the selected filter is shown — Vezi rezultate applies and closes.
  */
 export function CatalogQuickSheet({
   kind,
@@ -133,6 +144,18 @@ export function CatalogQuickSheet({
   const [priceMax, setPriceMax] = useState(query.priceMax ?? priceCeiling);
   const [yearMin, setYearMin] = useState(query.yearMin ?? yearFloor);
   const [yearMax, setYearMax] = useState(query.yearMax ?? yearCeiling);
+
+  useEffect(() => {
+    if (variant !== "overlay") return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [variant, onClose]);
 
   const filteredBrands = useMemo(() => {
     const q = brandSearch.trim().toLowerCase();
@@ -262,11 +285,18 @@ export function CatalogQuickSheet({
     );
   }
 
+  // Stay in the themed tree (CSS vars). Parent raises z-index while open so
+  // this sheet stacks above the tab bar; bottom clearance keeps the bar visible
+  // with "Vezi rezultate" sitting directly above it.
+  // Cap height (~80%) so the dimmed area above stays tappable to dismiss.
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center">
+    <div
+      className="fixed inset-x-0 top-0 z-[80] flex items-end justify-center"
+      style={{ bottom: MOBILE_NAV_CLEARANCE }}
+    >
       <button
         type="button"
-        className="absolute inset-0 bg-zinc-900/45"
+        className="catalog-filter-drawer-backdrop absolute inset-0 bg-zinc-900/45"
         aria-label="Închide"
         onClick={onClose}
       />
@@ -274,32 +304,42 @@ export function CatalogQuickSheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 flex max-h-[88dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl border border-[var(--sf-border)] bg-white shadow-xl"
+        className="catalog-filter-drawer-panel relative z-10 flex w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl border border-[var(--sf-border)] bg-white shadow-xl"
+        style={{ maxHeight: "min(80%, 80dvh)" }}
       >
-        <div className="flex shrink-0 flex-col items-center px-4 pt-3 pb-2">
-          <span className="mb-3 h-1 w-10 rounded-full bg-zinc-300" aria-hidden />
-          <h2 className="w-full text-2xl font-bold tracking-tight text-[var(--sf-text)]">
-            {title}
-          </h2>
-          <p className="mt-1 w-full text-sm text-[var(--sf-text-muted)]">{subtitle}</p>
+        <div className="relative flex shrink-0 items-start gap-3 px-4 pt-3 pb-2">
+          <span
+            className="absolute top-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-zinc-300"
+            aria-hidden
+          />
+          <div className="min-w-0 flex-1 pt-3">
+            <h2 className="text-2xl font-bold tracking-tight text-[var(--sf-text)]">
+              {title}
+            </h2>
+            <p className="mt-1 text-sm text-[var(--sf-text-muted)]">{subtitle}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="mt-2 inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-[var(--sf-border)] text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+            aria-label="Închide"
+          >
+            <IconClose size={18} />
+          </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{body}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
+          {body}
+        </div>
 
-        <div
-          className="shrink-0 border-t border-[var(--sf-border)] bg-white px-4 pt-3"
-          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-        >
+        <div className="shrink-0 border-t border-[var(--sf-border)] bg-white px-4 py-3 shadow-[0_-6px_16px_rgba(24,24,27,0.08)]">
           <button
             type="button"
             onClick={onContinue}
-            className="inline-flex min-h-13 w-full items-center justify-center rounded-2xl text-base font-bold text-white"
-            style={{
-              backgroundImage:
-                "linear-gradient(90deg, color-mix(in srgb, var(--sf-accent) 88%, #7f1d1d), var(--sf-accent))",
-            }}
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl text-base font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+            style={{ backgroundColor: "var(--sf-accent)" }}
           >
-            Continuă
+            Vezi rezultate
           </button>
         </div>
       </div>

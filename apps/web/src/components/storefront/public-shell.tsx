@@ -1,4 +1,4 @@
-﻿import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import type { PublicTenantView } from "@/lib/storefront/resolve-public-tenant";
 import {
@@ -66,7 +66,7 @@ export function PublicStorefrontShell({
   return (
     <StorefrontListsProvider tenantSlug={tenant.slug}>
       <div
-        className={`${shellClass} flex min-h-full min-w-0 flex-1 flex-col overflow-x-hidden`}
+        className={`${shellClass} flex min-h-full min-w-0 flex-1 flex-col overflow-x-clip`}
         data-storefront-template={tenant.templateId}
         style={tokenStyle}
       >
@@ -165,7 +165,7 @@ export function PublicStorefrontShell({
         {showMobileNav ? (
           <nav
             aria-label="Navigare mobil"
-            className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--sf-border)] bg-white/95 backdrop-blur-md md:hidden"
+            className="fixed inset-x-0 bottom-0 z-[90] border-t border-[var(--sf-border)] bg-white/95 backdrop-blur-md md:hidden"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <ul className="mx-auto flex w-full max-w-[1200px] items-stretch justify-around px-1 py-1.5">

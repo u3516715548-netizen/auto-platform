@@ -19,6 +19,7 @@ import {
 import { PublicStorefrontShell } from "@/components/storefront/public-shell";
 import { PublicVehicleList } from "@/components/storefront/public-vehicle-list";
 import { CatalogFilterDrawer } from "@/components/storefront/catalog-filter-drawer";
+import { CatalogScrollCollapse } from "@/components/storefront/catalog-scroll-collapse";
 import { CatalogActiveFilters } from "@/components/storefront/catalog-active-filters";
 import { CatalogPagination } from "@/components/storefront/catalog-pagination";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
@@ -141,102 +142,106 @@ export default async function RootPage({ searchParams }: PageProps) {
 
   return (
     <PublicStorefrontShell tenant={tenantView} stickySurface="catalog">
-      <div className="sf-glow-ambient flex min-w-0 flex-col gap-4">
+      <div className="sf-glow-ambient flex min-w-0 flex-col">
         <h2 className="sr-only">Vehicule disponibile</h2>
 
-        <CatalogFilterDrawer
-          query={query}
-          brands={brands.length > 0 ? brands : undefined}
-          priceCeiling={priceCeiling}
-          yearFloor={yearFloor}
-          yearCeiling={yearCeiling}
-        />
+        <CatalogScrollCollapse
+          filters={
+            <CatalogFilterDrawer
+              query={query}
+              brands={brands.length > 0 ? brands : undefined}
+              priceCeiling={priceCeiling}
+              yearFloor={yearFloor}
+              yearCeiling={yearCeiling}
+            />
+          }
+        >
+          {listError ? <FeedbackBanner variant="error">{listError}</FeedbackBanner> : null}
 
-        {listError ? <FeedbackBanner variant="error">{listError}</FeedbackBanner> : null}
-
-        {!listError ? (
-          <div
-            className="flex items-center justify-between gap-3"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            <div>
-              <p className="text-lg font-bold tracking-tight text-[var(--sf-text)]">
-                {total === 1 ? "1 mașină" : `${total} mașini`}
-              </p>
-              <p className="text-sm text-[var(--sf-text-muted)]">în stoc</p>
-              <span className="sr-only">{catalogResultsLabel(total)}</span>
-            </div>
-            <div className="flex shrink-0 items-center gap-1.5">
-              <span
-                className="inline-flex size-10 items-center justify-center rounded-xl border border-[var(--sf-border)] bg-white text-[var(--sf-text-muted)]"
-                aria-hidden
-                title="Vizualizare listă"
-              >
-                <IconGrid size={16} />
-              </span>
-              <Link
-                href={publicSavedPath()}
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[var(--sf-border)] bg-white px-2.5 text-xs font-semibold text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
-              >
-                <IconBookmark size={14} />
-                Salvează
-              </Link>
-              <Link
-                href={nextSortHref(query)}
-                className="inline-flex min-h-10 max-w-[7.5rem] items-center gap-1.5 truncate rounded-xl border border-[var(--sf-border)] bg-white px-2.5 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
-                style={{ color: "var(--sf-accent)" }}
-                title={`Sortare: ${sortLabel}. Apasă pentru următoarea.`}
-              >
-                <IconSort size={14} />
-                <span className="truncate">
-                  {query.sort === "newest" ? "Recente" : sortLabel}
-                </span>
-              </Link>
-            </div>
-          </div>
-        ) : null}
-
-        <CatalogActiveFilters query={query} />
-
-        {!listError && total === 0 ? (
-          <div className="rounded-[var(--sf-radius-lg)] border border-dashed border-[var(--sf-border)] bg-white px-4 py-10 text-center">
-            {hasFilterChips ? (
-              <>
-                <p className="text-base font-medium text-[var(--sf-text)]">
-                  Niciun vehicul nu corespunde filtrelor selectate.
+          {!listError ? (
+            <div
+              className="flex items-center justify-between gap-3 px-3 md:px-5"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <div className="min-w-0">
+                <p className="text-lg font-bold tracking-tight text-[var(--sf-text)]">
+                  {total === 1 ? "1 mașină" : `${total} mașini`}
                 </p>
-                <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[var(--sf-text-muted)]">
-                  Modifică filtrele sau resetează căutarea.
-                </p>
-                <Link
-                  href={resetCatalogHref()}
-                  className="mt-4 inline-flex min-h-11 items-center justify-center rounded-[var(--sf-radius)] px-4 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
-                  style={{ backgroundColor: tenantView.primaryColor }}
+                <p className="text-sm text-[var(--sf-text-muted)]">în stoc</p>
+                <span className="sr-only">{catalogResultsLabel(total)}</span>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span
+                  className="inline-flex size-10 items-center justify-center rounded-xl border border-[var(--sf-border)] bg-white text-[var(--sf-text-muted)]"
+                  aria-hidden
+                  title="Vizualizare listă"
                 >
-                  Resetează filtrele
+                  <IconGrid size={16} />
+                </span>
+                <Link
+                  href={publicSavedPath()}
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[var(--sf-border)] bg-white px-2.5 text-xs font-semibold text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                >
+                  <IconBookmark size={14} />
+                  Salvează
                 </Link>
-              </>
-            ) : (
-              <>
-                <p className="text-base font-medium text-[var(--sf-text)]">
-                  Momentan nu sunt vehicule disponibile.
-                </p>
-                <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[var(--sf-text-muted)]">
-                  Revenim curând cu oferte noi.
-                </p>
-              </>
-            )}
-          </div>
-        ) : null}
+                <Link
+                  href={nextSortHref(query)}
+                  className="inline-flex min-h-10 max-w-[7.5rem] items-center gap-1.5 truncate rounded-xl border border-[var(--sf-border)] bg-white px-2.5 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                  style={{ color: "var(--sf-accent)" }}
+                  title={`Sortare: ${sortLabel}. Apasă pentru următoarea.`}
+                >
+                  <IconSort size={14} />
+                  <span className="truncate">
+                    {query.sort === "newest" ? "Recente" : sortLabel}
+                  </span>
+                </Link>
+              </div>
+            </div>
+          ) : null}
 
-        {!listError && vehicles.length > 0 ? (
-          <PublicVehicleList vehicles={vehicles} />
-        ) : null}
+          <CatalogActiveFilters query={query} />
 
-        {!listError && vehicles.length > 0 ? (
-          <CatalogPagination query={query} page={page} totalPages={totalPages} />
-        ) : null}
+          {!listError && total === 0 ? (
+            <div className="rounded-[var(--sf-radius-lg)] border border-dashed border-[var(--sf-border)] bg-white px-4 py-10 text-center">
+              {hasFilterChips ? (
+                <>
+                  <p className="text-base font-medium text-[var(--sf-text)]">
+                    Niciun vehicul nu corespunde filtrelor selectate.
+                  </p>
+                  <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[var(--sf-text-muted)]">
+                    Modifică filtrele sau resetează căutarea.
+                  </p>
+                  <Link
+                    href={resetCatalogHref()}
+                    className="mt-4 inline-flex min-h-11 items-center justify-center rounded-[var(--sf-radius)] px-4 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                    style={{ backgroundColor: tenantView.primaryColor }}
+                  >
+                    Resetează filtrele
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-base font-medium text-[var(--sf-text)]">
+                    Momentan nu sunt vehicule disponibile.
+                  </p>
+                  <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[var(--sf-text-muted)]">
+                    Revenim curând cu oferte noi.
+                  </p>
+                </>
+              )}
+            </div>
+          ) : null}
+
+          {!listError && vehicles.length > 0 ? (
+            <PublicVehicleList vehicles={vehicles} />
+          ) : null}
+
+          {!listError && vehicles.length > 0 ? (
+            <CatalogPagination query={query} page={page} totalPages={totalPages} />
+          ) : null}
+        </CatalogScrollCollapse>
       </div>
     </PublicStorefrontShell>
   );

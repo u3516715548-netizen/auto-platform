@@ -1,6 +1,10 @@
 # Handoff — Platformă SaaS „Shopify pentru Auto”
 
-**Sursa de adevăr (scurt):** acest fișier.
+> **Status consolidat (7 oct 2026):** vezi  
+> [`HANDOFF_Status_Actual_Aplicatie_Auto_Platform.md`](./HANDOFF_Status_Actual_Aplicatie_Auto_Platform.md)  
+> — audit pe secțiuni, istoric UX, gaps, recomandări, checklist. Acest fișier rămâne rezumat scurt pe etape.
+
+**Sursa de adevăr (scurt):** acest fișier (+ documentul Status Actual de mai sus).  
 **Detalii pe etape:** [`docs/stages/`](./docs/stages/).
 
 ## Stare actuală

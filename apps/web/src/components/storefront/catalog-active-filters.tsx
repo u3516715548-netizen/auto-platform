@@ -17,7 +17,7 @@ export function CatalogActiveFilters({ query }: CatalogActiveFiltersProps) {
   if (!showReset && chips.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 px-3 md:px-5">
       {chips.length > 0 ? (
         <ul className="flex flex-wrap gap-2" aria-label="Filtre active">
           {chips.map((chip) => (

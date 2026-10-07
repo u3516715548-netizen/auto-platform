@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import {
   CATALOG_SORT_LABELS_RO,
   CATALOG_SORT_VALUES,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/vehicles/vehicle-field-labels";
 import {
   IconBody,
+  IconChevronRight,
   IconFuel,
   IconSearch,
   IconSort,
@@ -49,6 +51,50 @@ const checkboxLabelClass =
 
 const checkboxClass =
   "size-5 shrink-0 rounded border-[var(--sf-border)] text-[var(--sf-accent)] focus:ring-[var(--sf-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]";
+
+function FilterAccordion({
+  title,
+  subtitle,
+  icon,
+  selectedCount,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  icon: ReactNode;
+  selectedCount: number;
+  children: ReactNode;
+}) {
+  return (
+    <details className="group rounded-xl border border-[var(--sf-border)] bg-white px-3 open:pb-1">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center gap-2 py-3 marker:content-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] [&::-webkit-details-marker]:hidden">
+        <span className="text-[var(--sf-accent)]" aria-hidden>
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-[var(--sf-text)]">{title}</p>
+          <p className="text-xs text-[var(--sf-text-muted)]">{subtitle}</p>
+        </div>
+        {selectedCount > 0 ? (
+          <span
+            className="inline-flex min-h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold text-white"
+            style={{ backgroundColor: "var(--sf-accent)" }}
+            aria-label={`${selectedCount} selectate`}
+          >
+            {selectedCount}
+          </span>
+        ) : null}
+        <span
+          className="shrink-0 text-[var(--sf-text-muted)] transition-transform duration-200 group-open:rotate-90"
+          aria-hidden
+        >
+          <IconChevronRight size={18} />
+        </span>
+      </summary>
+      <div className="border-t border-[var(--sf-border)] py-1">{children}</div>
+    </details>
+  );
+}
 
 function GhostRange({
   id,
@@ -215,77 +261,65 @@ export function CatalogFilters({
         </select>
       </div>
 
-      <section className="rounded-xl border border-[var(--sf-border)] bg-white px-3">
-        <div className="flex items-center gap-2 border-b border-[var(--sf-border)] py-3">
-          <IconFuel size={18} className="text-[var(--sf-accent)]" />
-          <div>
-            <p className="text-sm font-semibold text-[var(--sf-text)]">Combustibil</p>
-            <p className="text-xs text-[var(--sf-text-muted)]">Tip carburant</p>
-          </div>
-        </div>
-        <div className="py-1">
-          {fuelOptions.map((opt) => (
-            <label key={opt.value} className={checkboxLabelClass}>
-              <input
-                type="checkbox"
-                name="fuel"
-                value={opt.value}
-                defaultChecked={query.fuel.includes(opt.value)}
-                className={checkboxClass}
-              />
-              {opt.label}
-            </label>
-          ))}
-        </div>
-      </section>
+      <FilterAccordion
+        title="Combustibil"
+        subtitle="Tip carburant"
+        icon={<IconFuel size={18} />}
+        selectedCount={query.fuel.length}
+      >
+        {fuelOptions.map((opt) => (
+          <label key={opt.value} className={checkboxLabelClass}>
+            <input
+              type="checkbox"
+              name="fuel"
+              value={opt.value}
+              defaultChecked={query.fuel.includes(opt.value)}
+              className={checkboxClass}
+            />
+            {opt.label}
+          </label>
+        ))}
+      </FilterAccordion>
 
-      <section className="rounded-xl border border-[var(--sf-border)] bg-white px-3">
-        <div className="flex items-center gap-2 border-b border-[var(--sf-border)] py-3">
-          <IconTag size={18} className="text-[var(--sf-accent)]" />
-          <div>
-            <p className="text-sm font-semibold text-[var(--sf-text)]">Cutie de viteze</p>
-            <p className="text-xs text-[var(--sf-text-muted)]">Transmisie</p>
-          </div>
-        </div>
-        <div className="py-1">
-          {transmissionOptions.map((opt) => (
-            <label key={opt.value} className={checkboxLabelClass}>
-              <input
-                type="checkbox"
-                name="transmission"
-                value={opt.value}
-                defaultChecked={query.transmission.includes(opt.value)}
-                className={checkboxClass}
-              />
-              {opt.label}
-            </label>
-          ))}
-        </div>
-      </section>
+      <FilterAccordion
+        title="Cutie de viteze"
+        subtitle="Transmisie"
+        icon={<IconTag size={18} />}
+        selectedCount={query.transmission.length}
+      >
+        {transmissionOptions.map((opt) => (
+          <label key={opt.value} className={checkboxLabelClass}>
+            <input
+              type="checkbox"
+              name="transmission"
+              value={opt.value}
+              defaultChecked={query.transmission.includes(opt.value)}
+              className={checkboxClass}
+            />
+            {opt.label}
+          </label>
+        ))}
+      </FilterAccordion>
 
-      <section className="rounded-xl border border-[var(--sf-border)] bg-white px-3">
-        <div className="flex items-center gap-2 border-b border-[var(--sf-border)] py-3">
-          <IconBody size={18} className="text-[var(--sf-accent)]" />
-          <div>
-            <p className="text-sm font-semibold text-[var(--sf-text)]">Tip caroserie</p>
-            <p className="text-xs text-[var(--sf-text-muted)]">Formă caroserie</p>
-          </div>
-        </div>
-        <div className="py-1">
-          {bodyOptions.map((opt) => (
-            <label key={opt.value} className={checkboxLabelClass}>
-              <input
-                type="checkbox"
-                name="bodyType"
-                value={opt.value}
-                defaultChecked={query.bodyType.includes(opt.value)}
-                className={checkboxClass}
-              />
-              {opt.label}
-            </label>
-          ))}
-        </div>
-      </section>
+      <FilterAccordion
+        title="Tip caroserie"
+        subtitle="Formă caroserie"
+        icon={<IconBody size={18} />}
+        selectedCount={query.bodyType.length}
+      >
+        {bodyOptions.map((opt) => (
+          <label key={opt.value} className={checkboxLabelClass}>
+            <input
+              type="checkbox"
+              name="bodyType"
+              value={opt.value}
+              defaultChecked={query.bodyType.includes(opt.value)}
+              className={checkboxClass}
+            />
+            {opt.label}
+          </label>
+        ))}
+      </FilterAccordion>
 
       {!hideActions ? (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
