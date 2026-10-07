@@ -212,13 +212,17 @@ describe.skipIf(!canRunOnline)(
         (await db.query.vehicles.findFirst({
           where: and(eq(vehicles.tenantId, tenantAId), eq(vehicles.slug, "golf-8-acme")),
         }));
+      // Public ACME fixture is showcase (Golf is archived without cover — Etapa 18).
+      const showcase = await db.query.vehicles.findFirst({
+        where: and(eq(vehicles.tenantId, tenantAId), eq(vehicles.slug, "koenigsegg-ccx")),
+      });
       const vb =
         seeded.vehicleB ??
         (await db.query.vehicles.findFirst({
           where: and(eq(vehicles.tenantId, tenantBId), eq(vehicles.slug, "focus-beta")),
         }));
-      if (!va || !vb) throw new Error("Seed vehicles missing");
-      vehicleAId = va.id;
+      if (!va || !vb || !showcase) throw new Error("Seed vehicles missing");
+      vehicleAId = showcase.id;
       vehicleBId = vb.id;
 
       await db
@@ -258,6 +262,8 @@ describe.skipIf(!canRunOnline)(
 
       expect(acmePublic.every((row) => row.tenantId === tenantAId)).toBe(true);
       expect(acmePublic.some((row) => row.id === vehicleAId)).toBe(true);
+      expect(acmePublic.some((row) => row.slug === "koenigsegg-ccx")).toBe(true);
+      expect(acmePublic.some((row) => row.slug === "golf-8-acme")).toBe(false);
       expect(acmePublic.some((row) => row.id === vehicleBId)).toBe(false);
       expect(acmePublic.some((row) => row.slug === "focus-beta")).toBe(false);
     });

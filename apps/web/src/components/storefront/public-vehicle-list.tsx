@@ -17,6 +17,7 @@ import {
   VehicleCardCompareButton,
   VehicleListActions,
 } from "@/components/storefront/vehicle-list-actions";
+import { StorefrontMediaImage } from "@/components/storefront/storefront-media-image";
 
 type PublicVehicleListProps = {
   vehicles: PublicVehicleCatalogDto[];
@@ -133,18 +134,18 @@ export function PublicVehicleList({
                   }
                   ariaLabel={title}
                 >
-                  {vehicle.coverImage?.url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={vehicle.coverImage.url}
-                      alt={vehicle.coverImage.altText ?? title}
-                      className="h-full w-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-[1.02] motion-reduce:transition-none"
-                    />
-                  ) : (
-                    <span className="flex h-full items-center justify-center text-sm text-[var(--sf-text-muted)]">
-                      Imagine indisponibilă
-                    </span>
-                  )}
+                  <StorefrontMediaImage
+                    src={vehicle.coverImage?.url ?? ""}
+                    alt={vehicle.coverImage?.altText ?? title}
+                    className="object-cover transition-transform duration-300 motion-safe:group-hover:scale-[1.02] motion-reduce:transition-none"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    priority={index === 0}
+                    fallback={
+                      <span className="flex h-full items-center justify-center text-sm text-[var(--sf-text-muted)]">
+                        Imagine indisponibilă
+                      </span>
+                    }
+                  />
                 </CardNav>
                 {vehicle.condition === "new" ? (
                   <span

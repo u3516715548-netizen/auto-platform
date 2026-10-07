@@ -16,6 +16,7 @@
     "db:migrate": "pnpm --filter @auto-platform/db migrate",
     "db:studio": "pnpm --filter @auto-platform/db studio",
     "db:seed": "pnpm --filter @auto-platform/db seed",
+    "db:clean-acme-catalog": "pnpm --filter @auto-platform/db clean-acme-catalog",
     "db:test": "pnpm --filter @auto-platform/db test",
     "test": "pnpm db:test"
   },

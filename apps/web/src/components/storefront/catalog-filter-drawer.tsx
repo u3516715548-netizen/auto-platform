@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useEffect, useId, useRef, useState } from "react";
 import type { CatalogQuery } from "@/lib/storefront/catalog-query";
 
@@ -16,11 +17,7 @@ import {
   catalogDrawerBodyOverflow,
   resolveFocusTrapIndex,
 } from "@/lib/storefront/catalog-drawer-a11y";
-import { CatalogFilters } from "@/components/storefront/catalog-filters";
-import {
-  CatalogQuickSheet,
-  type QuickSheetKind,
-} from "@/components/storefront/catalog-quick-sheets";
+import type { QuickSheetKind } from "@/components/storefront/catalog-quick-sheets";
 import {
   IconBody,
   IconCalendar,
@@ -32,6 +29,20 @@ import {
   IconSliders,
   IconTag,
 } from "@/components/storefront/icons";
+
+/** Heavy filter panels — loaded when opened (keeps catalog first paint lighter). */
+const CatalogFilters = dynamic(
+  () =>
+    import("@/components/storefront/catalog-filters").then((m) => m.CatalogFilters),
+  { ssr: false },
+);
+const CatalogQuickSheet = dynamic(
+  () =>
+    import("@/components/storefront/catalog-quick-sheets").then(
+      (m) => m.CatalogQuickSheet,
+    ),
+  { ssr: false },
+);
 
 type CatalogFilterDrawerProps = {
   query: CatalogQuery;

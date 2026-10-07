@@ -8,13 +8,14 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDb, type Database } from "../client";
 import { withTenantContext } from "../rls";
 import { seedDevTenants } from "../seed/dev-tenants";
 import { reservations } from "../schema/reservations";
 import { vehicles } from "../schema/vehicles";
 import { writeAuditLog } from "../audit";
+import { cleanAcmePublicCatalog } from "../demo/clean-acme-public-catalog";
 
 for (const candidate of [
   resolve(process.cwd(), ".env"),
@@ -81,6 +82,29 @@ describe.skipIf(!canRunOnline)(
           return created.id;
         },
       );
+    });
+
+    afterAll(async () => {
+      // Do not leave Test Reservation vehicles as public catalog pollution (Etapa 18).
+      if (!reservationVehicleId || !db || !profileA || !tenantAId) return;
+      await withTenantContext(db, { profileId: profileA, tenantId: tenantAId }, async (tx) => {
+        await tx
+          .update(reservations)
+          .set({ status: "cancelled", updatedAt: new Date() })
+          .where(
+            and(
+              eq(reservations.tenantId, tenantAId),
+              eq(reservations.vehicleId, reservationVehicleId),
+              eq(reservations.status, "active"),
+            ),
+          );
+        await tx
+          .update(vehicles)
+          .set({ status: "archived", updatedAt: new Date() })
+          .where(and(eq(vehicles.id, reservationVehicleId), eq(vehicles.tenantId, tenantAId)));
+      });
+      // Belt-and-suspenders: archive any leftover ACME public test / Golf rows.
+      await cleanAcmePublicCatalog(db);
     });
 
     async function resetReservationVehicle() {

@@ -52,6 +52,7 @@ export {
   catalogQueryToSearchParams,
 } from "./catalog-query";
 
+/** Full public row — detail / legacy list. */
 const publicVehicleSelect = {
   slug: vehicles.slug,
   make: vehicles.make,
@@ -90,6 +91,85 @@ const publicVehicleSelect = {
   id: vehicles.id,
   createdAt: vehicles.createdAt,
 } as const;
+
+/**
+ * Catalog card columns only — skips description/features and other detail-heavy fields.
+ * Server still selects `id` for cover attach; `id` never enters the public DTO.
+ */
+const publicCatalogVehicleSelect = {
+  slug: vehicles.slug,
+  make: vehicles.make,
+  model: vehicles.model,
+  year: vehicles.year,
+  mileage: vehicles.mileage,
+  price: vehicles.price,
+  currency: vehicles.currency,
+  fuel: vehicles.fuel,
+  transmission: vehicles.transmission,
+  bodyType: vehicles.bodyType,
+  condition: vehicles.condition,
+  powerHp: vehicles.powerHp,
+  priceNegotiable: vehicles.priceNegotiable,
+  vatRegime: vehicles.vatRegime,
+  locationCity: vehicles.locationCity,
+  tenantId: vehicles.tenantId,
+  status: vehicles.status,
+  id: vehicles.id,
+  createdAt: vehicles.createdAt,
+} as const;
+
+function toPublicCatalogVehicleDto(row: {
+  slug: string;
+  make: string;
+  model: string;
+  year: number;
+  mileage: number;
+  price: string;
+  currency: string;
+  fuel: unknown;
+  transmission: unknown;
+  bodyType: unknown;
+  condition: unknown;
+  powerHp: unknown;
+  priceNegotiable: unknown;
+  vatRegime: unknown;
+  locationCity: unknown;
+}): PublicVehicleDto {
+  return toPublicVehicleDto({
+    slug: row.slug,
+    make: row.make,
+    model: row.model,
+    year: row.year,
+    mileage: row.mileage,
+    price: row.price,
+    currency: row.currency,
+    fuel: row.fuel,
+    transmission: row.transmission,
+    bodyType: row.bodyType,
+    condition: row.condition,
+    powerHp: row.powerHp,
+    priceNegotiable: row.priceNegotiable,
+    vatRegime: row.vatRegime,
+    locationCity: row.locationCity,
+    description: null,
+    driveType: null,
+    engineDisplacementCc: null,
+    emissionStandard: null,
+    doors: null,
+    seats: null,
+    exteriorColor: null,
+    interiorColor: null,
+    firstRegistrationYear: null,
+    firstRegistrationMonth: null,
+    originCountry: null,
+    warrantyMonths: null,
+    warrantyNotes: null,
+    hasServiceBook: false,
+    hasServiceHistory: false,
+    accidentStatus: null,
+    features: [],
+  });
+}
 
 export type PublicCatalogResult = {
   items: PublicVehicleCatalogDto[];
@@ -236,18 +316,24 @@ export async function listPublicVehiclesForCatalog(
   const offset = (page - 1) * CATALOG_PAGE_SIZE;
 
   const rows = await db
-    .select(publicVehicleSelect)
+    .select(publicCatalogVehicleSelect)
     .from(vehicles)
     .where(where)
     .orderBy(...orderBySort(query.sort))
     .limit(CATALOG_PAGE_SIZE)
     .offset(offset);
 
-  const dtos = rows
-    .filter((row) => row.tenantId === tenantId && row.status === "available")
-    .map((row) => toPublicVehicleDto(row));
+  const catalogRows = rows.filter(
+    (row) => row.tenantId === tenantId && row.status === "available",
+  );
 
-  const items = await attachPublicCoverImages(tenantId, dtos);
+  const items = await attachPublicCoverImages(
+    tenantId,
+    catalogRows.map((row) => ({
+      vehicle: toPublicCatalogVehicleDto(row),
+      vehicleId: row.id,
+    })),
+  );
 
   return {
     items,
@@ -334,7 +420,7 @@ export async function listPublicVehicleAlternatives(
   await clearPublicSessionGucs(db);
 
   const rows = await db
-    .select(publicVehicleSelect)
+    .select(publicCatalogVehicleSelect)
     .from(vehicles)
     .where(
       and(
@@ -346,11 +432,15 @@ export async function listPublicVehicleAlternatives(
     .orderBy(desc(vehicles.createdAt), asc(vehicles.id))
     .limit(safeLimit);
 
-  const dtos = filterPublicAlternativeRows(rows, tenantId, excludeSlug).map((row) =>
-    toPublicVehicleDto(row),
-  );
+  const filtered = filterPublicAlternativeRows(rows, tenantId, excludeSlug);
 
-  return attachPublicCoverImages(tenantId, dtos);
+  return attachPublicCoverImages(
+    tenantId,
+    filtered.map((row) => ({
+      vehicle: toPublicCatalogVehicleDto(row),
+      vehicleId: row.id,
+    })),
+  );
 }
 
 /** Server-only: resolve vehicle id for lead attribution (never expose to client DTO). */

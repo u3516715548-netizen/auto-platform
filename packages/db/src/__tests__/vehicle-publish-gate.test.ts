@@ -94,7 +94,7 @@ describe.skipIf(!canRunOnline)("6B publish gate + EUR (online)", () => {
     expect(missing).toContain("Combustibil");
   });
 
-  it("golf-8-acme seed is publish-ready and stays available", async () => {
+  it("golf-8-acme seed stays publish-ready fields but archived without cover", async () => {
     const golf = await withTenantContext(
       db,
       { profileId: profileA, tenantId: tenantAId },
@@ -103,9 +103,23 @@ describe.skipIf(!canRunOnline)("6B publish gate + EUR (online)", () => {
           where: and(eq(vehicles.tenantId, tenantAId), eq(vehicles.slug, "golf-8-acme")),
         }),
     );
-    expect(golf?.status).toBe("available");
+    expect(golf?.status).toBe("archived");
     expect(golf?.currency).toBe("EUR");
     expect(missingPublishFields(golf!)).toEqual([]);
+  });
+
+  it("showcase koenigsegg-ccx seed is publish-ready and stays available", async () => {
+    const car = await withTenantContext(
+      db,
+      { profileId: profileA, tenantId: tenantAId },
+      async (tx) =>
+        tx.query.vehicles.findFirst({
+          where: and(eq(vehicles.tenantId, tenantAId), eq(vehicles.slug, "koenigsegg-ccx")),
+        }),
+    );
+    expect(car?.status).toBe("available");
+    expect(car?.currency).toBe("EUR");
+    expect(missingPublishFields(car!)).toEqual([]);
   });
 
   it("tenant B cannot update ACME vehicle currency/status by id", async () => {
@@ -140,6 +154,7 @@ describe.skipIf(!canRunOnline)("6B publish gate + EUR (online)", () => {
         }),
     );
     expect(stillA?.currency).toBe("EUR");
-    expect(stillA?.status).toBe("available");
+    // Golf remains archived without cover (Etapa 18); status must not flip via foreign tenant.
+    expect(stillA?.status).toBe("archived");
   });
 });

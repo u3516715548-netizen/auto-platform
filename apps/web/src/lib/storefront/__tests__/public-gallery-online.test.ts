@@ -16,7 +16,8 @@ describe("public gallery online (DATABASE_URL)", () => {
     if (acme.kind !== "ok") return;
 
     const catalog = await listPublicVehiclesForCatalog(acme.tenant.tenantId);
-    expect(catalog.items.some((v) => v.slug === "golf-8-acme")).toBe(true);
+    expect(catalog.items.some((v) => v.slug === "koenigsegg-ccx")).toBe(true);
+    expect(catalog.items.some((v) => v.slug === "golf-8-acme")).toBe(false);
     expect(catalog.items.some((v) => v.slug === "draft-incomplet-acme")).toBe(false);
 
     for (const row of catalog.items) {
@@ -32,7 +33,7 @@ describe("public gallery online (DATABASE_URL)", () => {
       }
     }
 
-    const detail = await getPublicVehicleDetailBySlug(acme.tenant.tenantId, "golf-8-acme");
+    const detail = await getPublicVehicleDetailBySlug(acme.tenant.tenantId, "koenigsegg-ccx");
     expect(detail).not.toBeNull();
     if (!detail) return;
 

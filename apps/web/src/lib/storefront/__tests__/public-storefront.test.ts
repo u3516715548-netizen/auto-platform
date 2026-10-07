@@ -423,7 +423,10 @@ describe("public catalog/detail online (DATABASE_URL)", () => {
     const betaList = await listPublicVehicles(beta.tenant.tenantId);
 
     expect(acmeList.every((v) => typeof v.slug === "string")).toBe(true);
-    expect(acmeList.some((v) => v.slug === "golf-8-acme")).toBe(true);
+    expect(acmeList.some((v) => v.slug === "koenigsegg-ccx")).toBe(true);
+    expect(acmeList.some((v) => v.slug === "audi-rs6")).toBe(true);
+    expect(acmeList.some((v) => v.slug === "maserati-granturismo")).toBe(true);
+    expect(acmeList.some((v) => v.slug === "golf-8-acme")).toBe(false);
     expect(acmeList.some((v) => v.slug === "draft-incomplet-acme")).toBe(false);
     expect(acmeList.some((v) => v.slug === "focus-beta")).toBe(false);
     expect(betaList.some((v) => v.slug === "focus-beta")).toBe(true);
@@ -439,23 +442,25 @@ describe("public catalog/detail online (DATABASE_URL)", () => {
       expect(row.currency).toBe("EUR");
     }
 
-    const golf = acmeList.find((v) => v.slug === "golf-8-acme");
-    expect(golf?.fuel).toBe("diesel");
-    expect(golf?.features.length).toBeGreaterThan(0);
-    expect(golf?.features.every((f) => typeof f.label === "string" && f.label.length > 0)).toBe(
-      true,
-    );
-    expect(golf?.description).toMatch(/Golf/);
+    const showcase = acmeList.find((v) => v.slug === "koenigsegg-ccx");
+    expect(showcase?.fuel).toBe("petrol");
+    expect(showcase?.features.length).toBeGreaterThan(0);
+    expect(
+      showcase?.features.every((f) => typeof f.label === "string" && f.label.length > 0),
+    ).toBe(true);
+    expect(showcase?.description).toMatch(/Hypercar|roșu|rosu/i);
 
     expect(await getPublicVehicleBySlug(acme.tenant.tenantId, "draft-incomplet-acme")).toBeNull();
     expect(await getPublicVehicleBySlug(acme.tenant.tenantId, "focus-beta")).toBeNull();
     expect(await getPublicVehicleBySlug(acme.tenant.tenantId, "no-such-vehicle-zzzz")).toBeNull();
     expect(await getPublicVehicleBySlug(acme.tenant.tenantId, "e5-acme-reserved-public")).toBeNull();
+    expect(await getPublicVehicleBySlug(acme.tenant.tenantId, "golf-8-acme")).toBeNull();
     expect(await getPublicVehicleIdForLead(acme.tenant.tenantId, "focus-beta")).toBeNull();
+    expect(await getPublicVehicleIdForLead(acme.tenant.tenantId, "golf-8-acme")).toBeNull();
 
-    const own = await getPublicVehicleBySlug(acme.tenant.tenantId, "golf-8-acme");
-    expect(own?.slug).toBe("golf-8-acme");
-    const leadVehicleId = await getPublicVehicleIdForLead(acme.tenant.tenantId, "golf-8-acme");
+    const own = await getPublicVehicleBySlug(acme.tenant.tenantId, "koenigsegg-ccx");
+    expect(own?.slug).toBe("koenigsegg-ccx");
+    const leadVehicleId = await getPublicVehicleIdForLead(acme.tenant.tenantId, "koenigsegg-ccx");
     expect(typeof leadVehicleId).toBe("string");
     expect(own).not.toHaveProperty("id");
   });

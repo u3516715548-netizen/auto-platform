@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { cache } from "react";
 import { headers } from "next/headers";
 import { getDb, tenants } from "@auto-platform/db";
 import type { StorefrontTemplateId } from "@auto-platform/types";
@@ -50,26 +51,30 @@ export type ResolvePublicTenantResult =
  *
  * HOBBY_DEMO_ONLY: on Hobby apex Host only, may load a single server-env slug.
  * Missing/inactive demo slug → not_found (fail-closed), never another tenant.
+ *
+ * Wrapped in React `cache()` so `generateMetadata` + page share one resolve per request.
  */
-export async function resolvePublicTenantFromHost(): Promise<ResolvePublicTenantResult> {
-  const headerStore = await headers();
-  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
-  const rootDomain = getRootDomain();
-  const resolved = resolveTenantSlugFromHost(host, rootDomain);
+export const resolvePublicTenantFromHost = cache(
+  async (): Promise<ResolvePublicTenantResult> => {
+    const headerStore = await headers();
+    const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
+    const rootDomain = getRootDomain();
+    const resolved = resolveTenantSlugFromHost(host, rootDomain);
 
-  if (resolved.kind === "apex") {
-    const demoSlug = resolveHobbyDemoTenantSlugFromRequest(host, rootDomain);
-    if (demoSlug) {
-      return loadPublicTenantBySlug(demoSlug);
+    if (resolved.kind === "apex") {
+      const demoSlug = resolveHobbyDemoTenantSlugFromRequest(host, rootDomain);
+      if (demoSlug) {
+        return loadPublicTenantBySlug(demoSlug);
+      }
+      return { kind: "apex" };
     }
-    return { kind: "apex" };
-  }
-  if (resolved.kind === "invalid") {
-    return { kind: "not_found" };
-  }
+    if (resolved.kind === "invalid") {
+      return { kind: "not_found" };
+    }
 
-  return loadPublicTenantBySlug(resolved.slug);
-}
+    return loadPublicTenantBySlug(resolved.slug);
+  },
+);
 
 /**
  * Loads public tenant by slug under anon RLS context (no profile GUC).

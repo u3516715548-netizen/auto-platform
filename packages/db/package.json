@@ -18,6 +18,7 @@
     "migrate": "node ./scripts/migrate.mjs",
     "studio": "drizzle-kit studio",
     "seed": "tsx src/seed/dev-tenants.ts",
+    "clean-acme-catalog": "tsx scripts/clean-acme-public-catalog.mts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."

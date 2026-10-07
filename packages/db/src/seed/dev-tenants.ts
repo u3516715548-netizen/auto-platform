@@ -13,7 +13,7 @@
 import { config as loadEnv } from "dotenv";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { createDb } from "../client";
 import { writeAuditLog } from "../audit";
 import { memberships } from "../schema/memberships";
@@ -156,11 +156,15 @@ export async function seedDevTenants(connectionString: string) {
     ])
     .onConflictDoNothing({ target: [memberships.tenantId, memberships.profileId] });
 
+  // Golf stays in seed for isolation / publish-field fixtures, but is NOT public
+  // until a cover exists (Etapa 18). Status archived — reactivate when cover is attached.
+  // "Test Reservation" / e11a-res-* vehicles are NOT seeded; they come only from online tests
+  // (those suites must teardown / archive them — see cleanAcmePublicCatalog).
   await db
     .insert(vehicles)
     .values({
       tenantId: existingA.id,
-      status: "available",
+      status: "archived",
       slug: "golf-8-acme",
       make: "Volkswagen",
       model: "Golf",
@@ -396,11 +400,11 @@ export async function seedDevTenants(connectionString: string) {
     })
     .onConflictDoNothing({ target: [vehicles.tenantId, vehicles.slug] });
 
-  // Ensure previously seeded available rows get Etapa 6 publish fields (idempotent upsert-by-update).
+  // Idempotent: keep Golf publish fields complete, but archived (no public card without cover).
   await db
     .update(vehicles)
     .set({
-      status: "available",
+      status: "archived",
       fuel: "diesel",
       transmission: "manual",
       bodyType: "hatchback",
@@ -431,6 +435,21 @@ export async function seedDevTenants(connectionString: string) {
       updatedAt: new Date(),
     })
     .where(eq(vehicles.slug, "golf-8-acme"));
+
+  // Showcase cars must stay publicly available (covers attached separately via offline script).
+  await db
+    .update(vehicles)
+    .set({ status: "available", updatedAt: new Date() })
+    .where(
+      and(
+        eq(vehicles.tenantId, existingA.id),
+        inArray(vehicles.slug, [
+          "koenigsegg-ccx",
+          "audi-rs6",
+          "maserati-granturismo",
+        ]),
+      ),
+    );
 
   await db
     .update(vehicles)

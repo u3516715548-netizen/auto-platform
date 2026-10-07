@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb, vehicleMedia, vehicles } from "@auto-platform/db";
 import { createSignedDownloadUrls } from "@/lib/media/sign-storage-url";
 import { clearPublicSessionGucs } from "./clear-public-session";
@@ -32,6 +32,12 @@ type MediaRow = {
   storagePath: string;
   sortOrder: number;
   altText: string | null;
+};
+
+type CoverAttachInput = {
+  vehicle: PublicVehicleDto;
+  /** Server-only id — never placed on the public DTO. */
+  vehicleId: string;
 };
 
 async function loadAvailableVehicleMediaRows(
@@ -75,35 +81,90 @@ async function loadAvailableVehicleMediaRows(
     );
 }
 
+/**
+ * One cover row per vehicle (lowest sortOrder) — avoids loading full galleries for catalog cards.
+ */
+async function loadAvailableCoverMediaRows(
+  tenantId: string,
+  vehicleIds: string[],
+): Promise<MediaRow[]> {
+  if (vehicleIds.length === 0) return [];
+  const db = getDb();
+  await clearPublicSessionGucs(db);
+
+  const idList = sql.join(
+    vehicleIds.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  );
+
+  const result = await db.execute(sql`
+    SELECT DISTINCT ON (vm.vehicle_id)
+      vm.vehicle_id AS "vehicleId",
+      vm.storage_path AS "storagePath",
+      vm.sort_order AS "sortOrder",
+      vm.alt_text AS "altText"
+    FROM vehicle_media vm
+    INNER JOIN vehicles v ON v.id = vm.vehicle_id
+    WHERE vm.tenant_id = ${tenantId}::uuid
+      AND v.tenant_id = ${tenantId}::uuid
+      AND v.status = 'available'
+      AND vm.type = 'image'
+      AND vm.vehicle_id IN (${idList})
+    ORDER BY vm.vehicle_id, vm.sort_order ASC, vm.created_at ASC
+  `);
+
+  const rows = Array.isArray(result)
+    ? result
+    : ((result as { rows?: unknown }).rows ?? []);
+  if (!Array.isArray(rows)) return [];
+
+  return rows.flatMap((raw) => {
+    const r = raw as Record<string, unknown>;
+    const vehicleId = typeof r.vehicleId === "string" ? r.vehicleId : null;
+    const storagePath = typeof r.storagePath === "string" ? r.storagePath : null;
+    const sortOrder =
+      typeof r.sortOrder === "number"
+        ? r.sortOrder
+        : typeof r.sortOrder === "string"
+          ? Number(r.sortOrder)
+          : NaN;
+    if (!vehicleId || !storagePath || !Number.isFinite(sortOrder)) return [];
+    return [
+      {
+        vehicleId,
+        storagePath,
+        sortOrder: Math.trunc(sortOrder),
+        altText: typeof r.altText === "string" ? r.altText : null,
+      },
+    ];
+  });
+}
+
+/**
+ * Attaches signed cover images using vehicle ids already loaded with the catalog rows.
+ * Does not re-query vehicles by slug.
+ */
 export async function attachPublicCoverImages(
   tenantId: string,
-  items: PublicVehicleDto[],
+  items: CoverAttachInput[],
 ): Promise<PublicVehicleCatalogDto[]> {
   if (items.length === 0) return [];
 
-  const vehicleIds = await resolveVehicleIdsBySlugs(
-    tenantId,
-    items.map((v) => v.slug),
-  );
-  const idBySlug = new Map(vehicleIds.map((v) => [v.slug, v.id]));
-
-  const mediaRows = await loadAvailableVehicleMediaRows(tenantId, [...idBySlug.values()]);
-  const byVehicle = new Map<string, MediaRow[]>();
+  const vehicleIds = items.map((item) => item.vehicleId);
+  const mediaRows = await loadAvailableCoverMediaRows(tenantId, vehicleIds);
+  const byVehicle = new Map<string, MediaRow>();
   for (const row of mediaRows) {
-    const list = byVehicle.get(row.vehicleId) ?? [];
-    list.push(row);
-    byVehicle.set(row.vehicleId, list);
+    if (!byVehicle.has(row.vehicleId)) {
+      byVehicle.set(row.vehicleId, row);
+    }
   }
 
-  const coverPaths = [...byVehicle.values()]
-    .map((rows) => (rows.length > 0 ? rows[0]!.storagePath : null))
-    .filter((p): p is string => Boolean(p));
+  const coverPaths = [...byVehicle.values()].map((r) => r.storagePath);
   const urlByPath = await createSignedDownloadUrls(coverPaths);
 
-  return items.map((vehicle) => {
-    const vehicleId = idBySlug.get(vehicle.slug);
-    const rows = vehicleId ? (byVehicle.get(vehicleId) ?? []) : [];
-    const images = toPublicVehicleImages(rows.slice(0, 1), urlByPath);
+  return items.map(({ vehicle, vehicleId }) => {
+    const row = byVehicle.get(vehicleId);
+    const images = row ? toPublicVehicleImages([row], urlByPath) : [];
     return { ...vehicle, coverImage: pickCoverImage(images) };
   });
 }
@@ -130,20 +191,4 @@ export async function listPublicVehicleImagesForAvailable(
   const mediaRows = await loadAvailableVehicleMediaRows(tenantId, [vehicleId]);
   const urlByPath = await createSignedDownloadUrls(mediaRows.map((r) => r.storagePath));
   return toPublicVehicleImages(mediaRows, urlByPath);
-}
-
-async function resolveVehicleIdsBySlugs(
-  tenantId: string,
-  slugs: string[],
-): Promise<Array<{ slug: string; id: string }>> {
-  if (slugs.length === 0) return [];
-  const db = getDb();
-  await clearPublicSessionGucs(db);
-  const rows = await db
-    .select({ id: vehicles.id, slug: vehicles.slug, status: vehicles.status })
-    .from(vehicles)
-    .where(and(eq(vehicles.tenantId, tenantId), inArray(vehicles.slug, slugs)));
-  return rows
-    .filter((r) => r.status === "available")
-    .map((r) => ({ slug: r.slug, id: r.id }));
 }

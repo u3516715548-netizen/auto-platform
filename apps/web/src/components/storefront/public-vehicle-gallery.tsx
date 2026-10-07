@@ -6,6 +6,7 @@ import {
   initialGallerySelectedIndex,
   type PublicVehicleImageDto,
 } from "@/lib/storefront/public-gallery-helpers";
+import { StorefrontMediaImage } from "@/components/storefront/storefront-media-image";
 
 type PublicVehicleGalleryProps = {
   images: PublicVehicleImageDto[];
@@ -50,14 +51,17 @@ export function PublicVehicleGallery({
     <div className="flex flex-col gap-3">
       <div className="relative overflow-hidden rounded-[var(--sf-radius-lg)] bg-[var(--sf-surface-muted)]">
         {activeUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={activeUrl}
-            src={activeUrl}
-            alt={active.altText ?? vehicleLabel}
-            className="aspect-[16/10] w-full object-cover"
-            onError={() => setBroken((prev) => ({ ...prev, [safeIndex]: true }))}
-          />
+          <div className="relative aspect-[16/10] w-full">
+            <StorefrontMediaImage
+              key={activeUrl}
+              src={activeUrl}
+              alt={active.altText ?? vehicleLabel}
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 720px"
+              priority={safeIndex === 0}
+              onError={() => setBroken((prev) => ({ ...prev, [safeIndex]: true }))}
+            />
+          </div>
         ) : (
           <div className="flex aspect-[16/10] flex-col items-center justify-center gap-2 px-4 text-center">
             <p className="text-sm text-[var(--sf-text-muted)]">Imagine indisponibilă momentan.</p>
