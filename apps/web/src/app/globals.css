@@ -79,23 +79,24 @@ textarea:focus-visible,
 .catalog-scroll-filter-host {
   --catalog-filter-lift: 0px;
   --catalog-filter-opacity: 1;
+  opacity: var(--catalog-filter-opacity, 1);
 }
 
 body[data-sf-catalog-overlay="open"] .catalog-scroll-filter-host {
   z-index: 100 !important;
+  /* Keep sheets fully visible even if the page was mid-fade. */
+  opacity: 1 !important;
 }
 
 .catalog-scroll-filter-host .sf-solid-card {
   transform: translate3d(0, calc(var(--catalog-filter-lift, 0px) * -1), 0);
-  opacity: var(--catalog-filter-opacity, 1);
-  will-change: transform, opacity;
+  will-change: transform;
   transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .catalog-scroll-filter-host .sf-solid-card {
     transform: none;
-    opacity: 1;
     will-change: auto;
   }
 }
