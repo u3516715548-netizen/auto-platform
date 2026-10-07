@@ -11,6 +11,9 @@ import {
 } from "@/lib/storefront/demo/demo-storefront-data";
 import { filterPublicAlternativeRows } from "@/lib/storefront/public-vehicle-alternatives";
 import {
+  shouldAutoShowCompareBar,
+} from "@/lib/storefront/compare-bar-dismiss";
+import {
   COMPARE_MAX,
   COMPARE_MIN,
   estimateMonthlyRateEur,
@@ -43,6 +46,15 @@ describe("Template 1 UX refinements", () => {
       expect(shouldShowCompareBar(2, true)).toBe(false);
     });
 
+    it("does not auto-show after dismiss until compare is cleared", () => {
+      expect(shouldAutoShowCompareBar({ count: 2, dismissed: true })).toBe(false);
+      expect(shouldAutoShowCompareBar({ count: 2, dismissed: false })).toBe(true);
+      expect(shouldAutoShowCompareBar({ count: 0, dismissed: true })).toBe(false);
+      expect(
+        shouldAutoShowCompareBar({ count: 3, dismissed: true, forceShow: true }),
+      ).toBe(true);
+    });
+
     it("exposes a remove control for every selected vehicle (1–4)", () => {
       for (const count of [1, 2, 3, 4] as const) {
         const slugs = Array.from({ length: count }, (_, i) => `v-${i}`);
@@ -60,8 +72,8 @@ describe("Template 1 UX refinements", () => {
     });
   });
 
-  describe("detail section tabs", () => {
-    it("keeps Finanțare, Tehnic + Dotări, Descriere as in-page section targets", () => {
+  describe("detail sections", () => {
+    it("keeps Finanțare, Tehnic + Dotări, Descriere section ids without sticky tab bar", () => {
       expect(VEHICLE_DETAIL_SECTIONS.map((s) => s.id)).toEqual([
         "vehicle-section-finance",
         "vehicle-section-tech",
@@ -97,20 +109,20 @@ describe("Template 1 UX refinements", () => {
   });
 
   describe("demo alternatives", () => {
-    it("excludes current demo vehicle and never exceeds 8", () => {
+    it("excludes current demo vehicle and never exceeds 10", () => {
       const current = DEMO_VEHICLES[0];
       expect(current).toBeDefined();
       if (!current) return;
-      const alts = listDemoVehicleAlternatives(current.slug, 8);
+      const alts = listDemoVehicleAlternatives(current.slug, 10);
       expect(alts.every((v) => v.slug !== current.slug)).toBe(true);
-      expect(alts.length).toBe(Math.min(8, DEMO_VEHICLES.length - 1));
+      expect(alts.length).toBe(Math.min(10, DEMO_VEHICLES.length - 1));
       for (const alt of alts) {
         expect(alt.coverImage?.url?.startsWith("/demo-vehicles/")).toBe(true);
       }
     });
 
     it("returns empty when exclude slug is missing", () => {
-      expect(listDemoVehicleAlternatives("", 8)).toEqual([]);
+      expect(listDemoVehicleAlternatives("", 10)).toEqual([]);
     });
   });
 });

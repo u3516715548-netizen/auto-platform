@@ -77,7 +77,7 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
   const alternatives = await listPublicVehicleAlternatives(
     resolved.tenant.tenantId,
     vehicle.slug,
-    8,
+    10,
   );
 
   return (

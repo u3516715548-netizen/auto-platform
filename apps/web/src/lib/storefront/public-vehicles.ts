@@ -325,9 +325,9 @@ export { filterPublicAlternativeRows } from "./public-vehicle-alternatives";
 export async function listPublicVehicleAlternatives(
   tenantId: string,
   excludeSlug: string,
-  limit = 8,
+  limit = 10,
 ): Promise<PublicVehicleCatalogDto[]> {
-  const safeLimit = Math.min(8, Math.max(0, Math.floor(limit)));
+  const safeLimit = Math.min(10, Math.max(0, Math.floor(limit)));
   if (safeLimit === 0 || !excludeSlug) return [];
 
   const db = getDb();

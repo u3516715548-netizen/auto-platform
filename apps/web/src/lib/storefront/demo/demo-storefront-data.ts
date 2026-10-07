@@ -273,9 +273,9 @@ export function listDemoCatalogDtos(query = ""): PublicVehicleCatalogDto[] {
  */
 export function listDemoVehicleAlternatives(
   excludeSlug: string,
-  limit = 8,
+  limit = 10,
 ): PublicVehicleCatalogDto[] {
-  const safeLimit = Math.min(8, Math.max(0, Math.floor(limit)));
+  const safeLimit = Math.min(10, Math.max(0, Math.floor(limit)));
   if (safeLimit === 0 || !excludeSlug) return [];
   return DEMO_VEHICLES.filter((v) => v.slug !== excludeSlug)
     .slice(0, safeLimit)

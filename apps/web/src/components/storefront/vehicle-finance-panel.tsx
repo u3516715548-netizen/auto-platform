@@ -47,18 +47,20 @@ export function VehicleFinancePanel({ vehiclePrice, leadsEnabled }: VehicleFinan
   );
 
   return (
-    <section className="flex flex-col gap-3 text-center" aria-labelledby="finance-heading">
-      <div className="flex flex-col items-center">
-        <p className="sf-section-num" style={{ color: "#b45309" }}>
+    <section className="flex flex-col gap-4" aria-labelledby="finance-heading">
+      <div className="flex items-start gap-3 sm:gap-4">
+        <p className="sf-section-num shrink-0 tabular-nums" style={{ color: "#b45309" }} aria-hidden>
           01
         </p>
-        <div className="mt-1 mb-2 h-0.5 w-8 rounded-full bg-[#b45309]" />
-        <h2 id="finance-heading" className="text-xl font-bold text-[var(--sf-text)]">
-          Finanțare
-        </h2>
-        <p className="mt-1 max-w-md text-sm text-[var(--sf-text-muted)]">
-          Plan de rate adaptat pentru mașina ta.
-        </p>
+        <div className="min-w-0 flex-1 pt-0.5">
+          <h2 id="finance-heading" className="text-xl font-bold tracking-tight text-[var(--sf-text)]">
+            <span className="sr-only">01. </span>
+            Finanțare plan rate
+          </h2>
+          <p className="mt-1 text-sm text-[var(--sf-text-muted)]">
+            Calculează o estimare lunară pentru acest vehicul.
+          </p>
+        </div>
       </div>
 
       <div className="sf-solid-card rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)] p-4 text-left sm:p-5">

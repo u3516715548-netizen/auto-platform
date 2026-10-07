@@ -21,8 +21,8 @@ import {
 import {
   IconBody,
   IconCalendar,
-  IconChevronLeft,
   IconChevronRight,
+  IconClose,
   IconFuel,
   IconGrid,
   IconSearch,
@@ -48,8 +48,23 @@ function listFocusable(root: HTMLElement): HTMLElement[] {
   });
 }
 
+function useIsMdUp() {
+  const [isMd, setIsMd] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setIsMd(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return isMd;
+}
+
 const pillClass =
   "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--sf-border)] bg-white px-3 text-sm font-semibold text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]";
+
+const pillActiveClass =
+  "border-[var(--sf-accent)] bg-[color-mix(in_srgb,var(--sf-accent)_8%,white)] text-[var(--sf-text)]";
 
 const DEFAULT_BRANDS = [
   "Alfa Romeo",
@@ -72,8 +87,9 @@ const DEFAULT_BRANDS = [
 ];
 
 /**
- * Catalog filter chrome (all breakpoints) — tabs, search, quick pills;
- * „Toate filtrele” opens the advanced drawer (mobile sheet / desktop panel).
+ * Catalog filter chrome — tabs, search, quick pills;
+ * desktop: full-width overlay dropdowns over the vehicle grid;
+ * mobile: sheets / ~80% bottom drawer for all filters.
  */
 export function CatalogFilterDrawer({
   query,
@@ -84,13 +100,22 @@ export function CatalogFilterDrawer({
 }: CatalogFilterDrawerProps) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState<QuickSheetKind | null>(null);
+  const isMdUp = useIsMdUp();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const inlineQuickRef = useRef<HTMLDivElement>(null);
+  const inlineAllRef = useRef<HTMLDivElement>(null);
+  const filtersRootRef = useRef<HTMLDivElement>(null);
   const reactId = useId();
   const panelId = `catalog-filter-drawer-${reactId.replace(/:/g, "")}`;
   const titleId = `${panelId}-title`;
   const activeCount = countActiveCatalogFilters(query);
   const hasFilters = catalogQueryHasFilterChips(query);
+
+  function closeAll() {
+    setOpen(false);
+    setSheet(null);
+  }
 
   function close() {
     setOpen(false);
@@ -98,16 +123,29 @@ export function CatalogFilterDrawer({
 
   function openDrawer() {
     setSheet(null);
-    setOpen(true);
+    setOpen((prev) => !prev);
   }
 
-  useEffect(() => {
-    if (!open) return;
+  function toggleSheet(kind: QuickSheetKind) {
+    setOpen(false);
+    setSheet((prev) => (prev === kind ? null : kind));
+  }
 
+  const mobileOverlayOpen = !isMdUp && (open || sheet != null);
+
+  useEffect(() => {
+    if (!mobileOverlayOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = catalogDrawerBodyOverflow(true);
-    const trigger = triggerRef.current;
+    return () => {
+      document.body.style.overflow = previousOverflow || catalogDrawerBodyOverflow(false);
+    };
+  }, [mobileOverlayOpen]);
 
+  useEffect(() => {
+    if (!open || isMdUp) return;
+
+    const trigger = triggerRef.current;
     const panel = panelRef.current;
     const focusables = panel ? listFocusable(panel) : [];
     const initial = focusables[0] ?? panel;
@@ -140,20 +178,42 @@ export function CatalogFilterDrawer({
 
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.style.overflow = previousOverflow || catalogDrawerBodyOverflow(false);
       document.removeEventListener("keydown", onKeyDown);
       trigger?.focus();
     };
-  }, [open]);
+  }, [open, isMdUp]);
 
   useEffect(() => {
-    if (!sheet) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = catalogDrawerBodyOverflow(true);
+    if (!isMdUp) return;
+    if (!open && !sheet) return;
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeAll();
+      }
+    }
+
+    function onPointerDown(event: PointerEvent) {
+      const target = event.target as Node | null;
+      if (!target) return;
+      // Ignore the same gesture that opened the panel (button is inside root).
+      if (filtersRootRef.current?.contains(target)) return;
+      closeAll();
+    }
+
+    // Defer attach so the opening click does not immediately close the panel.
+    const timer = window.setTimeout(() => {
+      document.addEventListener("pointerdown", onPointerDown);
+    }, 0);
+
+    document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.style.overflow = previousOverflow || catalogDrawerBodyOverflow(false);
+      window.clearTimeout(timer);
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [sheet]);
+  }, [isMdUp, open, sheet]);
 
   const triggerHint =
     activeCount > 0
@@ -161,10 +221,10 @@ export function CatalogFilterDrawer({
       : "Cutie · km · TVA · scaune · dotări";
 
   return (
-    <div>
+    <div ref={filtersRootRef} className="relative z-30">
       <div className="sf-solid-card flex flex-col gap-3 rounded-2xl border border-[var(--sf-border)] p-3 md:gap-4 md:p-5">
         <div
-          className="flex rounded-full bg-[var(--sf-surface-muted)] p-1 md:max-w-md"
+          className="mx-auto flex w-full max-w-md rounded-full bg-[var(--sf-surface-muted)] p-1"
           role="presentation"
         >
           <span className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full bg-white px-3 text-sm font-semibold text-[var(--sf-text)] shadow-sm">
@@ -232,25 +292,46 @@ export function CatalogFilterDrawer({
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
           <button
             type="button"
-            className={`${pillClass} col-span-2 md:col-span-1`}
-            onClick={() => setSheet("brand")}
+            className={`${pillClass} col-span-2 md:col-span-1 ${sheet === "brand" ? pillActiveClass : ""}`}
+            aria-expanded={sheet === "brand"}
+            onClick={() => toggleSheet("brand")}
           >
             <IconGrid size={16} />
             Brand
           </button>
-          <button type="button" className={pillClass} onClick={() => setSheet("body")}>
+          <button
+            type="button"
+            className={`${pillClass} ${sheet === "body" ? pillActiveClass : ""}`}
+            aria-expanded={sheet === "body"}
+            onClick={() => toggleSheet("body")}
+          >
             <IconBody size={16} />
             Caroserie
           </button>
-          <button type="button" className={pillClass} onClick={() => setSheet("fuel")}>
+          <button
+            type="button"
+            className={`${pillClass} ${sheet === "fuel" ? pillActiveClass : ""}`}
+            aria-expanded={sheet === "fuel"}
+            onClick={() => toggleSheet("fuel")}
+          >
             <IconFuel size={16} />
             Combustibil
           </button>
-          <button type="button" className={pillClass} onClick={() => setSheet("price")}>
+          <button
+            type="button"
+            className={`${pillClass} ${sheet === "price" ? pillActiveClass : ""}`}
+            aria-expanded={sheet === "price"}
+            onClick={() => toggleSheet("price")}
+          >
             <IconTag size={16} />
             Preț
           </button>
-          <button type="button" className={pillClass} onClick={() => setSheet("year")}>
+          <button
+            type="button"
+            className={`${pillClass} ${sheet === "year" ? pillActiveClass : ""}`}
+            aria-expanded={sheet === "year"}
+            onClick={() => toggleSheet("year")}
+          >
             <IconCalendar size={16} />
             An
           </button>
@@ -261,7 +342,7 @@ export function CatalogFilterDrawer({
             style={{ backgroundColor: "var(--sf-accent)" }}
             aria-expanded={open}
             aria-controls={panelId}
-            aria-haspopup="dialog"
+            aria-haspopup={isMdUp ? "true" : "dialog"}
             onClick={openDrawer}
           >
             <IconSliders size={18} />
@@ -276,7 +357,81 @@ export function CatalogFilterDrawer({
         </div>
       </div>
 
-      {sheet ? (
+      {/* Outside .sf-solid-card — card has overflow:hidden and would clip overlays */}
+      {sheet && isMdUp ? (
+        <div className="absolute inset-x-0 top-full z-40 mt-2">
+          <CatalogQuickSheet
+            key={sheet}
+            kind={sheet}
+            query={query}
+            brands={brands}
+            priceCeiling={priceCeiling}
+            yearFloor={yearFloor}
+            yearCeiling={yearCeiling}
+            onClose={() => setSheet(null)}
+            variant="inline"
+            panelRef={inlineQuickRef}
+          />
+        </div>
+      ) : null}
+
+      {open && isMdUp ? (
+        <div
+          ref={inlineAllRef}
+          id={panelId}
+          className="absolute inset-x-0 top-full z-40 mt-2"
+          role="region"
+          aria-labelledby={titleId}
+        >
+          <div className="flex max-h-[min(32rem,70vh)] w-full flex-col overflow-hidden rounded-2xl border border-[var(--sf-border)] bg-white shadow-lg">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--sf-border)] px-4 py-3">
+              <h2 id={titleId} className="text-lg font-bold text-[var(--sf-text)]">
+                Toate filtrele
+              </h2>
+              <div className="flex items-center gap-2">
+                {hasFilters ? (
+                  <Link
+                    href={resetCatalogHref()}
+                    className="text-sm font-medium text-[var(--sf-accent)] underline underline-offset-2"
+                    onClick={close}
+                  >
+                    Șterge
+                  </Link>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={close}
+                  className="inline-flex min-h-10 items-center rounded-full border border-[var(--sf-border)] px-3 text-sm font-semibold text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                >
+                  Anulează
+                </button>
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+              <CatalogFilters
+                query={query}
+                idPrefix="catalog-drawer-desktop"
+                formId={`${panelId}-form`}
+                submitLabel="Aplică filtrele"
+                hideActions
+                className="flex flex-col gap-3 border-0 bg-transparent p-0"
+              />
+            </div>
+            <div className="shrink-0 border-t border-[var(--sf-border)] bg-white px-4 py-3">
+              <button
+                type="submit"
+                form={`${panelId}-form`}
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl text-sm font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                style={{ backgroundColor: "var(--sf-accent)" }}
+              >
+                Aplică filtrele
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {sheet && !isMdUp ? (
         <CatalogQuickSheet
           kind={sheet}
           query={query}
@@ -285,11 +440,17 @@ export function CatalogFilterDrawer({
           yearFloor={yearFloor}
           yearCeiling={yearCeiling}
           onClose={() => setSheet(null)}
+          variant="overlay"
         />
       ) : null}
 
-      {open ? (
-        <div className="fixed inset-0 z-50 flex items-stretch justify-end">
+      {open && !isMdUp ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center"
+          style={{
+            paddingBottom: "calc(4.5rem + env(safe-area-inset-bottom, 0px))",
+          }}
+        >
           <button
             type="button"
             className="absolute inset-0 bg-zinc-900/45 motion-safe:transition-opacity motion-safe:duration-200 motion-reduce:transition-none"
@@ -303,58 +464,64 @@ export function CatalogFilterDrawer({
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            className="catalog-filter-drawer-panel relative z-10 flex h-full w-full max-w-[480px] flex-col bg-white shadow-xl outline-none"
+            className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-[var(--sf-border)] bg-white shadow-xl outline-none"
+            style={{
+              height: "min(80dvh, calc(100dvh - 5.5rem - env(safe-area-inset-bottom, 0px)))",
+              maxHeight: "min(80dvh, calc(100dvh - 5.5rem - env(safe-area-inset-bottom, 0px)))",
+            }}
           >
-            <div className="flex shrink-0 items-center gap-2 border-b border-[var(--sf-border)] px-3 py-3">
-              <button
-                type="button"
-                onClick={close}
-                className="inline-flex size-10 items-center justify-center rounded-lg border border-[var(--sf-accent)] text-[var(--sf-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
-                aria-label="Înapoi"
-              >
-                <IconChevronLeft size={18} />
-              </button>
+            <div className="relative flex shrink-0 items-center gap-2 border-b border-[var(--sf-border)] px-3 pt-4 pb-3">
+              <span
+                className="absolute top-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-zinc-300"
+                aria-hidden
+              />
               <h2
                 id={titleId}
                 className="min-w-0 flex-1 text-center text-base font-bold text-[var(--sf-text)]"
               >
                 Filtrează
               </h2>
-              {hasFilters ? (
+              <button
+                type="button"
+                onClick={close}
+                className="inline-flex size-10 items-center justify-center rounded-full border border-[var(--sf-border)] text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                aria-label="Închide"
+              >
+                <IconClose size={18} />
+              </button>
+            </div>
+
+            {hasFilters ? (
+              <div className="shrink-0 border-b border-[var(--sf-border)] px-4 py-2 text-center">
                 <Link
                   href={resetCatalogHref()}
-                  className="shrink-0 text-sm font-medium text-[var(--sf-accent)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                  className="text-sm font-medium text-[var(--sf-accent)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
                   onClick={close}
                 >
                   Șterge opțiunile
                 </Link>
-              ) : (
-                <span className="inline-block w-[7.5rem]" aria-hidden />
-              )}
-            </div>
+              </div>
+            ) : null}
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-4 py-4 pb-28">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-4 py-4">
               <CatalogFilters
                 query={query}
                 idPrefix="catalog-drawer"
                 formId={`${panelId}-form`}
-                submitLabel="Vezi Rezultatele"
+                submitLabel="Vezi rezultatele"
                 hideActions
                 className="flex flex-col gap-3 border-0 bg-transparent p-0"
               />
             </div>
 
-            <div
-              className="absolute inset-x-0 bottom-0 z-20 border-t border-[var(--sf-border)] bg-white px-4 pt-3"
-              style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-            >
+            <div className="sticky bottom-0 z-20 shrink-0 border-t border-[var(--sf-border)] bg-white px-4 pt-3 pb-3 shadow-[0_-6px_16px_rgba(24,24,27,0.08)]">
               <button
                 type="submit"
                 form={`${panelId}-form`}
                 className="inline-flex min-h-12 w-full items-center justify-center rounded-xl text-sm font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
                 style={{ backgroundColor: "var(--sf-accent)" }}
               >
-                Vezi Rezultatele
+                Vezi rezultatele
               </button>
             </div>
           </div>

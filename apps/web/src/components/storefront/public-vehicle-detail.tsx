@@ -22,7 +22,6 @@ import { PublicVehicleGallery } from "./public-vehicle-gallery";
 import { VehicleFinancePanel } from "./vehicle-finance-panel";
 import { VehicleListActions } from "./vehicle-list-actions";
 import { VehicleShareButton } from "./vehicle-share-button";
-import { VehicleDetailSectionNav } from "./vehicle-detail-section-nav";
 import {
   IconBattery,
   IconBolt,
@@ -373,15 +372,17 @@ function SectionHeading({
   headingId?: string;
 }) {
   return (
-    <div className="flex flex-col items-center text-center">
-      <p className="sf-section-num" style={{ color }}>
+    <div className="flex items-start gap-3 sm:gap-4">
+      <p className="sf-section-num shrink-0 tabular-nums" style={{ color }} aria-hidden>
         {num}
       </p>
-      <div className="mt-1 mb-2 h-0.5 w-8 rounded-full" style={{ backgroundColor: color }} />
-      <h2 id={headingId} className="text-xl font-bold text-[var(--sf-text)]">
-        {title}
-      </h2>
-      <p className="mt-1 max-w-md text-sm text-[var(--sf-text-muted)]">{subtitle}</p>
+      <div className="min-w-0 flex-1 pt-0.5">
+        <h2 id={headingId} className="text-xl font-bold tracking-tight text-[var(--sf-text)]">
+          <span className="sr-only">{num}. </span>
+          {title}
+        </h2>
+        <p className="mt-1 text-sm text-[var(--sf-text-muted)]">{subtitle}</p>
+      </div>
     </div>
   );
 }
@@ -548,11 +549,9 @@ export function PublicVehicleDetail({
         </section>
       ) : null}
 
-      <VehicleDetailSectionNav />
-
       <section
         id="vehicle-section-finance"
-        className="scroll-mt-28"
+        className="scroll-mt-24"
         aria-labelledby="finance-heading"
       >
         <VehicleFinancePanel vehiclePrice={vehicle.price} leadsEnabled={leadsEnabled} />
@@ -560,13 +559,13 @@ export function PublicVehicleDetail({
 
       <section
         id="vehicle-section-tech"
-        className="scroll-mt-28 flex flex-col gap-4"
+        className="scroll-mt-24 flex flex-col gap-4"
         aria-labelledby="tech-heading"
       >
         <SectionHeading
           num="02"
-          title="Tehnic"
-          subtitle="Specificații tehnice și dotări pentru acest exemplar."
+          title="Tehnic + Dotări"
+          subtitle="Specificațiile și echiparea vehiculului."
           color="#2563eb"
           headingId="tech-heading"
         />
@@ -609,13 +608,13 @@ export function PublicVehicleDetail({
 
       <section
         id="vehicle-section-description"
-        className="scroll-mt-28 flex flex-col gap-3"
+        className="scroll-mt-24 flex flex-col gap-3"
         aria-labelledby="description-heading"
       >
         <SectionHeading
           num="03"
           title="Descriere"
-          subtitle="Detalii complete despre acest vehicul."
+          subtitle="Informații suplimentare despre acest vehicul."
           color="#7c3aed"
           headingId="description-heading"
         />

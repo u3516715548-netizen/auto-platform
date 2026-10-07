@@ -182,7 +182,7 @@ function CatalogView({
   return (
     <div className="sf-glow-ambient flex flex-col gap-4 px-3 py-3 md:px-8 md:py-6">
       <div className="sf-solid-card flex flex-col gap-3 rounded-2xl border border-[var(--sf-border,#e4e4e7)] p-3 md:gap-4 md:p-5">
-        <div className="flex rounded-full bg-[var(--sf-surface-muted,#f4f4f5)] p-1 md:max-w-md">
+        <div className="mx-auto flex w-full max-w-md rounded-full bg-[var(--sf-surface-muted,#f4f4f5)] p-1">
           <span className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full bg-[var(--sf-surface,#fff)] px-3 text-sm font-semibold shadow-sm">
             În stoc
           </span>

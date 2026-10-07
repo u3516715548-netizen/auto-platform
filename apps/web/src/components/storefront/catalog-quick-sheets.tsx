@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import type { VehicleBodyType, VehicleFuel } from "@auto-platform/types";
 import {
@@ -36,6 +36,13 @@ type CatalogQuickSheetProps = {
   yearFloor: number;
   yearCeiling: number;
   onClose: () => void;
+  /**
+   * overlay = mobile bottom sheet / centered modal
+   * inline = desktop in-flow dropdown under the filter card
+   */
+  variant?: "overlay" | "inline";
+  /** Optional panel ref for click-outside (inline). */
+  panelRef?: RefObject<HTMLDivElement | null>;
 };
 
 const BODY_OPTIONS: Array<{
@@ -114,6 +121,8 @@ export function CatalogQuickSheet({
   yearFloor,
   yearCeiling,
   onClose,
+  variant = "overlay",
+  panelRef,
 }: CatalogQuickSheetProps) {
   const router = useRouter();
   const [brandSearch, setBrandSearch] = useState("");
@@ -178,8 +187,83 @@ export function CatalogQuickSheet({
     apply({ ...query, yearMin: ymin, yearMax: ymax });
   }
 
+  const body = (
+    <>
+      {kind === "brand" ? (
+        <BrandSheet
+          search={brandSearch}
+          setSearch={setBrandSearch}
+          brands={filteredBrands}
+          selected={selectedMakes}
+          setSelected={setSelectedMakes}
+        />
+      ) : null}
+      {kind === "body" ? (
+        <BodySheet selected={selectedBodies} setSelected={setSelectedBodies} />
+      ) : null}
+      {kind === "fuel" ? (
+        <FuelSheet selected={selectedFuels} setSelected={setSelectedFuels} />
+      ) : null}
+      {kind === "price" ? (
+        <PriceSheet
+          ceiling={priceCeiling}
+          priceMin={priceMin}
+          priceMax={priceMax}
+          setPriceMin={setPriceMin}
+          setPriceMax={setPriceMax}
+        />
+      ) : null}
+      {kind === "year" ? (
+        <YearSheet
+          floor={yearFloor}
+          ceiling={yearCeiling}
+          yearMin={yearMin}
+          yearMax={yearMax}
+          setYearMin={setYearMin}
+          setYearMax={setYearMax}
+        />
+      ) : null}
+    </>
+  );
+
+  if (variant === "inline") {
+    return (
+      <div
+        ref={panelRef}
+        role="region"
+        aria-label={title}
+        className="flex max-h-[min(28rem,70vh)] w-full flex-col overflow-hidden rounded-2xl border border-[var(--sf-border)] bg-white shadow-lg"
+      >
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--sf-border)] px-4 py-3">
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold tracking-tight text-[var(--sf-text)]">{title}</h2>
+            <p className="mt-0.5 text-sm text-[var(--sf-text-muted)]">{subtitle}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex min-h-10 shrink-0 items-center rounded-full border border-[var(--sf-border)] px-3 text-sm font-semibold text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+          >
+            Închide
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3">{body}</div>
+        <div className="shrink-0 border-t border-[var(--sf-border)] bg-white px-4 py-3">
+          <button
+            type="button"
+            onClick={onContinue}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl text-sm font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+            style={{ backgroundColor: "var(--sf-accent)" }}
+          >
+            Aplică
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center">
       <button
         type="button"
         className="absolute inset-0 bg-zinc-900/45"
@@ -190,7 +274,7 @@ export function CatalogQuickSheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 flex max-h-[88dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl border border-[var(--sf-border)] bg-white shadow-xl sm:rounded-2xl"
+        className="relative z-10 flex max-h-[88dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl border border-[var(--sf-border)] bg-white shadow-xl"
       >
         <div className="flex shrink-0 flex-col items-center px-4 pt-3 pb-2">
           <span className="mb-3 h-1 w-10 rounded-full bg-zinc-300" aria-hidden />
@@ -200,42 +284,7 @@ export function CatalogQuickSheet({
           <p className="mt-1 w-full text-sm text-[var(--sf-text-muted)]">{subtitle}</p>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-          {kind === "brand" ? (
-            <BrandSheet
-              search={brandSearch}
-              setSearch={setBrandSearch}
-              brands={filteredBrands}
-              selected={selectedMakes}
-              setSelected={setSelectedMakes}
-            />
-          ) : null}
-          {kind === "body" ? (
-            <BodySheet selected={selectedBodies} setSelected={setSelectedBodies} />
-          ) : null}
-          {kind === "fuel" ? (
-            <FuelSheet selected={selectedFuels} setSelected={setSelectedFuels} />
-          ) : null}
-          {kind === "price" ? (
-            <PriceSheet
-              ceiling={priceCeiling}
-              priceMin={priceMin}
-              priceMax={priceMax}
-              setPriceMin={setPriceMin}
-              setPriceMax={setPriceMax}
-            />
-          ) : null}
-          {kind === "year" ? (
-            <YearSheet
-              floor={yearFloor}
-              ceiling={yearCeiling}
-              yearMin={yearMin}
-              yearMax={yearMax}
-              setYearMin={setYearMin}
-              setYearMax={setYearMax}
-            />
-          ) : null}
-        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">{body}</div>
 
         <div
           className="shrink-0 border-t border-[var(--sf-border)] bg-white px-4 pt-3"
