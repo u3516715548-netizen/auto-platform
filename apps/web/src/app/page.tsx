@@ -160,7 +160,7 @@ export default async function RootPage({ searchParams }: PageProps) {
 
           {!listError ? (
             <div
-              className="flex items-center justify-between gap-3 px-3 md:px-5"
+              className="catalog-results-toolbar flex items-center justify-between gap-3 rounded-2xl border border-[var(--sf-border)] bg-white px-3 py-2.5 md:px-5"
               aria-live="polite"
               aria-atomic="true"
             >
@@ -173,7 +173,7 @@ export default async function RootPage({ searchParams }: PageProps) {
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <span
-                  className="inline-flex size-10 items-center justify-center rounded-xl border border-[var(--sf-border)] bg-white text-[var(--sf-text-muted)]"
+                  className="inline-flex size-10 items-center justify-center rounded-xl border border-[var(--sf-border)] bg-[var(--sf-surface-muted)] text-[var(--sf-text-muted)]"
                   aria-hidden
                   title="Vizualizare listă"
                 >
@@ -181,14 +181,14 @@ export default async function RootPage({ searchParams }: PageProps) {
                 </span>
                 <Link
                   href={publicSavedPath()}
-                  className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[var(--sf-border)] bg-white px-2.5 text-xs font-semibold text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[var(--sf-border)] bg-[var(--sf-surface-muted)] px-2.5 text-xs font-semibold text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
                 >
                   <IconBookmark size={14} />
                   Salvează
                 </Link>
                 <Link
                   href={nextSortHref(query)}
-                  className="inline-flex min-h-10 max-w-[7.5rem] items-center gap-1.5 truncate rounded-xl border border-[var(--sf-border)] bg-white px-2.5 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                  className="inline-flex min-h-10 max-w-[7.5rem] items-center gap-1.5 truncate rounded-xl border border-[var(--sf-border)] bg-[var(--sf-surface-muted)] px-2.5 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
                   style={{ color: "var(--sf-accent)" }}
                   title={`Sortare: ${sortLabel}. Apasă pentru următoarea.`}
                 >

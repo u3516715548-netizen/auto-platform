@@ -75,11 +75,13 @@ textarea:focus-visible,
 /**
  * Catalog scroll chrome — lift via CSS var; opacity fades as cards cover it.
  * Pinning uses position:fixed on the host (see CatalogScrollCollapse).
+ * Vars are updated imperatively on scroll to avoid React re-render jitter.
  */
 .catalog-scroll-filter-host {
   --catalog-filter-lift: 0px;
   --catalog-filter-opacity: 1;
   opacity: var(--catalog-filter-opacity, 1);
+  background-color: #ffffff;
 }
 
 body[data-sf-catalog-overlay="open"] .catalog-scroll-filter-host {
@@ -90,15 +92,20 @@ body[data-sf-catalog-overlay="open"] .catalog-scroll-filter-host {
 
 .catalog-scroll-filter-host .sf-solid-card {
   transform: translate3d(0, calc(var(--catalog-filter-lift, 0px) * -1), 0);
-  will-change: transform;
   transition: none;
+  backface-visibility: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .catalog-scroll-filter-host .sf-solid-card {
     transform: none;
-    will-change: auto;
   }
+}
+
+/* Results count + Salvează / Recente — solid so it stays readable over fading filters. */
+.catalog-results-toolbar {
+  background-color: #ffffff;
+  box-shadow: 0 1px 0 rgba(24, 24, 27, 0.04);
 }
 
 /**
