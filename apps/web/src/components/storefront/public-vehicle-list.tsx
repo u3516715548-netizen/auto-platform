@@ -25,6 +25,8 @@ type PublicVehicleListProps = {
    * Live storefront leaves this unset.
    */
   onSelectSlug?: (slug: string) => void;
+  /** Flush first card under the catalog results toolbar (mobile). */
+  attachToToolbar?: boolean;
 };
 
 function buildSpecLine(vehicle: PublicVehicleCatalogDto): string {
@@ -80,10 +82,18 @@ function CardNav({
  * Template 1 catalog cards.
  * Actions sit outside the Link (no nested interactive elements) so navigation stays reliable.
  */
-export function PublicVehicleList({ vehicles, onSelectSlug }: PublicVehicleListProps) {
+export function PublicVehicleList({
+  vehicles,
+  onSelectSlug,
+  attachToToolbar = false,
+}: PublicVehicleListProps) {
   return (
-    <ul className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
-      {vehicles.map((vehicle) => {
+    <ul
+      className={`grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6 ${
+        attachToToolbar ? "md:mt-3" : ""
+      }`}
+    >
+      {vehicles.map((vehicle, index) => {
         const href = publicVehiclePath(vehicle.slug);
         const title = `${vehicle.make} ${vehicle.model}`;
         const vatLabel = vehicle.vatRegime
@@ -94,11 +104,24 @@ export function PublicVehicleList({ vehicles, onSelectSlug }: PublicVehicleListP
         const transmissionTag = vehicle.transmission
           ? VEHICLE_TRANSMISSION_LABELS_RO[vehicle.transmission]
           : null;
+        const flushTop = attachToToolbar && index === 0;
 
         return (
           <li key={vehicle.slug} className="min-w-0">
-            <article className="sf-solid-card group relative flex h-full flex-col overflow-hidden rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)]">
-              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-[var(--sf-radius-lg)] bg-[var(--sf-surface-muted)]">
+            <article
+              className={`sf-solid-card group relative flex h-full flex-col overflow-hidden border border-[var(--sf-border)] ${
+                flushTop
+                  ? "rounded-b-[var(--sf-radius-lg)] rounded-t-none md:rounded-[var(--sf-radius-lg)]"
+                  : "rounded-[var(--sf-radius-lg)]"
+              }`}
+            >
+              <div
+                className={`relative aspect-[4/3] w-full overflow-hidden bg-[var(--sf-surface-muted)] ${
+                  flushTop
+                    ? "rounded-t-none md:rounded-t-[var(--sf-radius-lg)]"
+                    : "rounded-t-[var(--sf-radius-lg)]"
+                }`}
+              >
                 <CardNav
                   href={href}
                   onSelectSlug={onSelectSlug}

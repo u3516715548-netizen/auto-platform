@@ -30,20 +30,22 @@ function nearlyEqual(a: number, b: number, eps = 0.5): boolean {
 }
 
 type CatalogScrollCollapseProps = {
+  /** Scrolls away under the header (e.g. În stoc tabs) — never pinned. */
+  lead?: ReactNode;
+  /** Search + filter pills — lifts, pins, then fades as results cover it. */
   filters: ReactNode;
   children: ReactNode;
 };
 
 /**
- * Catalog filter chrome on scroll:
- * 1) short lift
- * 2) pins under the site header
- * 3) opacity → 0 as results cover it
+ * Catalog chrome on scroll:
+ * - `lead` scrolls away normally
+ * - `filters` lift → pin under header → opacity as results cover
  *
- * Lift/opacity are written to CSS vars on the host (no React re-render per
- * frame) so the chrome stays smooth on real mobile.
+ * Lift/opacity use CSS vars on the host (no React re-render per frame).
  */
 export function CatalogScrollCollapse({
+  lead,
   filters,
   children,
 }: CatalogScrollCollapseProps) {
@@ -71,7 +73,6 @@ export function CatalogScrollCollapse({
       pinnedRef.current ? "0px" : `${liftPx}px`,
     );
     host.style.setProperty("--catalog-filter-opacity", String(opacityValue));
-    // Disable hit-testing once mostly faded so cards stay tappable.
     host.style.pointerEvents =
       pinnedRef.current && opacityValue < 0.85 ? "none" : "";
   };
@@ -110,7 +111,6 @@ export function CatalogScrollCollapse({
       setFilterH(nextH);
     }
 
-    // Header height only when it meaningfully changes (mobile URL bar).
     if (!nearlyEqual(headerHRef.current, topOffset, 2)) {
       headerHRef.current = topOffset;
       setHeaderH(topOffset);
@@ -145,12 +145,13 @@ export function CatalogScrollCollapse({
       else nextLift = LIFT_DISTANCE;
     }
 
+    // Opacity only after the filter chrome has reached the header (lead already gone).
     const filterRect = filterHost.getBoundingClientRect();
     const contentTop = content.getBoundingClientRect().top;
     const overlap = filterRect.bottom - contentTop;
 
     let nextOpacity = 1;
-    if (overlap > 0) {
+    if (shouldPin && overlap > 0) {
       const fadeRange = Math.max(filterRect.height * 0.85, 48);
       nextOpacity = Math.max(0, Math.min(1, 1 - overlap / fadeRange));
     }
@@ -195,7 +196,6 @@ export function CatalogScrollCollapse({
   const box = fixedBox.width > 0 ? fixedBox : fixedBoxRef.current;
   const height = filterH > 0 ? filterH : filterHRef.current;
 
-  // Stable top while pinned — do not animate `top` with lift (that caused jitter).
   const pinStyle: CSSProperties | undefined = pinned
     ? {
         position: "fixed",
@@ -207,7 +207,9 @@ export function CatalogScrollCollapse({
     : undefined;
 
   return (
-    <div className="relative flex min-w-0 flex-col">
+    <div className="relative flex min-w-0 flex-col gap-3">
+      {lead ? <div className="relative z-[1] min-w-0">{lead}</div> : null}
+
       <div ref={sentinelRef} className="pointer-events-none h-0 w-full" aria-hidden />
 
       {pinned ? (
@@ -222,10 +224,7 @@ export function CatalogScrollCollapse({
         {filters}
       </div>
 
-      <div
-        ref={contentRef}
-        className="relative z-10 flex min-w-0 flex-col gap-3"
-      >
+      <div ref={contentRef} className="relative z-10 flex min-w-0 flex-col">
         {children}
       </div>
     </div>

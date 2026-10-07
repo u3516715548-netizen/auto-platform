@@ -39,7 +39,42 @@ type CatalogFilterDrawerProps = {
   priceCeiling?: number;
   yearFloor?: number;
   yearCeiling?: number;
+  /** When false, stock tabs are rendered outside (scroll-away lead). Default true. */
+  showStockToggle?: boolean;
 };
+
+/** În stoc / Urmează în stoc — can sit in the scroll-away lead or inside the filter card. */
+export function CatalogStockAvailabilityToggle({
+  framed = false,
+}: {
+  /** Own white card (lead above pinned filters). */
+  framed?: boolean;
+}) {
+  const toggle = (
+    <div
+      className="mx-auto flex w-full max-w-md rounded-full bg-[var(--sf-surface-muted)] p-1"
+      role="presentation"
+    >
+      <span className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full bg-white px-3 text-sm font-semibold text-[var(--sf-text)] shadow-sm">
+        În stoc
+      </span>
+      <span
+        className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full px-3 text-sm font-medium text-[var(--sf-text-muted)]"
+        title="Disponibil ulterior"
+      >
+        Urmează în stoc
+      </span>
+    </div>
+  );
+
+  if (!framed) return toggle;
+
+  return (
+    <div className="sf-solid-card rounded-2xl border border-[var(--sf-border)] p-3 md:p-4">
+      {toggle}
+    </div>
+  );
+}
 
 function listFocusable(root: HTMLElement): HTMLElement[] {
   return Array.from(
@@ -100,6 +135,7 @@ export function CatalogFilterDrawer({
   priceCeiling = 114_000,
   yearFloor = 2001,
   yearCeiling = new Date().getFullYear(),
+  showStockToggle = true,
 }: CatalogFilterDrawerProps) {
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState<QuickSheetKind | null>(null);
@@ -243,20 +279,7 @@ export function CatalogFilterDrawer({
       className={`relative ${mobileOverlayOpen ? "z-[100]" : "z-30"}`}
     >
       <div className="sf-solid-card flex flex-col gap-3 rounded-2xl border border-[var(--sf-border)] p-3 md:gap-4 md:p-5">
-        <div
-          className="mx-auto flex w-full max-w-md rounded-full bg-[var(--sf-surface-muted)] p-1"
-          role="presentation"
-        >
-          <span className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full bg-white px-3 text-sm font-semibold text-[var(--sf-text)] shadow-sm">
-            În stoc
-          </span>
-          <span
-            className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full px-3 text-sm font-medium text-[var(--sf-text-muted)]"
-            title="Disponibil ulterior"
-          >
-            Urmează în stoc
-          </span>
-        </div>
+        {showStockToggle ? <CatalogStockAvailabilityToggle /> : null}
 
         <form method="GET" action="/" className="relative">
           <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--sf-text-muted)]">
