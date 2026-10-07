@@ -25,6 +25,10 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+function nearlyEqual(a: number, b: number, eps = 0.5): boolean {
+  return Math.abs(a - b) <= eps;
+}
+
 type CatalogScrollCollapseProps = {
   filters: ReactNode;
   children: ReactNode;
@@ -36,8 +40,8 @@ type CatalogScrollCollapseProps = {
  * 2) pins fixed under the site header
  * 3) opacity → 0 as the results/cards cover it
  *
- * Uses rAF + scroll on window/document/visualViewport — window-only scroll
- * is unreliable on iOS while the address bar moves.
+ * State updates are gated via refs — unbounded setState from scroll was
+ * freezing client navigation (Maximum update depth / dead Links).
  */
 export function CatalogScrollCollapse({
   filters,
@@ -49,6 +53,10 @@ export function CatalogScrollCollapse({
   const filterHRef = useRef(0);
   const fixedBoxRef = useRef({ left: 0, width: 0 });
   const rafRef = useRef(0);
+  const liftRef = useRef(0);
+  const opacityRef = useRef(1);
+  const pinnedRef = useRef(false);
+  const headerHRef = useRef(FALLBACK_HEADER_OFFSET);
 
   const [lift, setLift] = useState(0);
   const [opacity, setOpacity] = useState(1);
@@ -69,15 +77,21 @@ export function CatalogScrollCollapse({
     const scrolled = Math.max(0, topOffset - sentTop);
     const shouldPin = sentTop <= topOffset + 0.5;
 
-    // Measure in-flow box; when pinned, align to main padding box.
     if (!shouldPin) {
       const r = filterHost.getBoundingClientRect();
       const nextH = Math.round(r.height);
       const nextBox = { left: Math.round(r.left), width: Math.round(r.width) };
-      filterHRef.current = nextH;
-      fixedBoxRef.current = nextBox;
-      setFilterH(nextH);
-      setFixedBox(nextBox);
+      if (filterHRef.current !== nextH) {
+        filterHRef.current = nextH;
+        setFilterH(nextH);
+      }
+      if (
+        !nearlyEqual(fixedBoxRef.current.left, nextBox.left) ||
+        !nearlyEqual(fixedBoxRef.current.width, nextBox.width)
+      ) {
+        fixedBoxRef.current = nextBox;
+        setFixedBox(nextBox);
+      }
     } else {
       const main = document.querySelector<HTMLElement>("main");
       if (main) {
@@ -89,40 +103,56 @@ export function CatalogScrollCollapse({
           left: Math.round(mr.left + pl),
           width: Math.max(0, Math.round(mr.width - pl - pr)),
         };
-        fixedBoxRef.current = nextBox;
-        setFixedBox(nextBox);
+        if (
+          !nearlyEqual(fixedBoxRef.current.left, nextBox.left) ||
+          !nearlyEqual(fixedBoxRef.current.width, nextBox.width)
+        ) {
+          fixedBoxRef.current = nextBox;
+          setFixedBox(nextBox);
+        }
       }
       if (filterHRef.current === 0) {
         const r = filterHost.getBoundingClientRect();
-        filterHRef.current = Math.round(r.height);
-        setFilterH(filterHRef.current);
+        const nextH = Math.round(r.height);
+        filterHRef.current = nextH;
+        setFilterH(nextH);
       }
     }
 
-    setHeaderH(topOffset);
-    setPinned(shouldPin);
+    if (headerHRef.current !== topOffset) {
+      headerHRef.current = topOffset;
+      setHeaderH(topOffset);
+    }
 
-    // Lift (skip translate when OS asks for reduced motion).
+    if (pinnedRef.current !== shouldPin) {
+      pinnedRef.current = shouldPin;
+      setPinned(shouldPin);
+    }
+
     let nextLift = 0;
     if (!reduceMotion) {
       if (scrolled <= 0) nextLift = 0;
       else if (scrolled < LIFT_RANGE) nextLift = (scrolled / LIFT_RANGE) * LIFT_DISTANCE;
       else nextLift = LIFT_DISTANCE;
     }
-    setLift(nextLift);
+    if (!nearlyEqual(liftRef.current, nextLift, 0.05)) {
+      liftRef.current = nextLift;
+      setLift(nextLift);
+    }
 
-    // Opacity from coverage — still runs with reduced motion (no transform).
     const filterRect = filterHost.getBoundingClientRect();
     const contentTop = content.getBoundingClientRect().top;
     const overlap = filterRect.bottom - contentTop;
 
-    if (overlap <= 0) {
-      setOpacity(1);
-      return;
+    let nextOpacity = 1;
+    if (overlap > 0) {
+      const fadeRange = Math.max(filterRect.height, 1);
+      nextOpacity = Math.max(0, Math.min(1, 1 - overlap / fadeRange));
     }
-
-    const fadeRange = Math.max(filterRect.height, 1);
-    setOpacity(Math.max(0, Math.min(1, 1 - overlap / fadeRange)));
+    if (!nearlyEqual(opacityRef.current, nextOpacity, 0.01)) {
+      opacityRef.current = nextOpacity;
+      setOpacity(nextOpacity);
+    }
   });
 
   useEffect(() => {
@@ -141,11 +171,8 @@ export function CatalogScrollCollapse({
     document.addEventListener("scroll", schedule, scrollOpts);
     window.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("orientationchange", schedule, { passive: true });
-    // iOS address-bar / pinch viewport changes.
     window.visualViewport?.addEventListener("scroll", schedule, { passive: true });
     window.visualViewport?.addEventListener("resize", schedule, { passive: true });
-    // Kick sync during touch drag (some WebKits delay window scroll).
-    window.addEventListener("touchmove", schedule, { passive: true });
 
     return () => {
       if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
@@ -155,9 +182,8 @@ export function CatalogScrollCollapse({
       window.removeEventListener("orientationchange", schedule);
       window.visualViewport?.removeEventListener("scroll", schedule);
       window.visualViewport?.removeEventListener("resize", schedule);
-      window.removeEventListener("touchmove", schedule);
     };
-  }, [sync]);
+  }, []);
 
   const filterVars = {
     ["--catalog-filter-lift" as string]: pinned ? "0px" : `${lift}px`,
@@ -175,7 +201,6 @@ export function CatalogScrollCollapse({
         left: box.left,
         width: box.width || "100%",
         zIndex: 1,
-        // Do not set transform here — it would trap position:fixed filter sheets.
       }
     : undefined;
 
@@ -193,7 +218,7 @@ export function CatalogScrollCollapse({
         style={{
           ...filterVars,
           ...pinStyle,
-          pointerEvents: opacity < 0.12 ? "none" : undefined,
+          pointerEvents: pinned && opacity < 0.85 ? "none" : undefined,
         }}
       >
         {filters}
@@ -204,7 +229,6 @@ export function CatalogScrollCollapse({
         className={`relative z-10 flex min-w-0 flex-col gap-4 pt-3 ${
           overlapping ? "shadow-[0_-12px_28px_rgba(24,24,27,0.08)]" : ""
         }`}
-        // Transparent so the fading filter stays visible under cards (not a white wipe).
         style={{ backgroundColor: "transparent" }}
       >
         {children}
