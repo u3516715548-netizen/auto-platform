@@ -5,17 +5,20 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Label } from "@auto-platform/ui";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { resolvePostLoginPath } from "@/lib/auth/auth-redirects";
+import { sanitizeInviteNextPath } from "@/lib/team/invite-paths";
 
 type LoginFormProps = {
   tenantSlug: string | null;
+  nextPath?: string | null;
 };
 
-export function LoginForm({ tenantSlug }: LoginFormProps) {
+export function LoginForm({ tenantSlug, nextPath }: LoginFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const safeNext = sanitizeInviteNextPath(nextPath);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -35,7 +38,7 @@ export function LoginForm({ tenantSlug }: LoginFormProps) {
       }
 
       // Relative path keeps acme/beta host — never bounce to apex localhost.
-      router.replace(resolvePostLoginPath());
+      router.replace(resolvePostLoginPath(safeNext));
       router.refresh();
     } catch {
       setError("Autentificarea a eșuat. Încearcă din nou.");
@@ -55,6 +58,12 @@ export function LoginForm({ tenantSlug }: LoginFormProps) {
           Deschide login pe hostul dealerului (ex. acme.localhost:3000/login) pentru dashboard.
         </p>
       )}
+
+      {safeNext ? (
+        <p className="rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-900">
+          După autentificare vei reveni la invitație.
+        </p>
+      ) : null}
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="email">Email</Label>

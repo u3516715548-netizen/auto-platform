@@ -11,6 +11,69 @@ export type TenantPlan = z.infer<typeof tenantPlanSchema>;
 export const membershipRoleSchema = z.enum(["owner", "manager", "sales", "viewer"]);
 export type MembershipRole = z.infer<typeof membershipRoleSchema>;
 
+/** Roles that may be assigned via invitation (never owner). */
+export const INVITABLE_MEMBERSHIP_ROLES = ["manager", "sales", "viewer"] as const;
+export type InvitableMembershipRole = (typeof INVITABLE_MEMBERSHIP_ROLES)[number];
+export const invitableMembershipRoleSchema = z.enum(INVITABLE_MEMBERSHIP_ROLES);
+
+export const tenantInvitationStatusSchema = z.enum([
+  "pending",
+  "accepted",
+  "expired",
+  "revoked",
+]);
+export type TenantInvitationStatus = z.infer<typeof tenantInvitationStatusSchema>;
+
+export const INVITE_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function normalizeInvitationEmail(raw: string): string | null {
+  const normalized = raw.trim().toLowerCase();
+  if (!normalized || normalized.length > 160) return null;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return null;
+  return normalized;
+}
+
+export const createTenantInvitationInputSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .min(1, "Emailul este obligatoriu")
+      .max(160)
+      .transform((value, ctx) => {
+        const normalized = normalizeInvitationEmail(value);
+        if (!normalized) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Email invalid" });
+          return z.NEVER;
+        }
+        return normalized;
+      }),
+    role: invitableMembershipRoleSchema,
+  })
+  .strict();
+export type CreateTenantInvitationInput = z.infer<typeof createTenantInvitationInputSchema>;
+
+export const changeMemberRoleInputSchema = z
+  .object({
+    membershipId: z.string().uuid("Membership invalid"),
+    role: invitableMembershipRoleSchema,
+  })
+  .strict();
+export type ChangeMemberRoleInput = z.infer<typeof changeMemberRoleInputSchema>;
+
+export const removeMemberInputSchema = z
+  .object({
+    membershipId: z.string().uuid("Membership invalid"),
+  })
+  .strict();
+export type RemoveMemberInput = z.infer<typeof removeMemberInputSchema>;
+
+export const invitationIdInputSchema = z
+  .object({
+    invitationId: z.string().uuid("Invitație invalidă"),
+  })
+  .strict();
+
 export const vehicleStatusSchema = z.enum([
   "draft",
   "available",

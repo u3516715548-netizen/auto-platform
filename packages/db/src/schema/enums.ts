@@ -8,6 +8,14 @@ export const membershipRoleEnum = pgEnum("membership_role", [
   "sales",
   "viewer",
 ]);
+
+/** Etapa 21 — tenant invitation lifecycle. */
+export const tenantInvitationStatusEnum = pgEnum("tenant_invitation_status", [
+  "pending",
+  "accepted",
+  "expired",
+  "revoked",
+]);
 export const vehicleStatusEnum = pgEnum("vehicle_status", [
   "draft",
   "available",

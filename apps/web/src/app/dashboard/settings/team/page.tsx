@@ -1,5 +1,6 @@
 import { requireSettingsOwner } from "@/lib/auth/require-settings-owner";
 import { listTeamMembers } from "@/lib/settings/list-team-members";
+import { listPendingInvitations } from "@/lib/team/list-pending-invitations";
 import { TeamSettingsPanel } from "@/components/dashboard/team-settings-panel";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
@@ -10,11 +11,16 @@ export default async function DashboardSettingsTeamPage() {
   const session = await requireSettingsOwner();
 
   let members: Awaited<ReturnType<typeof listTeamMembers>> = [];
+  let invitations: Awaited<ReturnType<typeof listPendingInvitations>> = [];
   let listError: string | null = null;
   try {
-    members = await listTeamMembers();
+    [members, invitations] = await Promise.all([
+      listTeamMembers(),
+      listPendingInvitations(),
+    ]);
   } catch {
     members = [];
+    invitations = [];
     listError = "Nu am putut încărca echipa. Reîncarcă pagina sau încearcă mai târziu.";
   }
 
@@ -26,13 +32,15 @@ export default async function DashboardSettingsTeamPage() {
         <p className="max-w-2xl text-sm leading-6 text-zinc-600">
           Conturile cu acces la{" "}
           <span className="font-medium text-zinc-800">{session.tenant.name}</span>. Doar
-          proprietarul poate vedea această pagină.
+          proprietarul poate vedea și administra această pagină.
         </p>
       </section>
 
       {listError ? <FeedbackBanner variant="error">{listError}</FeedbackBanner> : null}
 
-      {!listError ? <TeamSettingsPanel members={members} /> : null}
+      {!listError ? (
+        <TeamSettingsPanel members={members} invitations={invitations} />
+      ) : null}
     </div>
   );
 }

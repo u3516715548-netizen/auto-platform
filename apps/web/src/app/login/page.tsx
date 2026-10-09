@@ -7,7 +7,7 @@ import { LoginForm } from "./login-form";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ auth?: string; error?: string }>;
+  searchParams: Promise<{ auth?: string; error?: string; next?: string }>;
 }) {
   const params = await searchParams;
   const errorMessage =
@@ -51,7 +51,7 @@ export default async function LoginPage({
         </p>
       ) : null}
 
-      <LoginForm tenantSlug={tenantSlug} />
+      <LoginForm tenantSlug={tenantSlug} nextPath={params.next ?? null} />
 
       <p className="text-center text-sm text-zinc-500">
         <Link href="/" className="underline underline-offset-2 hover:text-zinc-800">

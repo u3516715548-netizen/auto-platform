@@ -18,7 +18,14 @@ export function loginPath(searchParams?: Record<string, string | undefined>): st
   return serialized ? `${path}?${serialized}` : path;
 }
 
-export function resolvePostLoginPath(): string {
+/**
+ * Post-login destination. Optional `next` must already be sanitized by the caller
+ * (relative path only — never absolute / open redirect).
+ */
+export function resolvePostLoginPath(next?: string | null): string {
+  if (next && next.startsWith("/") && !next.startsWith("//") && !next.includes("://")) {
+    return next;
+  }
   return dashboardPath();
 }
 
