@@ -33,6 +33,7 @@ export function leadStatusBadgeClass(status: LeadStatus): string {
 
 export function leadSourceLabel(source: string): string | null {
   if (source === "storefront") return "Site public";
+  if (source === "finance") return "Finanțare";
   if (!source.trim()) return null;
   // Unknown sources: show only plain short tokens (no raw internals).
   if (/^[a-z0-9_-]{1,40}$/i.test(source)) return source;

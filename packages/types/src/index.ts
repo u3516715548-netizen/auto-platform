@@ -793,6 +793,181 @@ export type LeadNotificationStatus = z.infer<typeof leadNotificationStatusSchema
 /** Consent copy version stamped on new public leads. */
 export const PUBLIC_LEAD_CONSENT_VERSION = "v1" as const;
 
+/** Etapa 19 — finance consent copy version. */
+export const FINANCE_CONSENT_VERSION = "finance-v1" as const;
+
+export const financeApplicantTypeSchema = z.enum(["individual", "company"]);
+export type FinanceApplicantType = z.infer<typeof financeApplicantTypeSchema>;
+
+export const financeApplicationStatusSchema = z.enum([
+  "new",
+  "contacted",
+  "in_review",
+  "approved",
+  "rejected",
+  "withdrawn",
+  "archived",
+]);
+export type FinanceApplicationStatus = z.infer<typeof financeApplicationStatusSchema>;
+
+export const FINANCE_TERM_MONTHS = [12, 24, 36, 48, 60] as const;
+export type FinanceTermMonths = (typeof FINANCE_TERM_MONTHS)[number];
+
+/**
+ * Structural Romanian CUI validation (checksum), without ANAF lookup.
+ * Accepts optional `RO` prefix; returns digits-only CUI or null.
+ */
+export function normalizeRomanianCui(raw: string): string | null {
+  const trimmed = raw.trim().toUpperCase().replace(/\s+/g, "");
+  const withoutRo = trimmed.startsWith("RO") ? trimmed.slice(2) : trimmed;
+  if (!/^\d{2,10}$/.test(withoutRo)) return null;
+
+  const controlKey = [7, 3, 5, 2, 1, 7, 3, 5, 2];
+  const digits = withoutRo.split("").map((d) => Number(d));
+  const checkDigit = digits[digits.length - 1]!;
+  const body = digits.slice(0, -1);
+  // Pad body on the left to 9 digits for the standard key alignment.
+  while (body.length < 9) body.unshift(0);
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += body[i]! * controlKey[i]!;
+  }
+  let computed = (sum * 10) % 11;
+  if (computed === 10) computed = 0;
+  if (computed !== checkDigit) return null;
+  return withoutRo;
+}
+
+/** Required finance phone — normalized E.164-style via public contact rules. */
+export const financePhoneFieldSchema = z.preprocess(
+  emptyFormFieldToUndefined,
+  z
+    .string({ required_error: "Telefonul este obligatoriu" })
+    .trim()
+    .min(1, "Telefonul este obligatoriu")
+    .max(PUBLIC_CONTACT_INPUT_MAX, "Telefon prea lung")
+    .transform((value, ctx) => {
+      const normalized = normalizePublicContactNumber(value);
+      if (!normalized) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Telefon invalid" });
+        return z.NEVER;
+      }
+      return normalized;
+    }),
+);
+
+/**
+ * Public finance application form — never trusts client tenant/vehicle/lead ids.
+ * Phone and email required; CUI required for company.
+ */
+export const createFinanceApplicationInputSchema = z
+  .object({
+    applicantType: financeApplicantTypeSchema,
+    firstName: z.preprocess(
+      emptyFormFieldToUndefined,
+      z.string().trim().max(80).optional(),
+    ),
+    lastName: z.preprocess(
+      emptyFormFieldToUndefined,
+      z.string().trim().max(80).optional(),
+    ),
+    companyName: z.preprocess(
+      emptyFormFieldToUndefined,
+      z.string().trim().max(160).optional(),
+    ),
+    companyTaxId: z.preprocess(
+      emptyFormFieldToUndefined,
+      z.string().trim().max(16).optional(),
+    ),
+    email: publicLeadEmailFieldSchema,
+    phone: financePhoneFieldSchema,
+    amountEur: z.coerce
+      .number({
+        required_error: "Suma este obligatorie",
+        invalid_type_error: "Sumă invalidă",
+      })
+      .positive("Suma trebuie să fie pozitivă")
+      .max(99_999_999, "Sumă prea mare"),
+    termMonths: z.coerce
+      .number({
+        required_error: "Perioada este obligatorie",
+        invalid_type_error: "Perioadă invalidă",
+      })
+      .refine(
+        (value): value is FinanceTermMonths =>
+          (FINANCE_TERM_MONTHS as readonly number[]).includes(value),
+        "Perioadă invalidă",
+      ),
+    consent: z.literal(true, {
+      errorMap: () => ({ message: "Consimțământul este obligatoriu" }),
+    }),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    if (data.applicantType === "individual") {
+      if (!data.firstName?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Prenumele este obligatoriu",
+          path: ["firstName"],
+        });
+      }
+      if (!data.lastName?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Numele este obligatoriu",
+          path: ["lastName"],
+        });
+      }
+    } else {
+      if (!data.companyName?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Denumirea firmei este obligatorie",
+          path: ["companyName"],
+        });
+      }
+      if (!data.companyTaxId?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "CUI-ul este obligatoriu",
+          path: ["companyTaxId"],
+        });
+      } else if (!normalizeRomanianCui(data.companyTaxId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "CUI invalid",
+          path: ["companyTaxId"],
+        });
+      }
+    }
+  })
+  .transform((data) => {
+    if (data.applicantType === "individual") {
+      return {
+        applicantType: "individual" as const,
+        fullName: `${data.firstName!.trim()} ${data.lastName!.trim()}`.replace(/\s+/g, " "),
+        companyTaxId: undefined as string | undefined,
+        email: data.email,
+        phone: data.phone,
+        amountEur: data.amountEur,
+        termMonths: data.termMonths as FinanceTermMonths,
+        consent: true as const,
+      };
+    }
+    return {
+      applicantType: "company" as const,
+      fullName: data.companyName!.trim(),
+      companyTaxId: normalizeRomanianCui(data.companyTaxId!)!,
+      email: data.email,
+      phone: data.phone,
+      amountEur: data.amountEur,
+      termMonths: data.termMonths as FinanceTermMonths,
+      consent: true as const,
+    };
+  });
+export type CreateFinanceApplicationInput = z.infer<typeof createFinanceApplicationInputSchema>;
+
 /**
  * Formats a EUR amount for Romanian storefront/dashboard: `12.900 €`.
  * Accepts numeric string or number; invalid input returns a safe fallback.

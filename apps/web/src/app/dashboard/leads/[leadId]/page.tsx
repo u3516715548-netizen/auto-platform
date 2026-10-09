@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { formatPriceEurRo } from "@auto-platform/types";
 import { getTenantLeadById } from "@/lib/leads/list-leads";
+import { getFinanceApplicationForLead } from "@/lib/leads/get-finance-application-for-lead";
 import { listLeadAssignableMembers } from "@/lib/leads/list-assignees";
 import { canMutateLead } from "@/lib/leads/permissions";
 import { formatLeadDateTimeRo } from "@/lib/leads/lead-list-filter";
@@ -39,6 +41,8 @@ export default async function DashboardLeadDetailPage({ params, searchParams }: 
   const mailto = leadMailtoHref(lead.email);
   const tel = leadTelHref(lead.phone);
   const sourceLabel = leadSourceLabel(lead.source);
+  const financeApp =
+    lead.source === "finance" ? await getFinanceApplicationForLead(lead.id) : null;
 
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-5 sm:gap-6">
@@ -185,6 +189,66 @@ export default async function DashboardLeadDetailPage({ params, searchParams }: 
           </div>
         </dl>
       </section>
+
+      {financeApp ? (
+        <section
+          aria-labelledby="lead-finance-heading"
+          className="rounded-lg border border-zinc-200 bg-white p-3 sm:p-5"
+        >
+          <h3 id="lead-finance-heading" className="mb-4 text-base font-semibold text-zinc-900">
+            Cerere de finanțare
+          </h3>
+          <dl className="grid gap-3 text-sm">
+            <div>
+              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                Tip solicitant
+              </dt>
+              <dd className="mt-1 text-zinc-900">
+                {financeApp.applicantType === "company" ? "Firmă" : "Persoană fizică"}
+              </dd>
+            </div>
+            {financeApp.companyTaxId ? (
+              <div>
+                <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">CUI</dt>
+                <dd className="mt-1 text-zinc-900">{financeApp.companyTaxId}</dd>
+              </div>
+            ) : null}
+            <div>
+              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">Sumă</dt>
+              <dd className="mt-1 text-zinc-900">{formatPriceEurRo(financeApp.amountEur)}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">Perioadă</dt>
+              <dd className="mt-1 text-zinc-900">{financeApp.termMonths} luni</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                Rată estimată
+              </dt>
+              <dd className="mt-1 text-zinc-900">
+                {formatPriceEurRo(financeApp.estimatedMonthlyEurSnapshot)} / lună
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                Preț vehicul (snapshot)
+              </dt>
+              <dd className="mt-1 text-zinc-900">
+                {formatPriceEurRo(financeApp.vehiclePriceEurSnapshot)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                Status finanțare
+              </dt>
+              <dd className="mt-1 text-zinc-900">{financeApp.status}</dd>
+            </div>
+          </dl>
+          <p className="mt-3 text-xs text-zinc-500">
+            Rata este estimativă și nu reprezintă o ofertă sau aprobare financiară.
+          </p>
+        </section>
+      ) : null}
 
       <section
         aria-labelledby="lead-status-heading"

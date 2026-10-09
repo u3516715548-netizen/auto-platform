@@ -1,4 +1,5 @@
 export const PUBLIC_LEAD_RATE_LIMIT_ENDPOINT = "storefront.createPublicLead" as const;
+export const PUBLIC_FINANCE_RATE_LIMIT_ENDPOINT = "storefront.createFinanceApplication" as const;
 
 /** 5 submission attempts / 10 minutes / IP / tenant / endpoint */
 export const PUBLIC_LEAD_ATTEMPT_LIMIT = 5;
@@ -11,7 +12,7 @@ export const PUBLIC_LEAD_ACCEPT_WINDOW_MS = 60 * 60 * 1000;
 export type PublicLeadRateLimitScope = {
   ipHash: string;
   tenantId: string;
-  endpoint?: typeof PUBLIC_LEAD_RATE_LIMIT_ENDPOINT;
+  endpoint?: string;
 };
 
 export type PublicLeadRateLimitVerdict = {

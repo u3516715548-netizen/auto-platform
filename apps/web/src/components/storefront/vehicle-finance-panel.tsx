@@ -1,13 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   calculateFixedMonthlyPayment,
   formatMonthlyPaymentEur,
   parsePriceEurNumber,
 } from "@/lib/storefront/storefront-vehicle-lite";
+import {
+  createFinanceApplicationAction,
+  type CreateFinanceApplicationState,
+} from "@/lib/storefront/create-finance-application";
+import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
 type VehicleFinancePanelProps = {
+  vehicleSlug: string;
   vehiclePrice: string;
   leadsEnabled: boolean;
 };
@@ -23,22 +29,34 @@ const PERIODS = [
 const ANNUAL_RATE = 4.9;
 
 const CONSENT_TEXT =
-  "Sunt de acord cu prelucrarea datelor mele cu caracter personal (Vezi mai multe în politica de confidențialitate).";
+  "Sunt de acord ca datele din această cerere să fie folosite doar pentru a discuta o opțiune de finanțare pentru acest vehicul.";
+
+const SUCCESS_TEXT =
+  "Cererea ta a fost înregistrată. Te vom contacta pentru următorii pași.";
+
+const HOBBY_INFO_TEXT =
+  "Cerere informativă. Contactează dealerul pentru o ofertă. Oferta finală se confirmă în showroom.";
 
 type ApplicantType = "individual" | "company";
 
+const fieldClassName =
+  "min-h-11 w-full rounded-lg border border-[var(--sf-border)] px-3 text-sm outline-none focus:border-[var(--sf-accent)]";
+
+const initialState: CreateFinanceApplicationState = { error: null, success: false };
+
 /**
- * Financing: amount slider 0→car price (default max), period chips, Aplică acum → popup.
- * No DB / bank.
+ * Financing: amount slider 0→car price (default max), period chips, Aplică acum → dialog.
+ * Persist via Server Action when leadsEnabled; otherwise informative-only (Hobby / preview).
  */
-export function VehicleFinancePanel({ vehiclePrice, leadsEnabled }: VehicleFinancePanelProps) {
+export function VehicleFinancePanel({
+  vehicleSlug,
+  vehiclePrice,
+  leadsEnabled,
+}: VehicleFinancePanelProps) {
   const price = Math.max(0, Math.round(parsePriceEurNumber(vehiclePrice)));
   const [amount, setAmount] = useState(price);
   const [months, setMonths] = useState(60);
   const [open, setOpen] = useState(false);
-  const [applicant, setApplicant] = useState<ApplicantType>("individual");
-  const [consent, setConsent] = useState(false);
-  const [sent, setSent] = useState(false);
 
   const safeAmount = Math.min(Math.max(0, amount), price || amount);
   const monthly = useMemo(
@@ -64,9 +82,7 @@ export function VehicleFinancePanel({ vehiclePrice, leadsEnabled }: VehicleFinan
       </div>
 
       <div className="sf-solid-card rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)] p-4 text-left sm:p-5">
-        <p className="text-center text-sm font-medium text-[var(--sf-text)]">
-          Am nevoie de suma de
-        </p>
+        <p className="text-center text-sm font-medium text-[var(--sf-text)]">Am nevoie de suma de</p>
         <div className="mt-3 flex min-h-14 items-center rounded-xl border border-[var(--sf-border)] bg-white px-3">
           <input
             type="number"
@@ -141,11 +157,7 @@ export function VehicleFinancePanel({ vehiclePrice, leadsEnabled }: VehicleFinan
 
         <button
           type="button"
-          onClick={() => {
-            setSent(false);
-            setConsent(false);
-            setOpen(true);
-          }}
+          onClick={() => setOpen(true)}
           className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full text-sm font-bold text-white"
           style={{ backgroundColor: "var(--sf-accent)" }}
         >
@@ -158,15 +170,11 @@ export function VehicleFinancePanel({ vehiclePrice, leadsEnabled }: VehicleFinan
 
       {open ? (
         <FinanceApplyDialog
-          applicant={applicant}
-          setApplicant={setApplicant}
-          consent={consent}
-          setConsent={setConsent}
-          sent={sent}
-          setSent={setSent}
+          vehicleSlug={vehicleSlug}
           leadsEnabled={leadsEnabled}
-          amountLabel={formatMonthlyPaymentEur(safeAmount)}
+          amount={safeAmount}
           months={months}
+          estimatedMonthly={monthly}
           onClose={() => setOpen(false)}
         />
       ) : null}
@@ -175,31 +183,44 @@ export function VehicleFinancePanel({ vehiclePrice, leadsEnabled }: VehicleFinan
 }
 
 function FinanceApplyDialog({
-  applicant,
-  setApplicant,
-  consent,
-  setConsent,
-  sent,
-  setSent,
+  vehicleSlug,
   leadsEnabled,
-  amountLabel,
+  amount,
   months,
+  estimatedMonthly,
   onClose,
 }: {
-  applicant: ApplicantType;
-  setApplicant: (v: ApplicantType) => void;
-  consent: boolean;
-  setConsent: (v: boolean) => void;
-  sent: boolean;
-  setSent: (v: boolean) => void;
+  vehicleSlug: string;
   leadsEnabled: boolean;
-  amountLabel: string;
+  amount: number;
   months: number;
+  estimatedMonthly: number;
   onClose: () => void;
 }) {
+  const [applicant, setApplicant] = useState<ApplicantType>("individual");
+  const [consent, setConsent] = useState(false);
+  const boundAction = createFinanceApplicationAction.bind(null, vehicleSlug);
+  const [state, formAction, pending] = useActionState(boundAction, initialState);
+  const statusRef = useRef<HTMLDivElement>(null);
+  const consentId = useId();
+
+  useEffect(() => {
+    if (state?.success || state?.error) {
+      statusRef.current?.focus({ preventScroll: true });
+    }
+  }, [state?.success, state?.error]);
+
+  const showSuccess = Boolean(state?.success);
+  const informativeOnly = !leadsEnabled;
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center text-left sm:items-center">
-      <button type="button" className="absolute inset-0 bg-zinc-900/45" aria-label="Închide" onClick={onClose} />
+      <button
+        type="button"
+        className="absolute inset-0 bg-zinc-900/45"
+        aria-label="Închide"
+        onClick={onClose}
+      />
       <div
         role="dialog"
         aria-modal="true"
@@ -218,21 +239,20 @@ function FinanceApplyDialog({
           </button>
         </div>
         <div className="overflow-y-auto px-4 py-4">
-          {sent ? (
-            <p className="rounded-xl bg-[var(--sf-surface-muted)] px-3 py-4 text-sm">
-              {leadsEnabled
-                ? "Cererea a fost înregistrată local. Completează și formularul de contact de pe pagină."
-                : "Cerere informativă. Contactează dealerul pentru o ofertă."}
-            </p>
+          {informativeOnly ? (
+            <FeedbackBanner variant="info">{HOBBY_INFO_TEXT}</FeedbackBanner>
+          ) : null}
+
+          {showSuccess ? (
+            <div ref={statusRef} tabIndex={-1} className="outline-none" aria-live="polite">
+              <FeedbackBanner variant="success">{SUCCESS_TEXT}</FeedbackBanner>
+            </div>
           ) : (
-            <form
-              className="flex flex-col gap-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!consent) return;
-                setSent(true);
-              }}
-            >
+            <form action={formAction} className="flex flex-col gap-4" noValidate>
+              <input type="hidden" name="amountEur" value={String(amount)} />
+              <input type="hidden" name="termMonths" value={String(months)} />
+              <input type="hidden" name="applicantType" value={applicant} />
+
               <div className="grid grid-cols-2 gap-1 rounded-xl bg-[var(--sf-surface-muted)] p-1">
                 {(
                   [
@@ -244,10 +264,10 @@ function FinanceApplyDialog({
                     key={key}
                     type="button"
                     onClick={() => setApplicant(key)}
-                    className="min-h-11 rounded-lg text-sm font-semibold text-white"
+                    disabled={pending || informativeOnly}
+                    className="min-h-11 rounded-lg text-sm font-semibold"
                     style={{
-                      backgroundColor:
-                        applicant === key ? "var(--sf-accent)" : "transparent",
+                      backgroundColor: applicant === key ? "var(--sf-accent)" : "transparent",
                       color: applicant === key ? "#fff" : "var(--sf-text)",
                     }}
                   >
@@ -255,64 +275,124 @@ function FinanceApplyDialog({
                   </button>
                 ))}
               </div>
+
               {applicant === "individual" ? (
                 <>
-                  <TextField label="Prenumele*" name="firstName" placeholder="Introdu prenumele" />
+                  <TextField
+                    label="Prenumele*"
+                    name="firstName"
+                    placeholder="Introdu prenumele"
+                    disabled={pending || informativeOnly}
+                    required
+                  />
                   <TextField
                     label="Numele de familie*"
                     name="lastName"
                     placeholder="Introdu numele de familie"
+                    disabled={pending || informativeOnly}
+                    required
                   />
                 </>
               ) : (
                 <>
                   <TextField
                     label="Denumire firmă*"
-                    name="company"
+                    name="companyName"
                     placeholder="Introdu denumirea firmei"
+                    disabled={pending || informativeOnly}
+                    required
                   />
-                  <TextField label="CUI*" name="cui" placeholder="Introdu CUI" />
+                  <TextField
+                    label="CUI*"
+                    name="companyTaxId"
+                    placeholder="Introdu CUI"
+                    disabled={pending || informativeOnly}
+                    required
+                  />
                 </>
               )}
+
               <TextField
                 label="Adresa de email*"
                 name="email"
                 type="email"
                 placeholder="Introdu adresa ta de e-mail"
+                disabled={pending || informativeOnly}
+                required
               />
               <TextField
                 label="Număr de telefon*"
                 name="phone"
                 type="tel"
                 placeholder="Introdu numărul tău de telefon"
+                disabled={pending || informativeOnly}
+                required
               />
-              <label className="flex items-start gap-3 text-sm leading-5">
+
+              <label
+                htmlFor={consentId}
+                className="flex items-start gap-3 text-sm leading-5 text-[var(--sf-text)]"
+              >
                 <input
+                  id={consentId}
+                  name="consent"
                   type="checkbox"
+                  value="true"
                   required
                   checked={consent}
+                  disabled={pending || informativeOnly}
                   onChange={(e) => setConsent(e.target.checked)}
-                  className="mt-0.5 size-5"
+                  className="mt-0.5 size-5 shrink-0"
                 />
                 <span>{CONSENT_TEXT}</span>
               </label>
+
+              {/* Honeypot — must not collide with company name field */}
+              <div
+                className="absolute -left-[9999px] top-auto h-0 w-0 overflow-hidden"
+                aria-hidden="true"
+              >
+                <label htmlFor="finance-website">Website</label>
+                <input
+                  id="finance-website"
+                  name="website"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
+
               <dl className="space-y-2 border-t border-[var(--sf-border)] pt-3 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-[var(--sf-text-muted)]">Sumă împrumutată</dt>
-                  <dd className="font-bold">{amountLabel}</dd>
+                  <dd className="font-bold">{formatMonthlyPaymentEur(amount)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-[var(--sf-text-muted)]">Perioadă</dt>
                   <dd className="font-bold">{months} luni</dd>
                 </div>
+                <div className="flex justify-between">
+                  <dt className="text-[var(--sf-text-muted)]">Rată estimată</dt>
+                  <dd className="font-bold">{formatMonthlyPaymentEur(estimatedMonthly)} / lună</dd>
+                </div>
               </dl>
+              <p className="text-xs text-[var(--sf-text-muted)]">
+                Rata este estimativă și nu reprezintă o ofertă, aprobare sau eligibilitate financiară.
+              </p>
+
+              {state?.error ? (
+                <div ref={statusRef} tabIndex={-1} className="outline-none" aria-live="assertive">
+                  <FeedbackBanner variant="error">{state.error}</FeedbackBanner>
+                </div>
+              ) : null}
+
               <button
                 type="submit"
-                disabled={!consent}
+                disabled={pending || !consent || informativeOnly}
                 className="min-h-12 rounded-full text-sm font-bold text-white disabled:opacity-50"
                 style={{ backgroundColor: "var(--sf-accent)" }}
               >
-                Trimite cererea
+                {pending ? "Se trimite…" : "Trimite cererea"}
               </button>
             </form>
           )}
@@ -327,11 +407,15 @@ function TextField({
   name,
   placeholder,
   type = "text",
+  disabled = false,
+  required = false,
 }: {
   label: string;
   name: string;
   placeholder: string;
   type?: string;
+  disabled?: boolean;
+  required?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -339,9 +423,10 @@ function TextField({
       <input
         name={name}
         type={type}
-        required
+        required={required}
+        disabled={disabled}
         placeholder={placeholder}
-        className="min-h-11 rounded-lg border border-[var(--sf-border)] px-3 text-sm outline-none focus:border-[var(--sf-accent)]"
+        className={fieldClassName}
       />
     </div>
   );

@@ -554,7 +554,11 @@ export function PublicVehicleDetail({
         className="scroll-mt-24"
         aria-labelledby="finance-heading"
       >
-        <VehicleFinancePanel vehiclePrice={vehicle.price} leadsEnabled={leadsEnabled} />
+        <VehicleFinancePanel
+          vehicleSlug={vehicle.slug}
+          vehiclePrice={vehicle.price}
+          leadsEnabled={leadsEnabled}
+        />
       </section>
 
       <section

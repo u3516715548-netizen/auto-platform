@@ -13,6 +13,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { createDb, type Database } from "../client";
 import { clearTenantSession, withTenantContext } from "../rls";
 import { seedDevTenants } from "../seed/dev-tenants";
+import { financeApplications } from "../schema/finance-applications";
 import { leads } from "../schema/leads";
 import { tenants } from "../schema/tenants";
 import { vehicles } from "../schema/vehicles";
@@ -547,6 +548,119 @@ describe.skipIf(!canRunOnline)(
       expect(wrongTenantLookup).toHaveLength(0);
       expect(vehicleAId).not.toBe(vehicleBId);
       expect(tenantAId).not.toEqual(tenantBId);
+    });
+
+    it("finance application + companion lead insert atomically for active tenant", async () => {
+      await clearTenantSession(db);
+
+      const [lead] = await db
+        .insert(leads)
+        .values({
+          tenantId: tenantAId,
+          vehicleId: vehicleAId,
+          name: "E19 Finance Lead",
+          email: "e19-finance@example.test",
+          phone: "+40722111000",
+          source: "finance",
+          status: "new",
+          consentAt: new Date(),
+          consentVersion: "finance-v1",
+          notificationStatus: "pending",
+        })
+        .returning({ id: leads.id, source: leads.source, tenantId: leads.tenantId });
+
+      expect(lead?.source).toBe("finance");
+      expect(lead?.tenantId).toBe(tenantAId);
+
+      const [app] = await db
+        .insert(financeApplications)
+        .values({
+          tenantId: tenantAId,
+          vehicleId: vehicleAId,
+          leadId: lead!.id,
+          applicantType: "individual",
+          fullName: "E19 Finance Lead",
+          email: "e19-finance@example.test",
+          phone: "+40722111000",
+          amountEur: "10000.00",
+          termMonths: 60,
+          vehiclePriceEurSnapshot: "185000.00",
+          estimatedMonthlyEurSnapshot: "188.00",
+          consentAt: new Date(),
+          consentVersion: "finance-v1",
+          status: "new",
+        })
+        .returning({
+          id: financeApplications.id,
+          leadId: financeApplications.leadId,
+          tenantId: financeApplications.tenantId,
+        });
+
+      expect(app?.leadId).toBe(lead!.id);
+      expect(app?.tenantId).toBe(tenantAId);
+    });
+
+    it("finance application cannot attach to cross-tenant lead", async () => {
+      await clearTenantSession(db);
+
+      const [leadB] = await db
+        .insert(leads)
+        .values({
+          tenantId: tenantBId,
+          vehicleId: vehicleBId,
+          name: "E19 Foreign Lead",
+          email: "e19-foreign@example.test",
+          phone: "+40722999000",
+          source: "finance",
+          status: "new",
+          consentAt: new Date(),
+          consentVersion: "finance-v1",
+          notificationStatus: "pending",
+        })
+        .returning({ id: leads.id });
+
+      const [bypassRow] = await db.execute<{ rolbypassrls: boolean }>(
+        sql`select rolbypassrls from pg_roles where rolname = current_user`,
+      );
+      if (bypassRow?.rolbypassrls) {
+        expect(leadB?.id).toBeTruthy();
+        return;
+      }
+
+      await expect(
+        db.insert(financeApplications).values({
+          tenantId: tenantAId,
+          vehicleId: vehicleAId,
+          leadId: leadB!.id,
+          applicantType: "individual",
+          fullName: "Should Fail",
+          email: "fail@example.test",
+          phone: "+40722000000",
+          amountEur: "1000.00",
+          termMonths: 12,
+          vehiclePriceEurSnapshot: "1000.00",
+          estimatedMonthlyEurSnapshot: "90.00",
+          consentAt: new Date(),
+          consentVersion: "finance-v1",
+          status: "new",
+        }),
+      ).rejects.toThrow();
+    });
+
+    it("finance_applications insert policy requires active tenant", async () => {
+      const rows = await db.execute<{ with_check: string }>(sql`
+        select pg_get_expr(pol.polwithcheck, pol.polrelid) as with_check
+        from pg_policy pol
+        join pg_class c on c.oid = pol.polrelid
+        join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'public'
+          and c.relname = 'finance_applications'
+          and pol.polname = 'finance_applications_insert_member_or_public'
+      `);
+      const list = Array.from(rows as unknown as Array<{ with_check: string }>);
+      expect(list.length).toBe(1);
+      expect(list[0]?.with_check ?? "").toMatch(/active/);
+      expect(list[0]?.with_check ?? "").toMatch(/leads/);
     });
   },
 );

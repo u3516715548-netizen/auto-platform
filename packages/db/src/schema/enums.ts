@@ -99,6 +99,23 @@ export const leadNotificationStatusEnum = pgEnum("lead_notification_status", [
   "failed",
 ]);
 
+/** Etapa 19 — finance applicant kind. */
+export const financeApplicantTypeEnum = pgEnum("finance_applicant_type", [
+  "individual",
+  "company",
+]);
+
+/** Etapa 19 — finance application CRM status (separate from lead_status). */
+export const financeApplicationStatusEnum = pgEnum("finance_application_status", [
+  "new",
+  "contacted",
+  "in_review",
+  "approved",
+  "rejected",
+  "withdrawn",
+  "archived",
+]);
+
 export const reservationStatusEnum = pgEnum("reservation_status", [
   "active",
   "expired",

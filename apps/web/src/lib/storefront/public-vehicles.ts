@@ -448,6 +448,18 @@ export async function getPublicVehicleIdForLead(
   tenantId: string,
   slug: string,
 ): Promise<string | null> {
+  const vehicle = await getPublicVehicleForFinance(tenantId, slug);
+  return vehicle?.id ?? null;
+}
+
+/**
+ * Resolves an available public vehicle for finance/lead flows.
+ * Returns id + numeric price from DB (never trusts client price).
+ */
+export async function getPublicVehicleForFinance(
+  tenantId: string,
+  slug: string,
+): Promise<{ id: string; priceEur: number } | null> {
   const db = getDb();
   await clearPublicSessionGucs(db);
 
@@ -456,6 +468,7 @@ export async function getPublicVehicleIdForLead(
       id: vehicles.id,
       tenantId: vehicles.tenantId,
       status: vehicles.status,
+      price: vehicles.price,
     })
     .from(vehicles)
     .where(
@@ -470,5 +483,11 @@ export async function getPublicVehicleIdForLead(
   if (!row || row.tenantId !== tenantId || row.status !== "available") {
     return null;
   }
-  return row.id;
+
+  const priceEur = Number(row.price);
+  if (!Number.isFinite(priceEur) || priceEur <= 0) {
+    return null;
+  }
+
+  return { id: row.id, priceEur };
 }

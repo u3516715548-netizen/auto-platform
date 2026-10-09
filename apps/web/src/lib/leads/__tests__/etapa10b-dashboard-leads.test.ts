@@ -126,6 +126,7 @@ describe("Etapa 10B — labels & contact links", () => {
     expect(leadStatusLabel("new")).toBe("Nou");
     expect(leadStatusLabel("won")).toBe("Câștigat");
     expect(leadSourceLabel("storefront")).toBe("Site public");
+    expect(leadSourceLabel("finance")).toBe("Finanțare");
     expect(leadSourceLabel("")).toBeNull();
 
     expect(leadMailtoHref("Ana@Example.com")).toBe("mailto:ana@example.com");
