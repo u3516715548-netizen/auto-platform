@@ -50,6 +50,20 @@
       "when": 1791519687027,
       "tag": "0006_finance_applications",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791522000000,
+      "tag": "0007_finance_lead_tenant_helper",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791522100000,
+      "tag": "0008_finance_vehicle_tenant_helper",
+      "breakpoints": true
     }
   ]
 }

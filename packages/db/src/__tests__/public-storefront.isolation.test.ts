@@ -660,7 +660,8 @@ describe.skipIf(!canRunOnline)(
       const list = Array.from(rows as unknown as Array<{ with_check: string }>);
       expect(list.length).toBe(1);
       expect(list[0]?.with_check ?? "").toMatch(/active/);
-      expect(list[0]?.with_check ?? "").toMatch(/leads/);
+      // Etapa 20: lead same-tenant via app.lead_belongs_to_tenant (not raw EXISTS on leads).
+      expect(list[0]?.with_check ?? "").toMatch(/lead_belongs_to_tenant/);
     });
   },
 );
