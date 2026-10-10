@@ -1054,3 +1054,354 @@ export function formatMileageKmRo(mileageKm: number): string {
   }
   return `${new Intl.NumberFormat("ro-RO").format(Math.trunc(mileageKm))} km`;
 }
+
+/* ─── Etapa 22 — tenant company profile ─────────────────────────────────── */
+
+export const companyEntityTypeSchema = z.enum(["srl", "sa", "pfa", "ii", "other"]);
+export type CompanyEntityType = z.infer<typeof companyEntityTypeSchema>;
+
+/** Tenant display currency for company profile (EUR|RON only). */
+export const companyCurrencySchema = z.enum(["EUR", "RON"]);
+export type CompanyCurrency = z.infer<typeof companyCurrencySchema>;
+
+export const BUSINESS_HOUR_DAYS = [
+  "mon",
+  "tue",
+  "wed",
+  "thu",
+  "fri",
+  "sat",
+  "sun",
+] as const;
+export type BusinessHourDay = (typeof BUSINESS_HOUR_DAYS)[number];
+
+const timeHhMmSchema = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Ora trebuie să fie HH:MM");
+
+const businessDayHoursSchema = z
+  .object({
+    open: timeHhMmSchema,
+    close: timeHhMmSchema,
+  })
+  .strict()
+  .refine((value) => value.open < value.close, {
+    message: "Ora de închidere trebuie să fie după ora de deschidere",
+  });
+
+/**
+ * Normalized weekly hours. Missing day keys mean closed.
+ * `note` is optional free text (max 200).
+ */
+export const businessHoursSchema = z
+  .object({
+    mon: businessDayHoursSchema.nullable().optional(),
+    tue: businessDayHoursSchema.nullable().optional(),
+    wed: businessDayHoursSchema.nullable().optional(),
+    thu: businessDayHoursSchema.nullable().optional(),
+    fri: businessDayHoursSchema.nullable().optional(),
+    sat: businessDayHoursSchema.nullable().optional(),
+    sun: businessDayHoursSchema.nullable().optional(),
+    note: z.string().trim().max(200).optional(),
+  })
+  .strict();
+export type BusinessHours = z.infer<typeof businessHoursSchema>;
+
+/**
+ * Structural Romanian Reg. Com. number (e.g. J40/1234/2020).
+ * No ONRC lookup.
+ */
+export function normalizeRomanianRegistrationNumber(raw: string): string | null {
+  const trimmed = raw.trim().toUpperCase().replace(/\s+/g, "");
+  if (!trimmed || trimmed.length > 32) return null;
+  const match = /^([A-Z])(\d{1,2})\/(\d{1,6})\/(\d{4})$/.exec(trimmed);
+  if (!match) return null;
+  const [, letter, county, serial, year] = match;
+  const yearNum = Number(year);
+  if (yearNum < 1990 || yearNum > 2100) return null;
+  return `${letter}${Number(county)}/${Number(serial)}/${year}`;
+}
+
+/**
+ * Storage / CDN path for logo or favicon. Relative path or https URL.
+ * Rejects traversal, data URIs, and secrets-looking query strings.
+ */
+export function normalizeBrandAssetPath(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > 500) return null;
+  if (trimmed.includes("..") || trimmed.includes("\\")) return null;
+  if (/^(data:|javascript:|file:)/i.test(trimmed)) return null;
+  if (/[?#].*(token|secret|key|password|apikey)=/i.test(trimmed)) return null;
+
+  if (/^https:\/\//i.test(trimmed)) {
+    try {
+      const url = new URL(trimmed);
+      if (url.protocol !== "https:") return null;
+      return url.toString();
+    } catch {
+      return null;
+    }
+  }
+
+  if (!/^[a-zA-Z0-9/_.-]+$/.test(trimmed)) return null;
+  if (trimmed.startsWith("/")) return null;
+  return trimmed;
+}
+
+const optionalNullableTrimmed = (max: number) =>
+  z.preprocess((value) => {
+    if (value === null) return null;
+    if (typeof value === "string" && value.trim() === "") return null;
+    return value;
+  }, z.union([z.string().trim().max(max), z.null()]).optional());
+
+/**
+ * Dashboard upsert input for company profile.
+ * Empty strings clear optional fields (null). Client tenant/owner never trusted.
+ */
+export const upsertCompanyProfileInputSchema = z
+  .object({
+    tradingName: z
+      .string()
+      .trim()
+      .min(2, "Numele comercial trebuie să aibă cel puțin 2 caractere.")
+      .max(120, "Numele comercial este prea lung."),
+    legalName: optionalNullableTrimmed(200),
+    taxId: z.preprocess((value) => {
+      if (value === null) return null;
+      if (typeof value === "string" && value.trim() === "") return null;
+      return value;
+    }, z.union([z.string().trim().max(16), z.null()]).optional()),
+    registrationNumber: z.preprocess((value) => {
+      if (value === null) return null;
+      if (typeof value === "string" && value.trim() === "") return null;
+      return value;
+    }, z.union([z.string().trim().max(32), z.null()]).optional()),
+    entityType: z.preprocess(
+      emptyFormFieldToUndefined,
+      companyEntityTypeSchema.optional().nullable(),
+    ),
+    publicEmail: z.preprocess((value) => {
+      if (value === null) return null;
+      if (typeof value === "string" && value.trim() === "") return null;
+      return value;
+    }, z.union([z.string().trim().max(160), z.null()]).optional()),
+    publicPhone: z.preprocess((value) => {
+      if (value === null) return null;
+      if (typeof value === "string" && value.trim() === "") return null;
+      return value;
+    }, z.union([z.string().trim().max(PUBLIC_CONTACT_INPUT_MAX), z.null()]).optional()),
+    website: z.preprocess((value) => {
+      if (value === null) return null;
+      if (typeof value === "string" && value.trim() === "") return null;
+      return value;
+    }, z.union([z.string().trim().max(300), z.null()]).optional()),
+    registeredAddress: optionalNullableTrimmed(300),
+    showroomAddress: optionalNullableTrimmed(300),
+    city: optionalNullableTrimmed(80),
+    county: optionalNullableTrimmed(80),
+    country: z.preprocess(
+      emptyFormFieldToUndefined,
+      z
+        .string()
+        .trim()
+        .length(2, "Țara trebuie să fie un cod ISO de 2 litere")
+        .transform((value) => value.toUpperCase())
+        .optional()
+        .nullable(),
+    ),
+    postalCode: optionalNullableTrimmed(16),
+    businessHours: businessHoursSchema.optional(),
+    logoPath: z.preprocess((value) => {
+      if (value === null) return null;
+      if (typeof value === "string" && value.trim() === "") return null;
+      return value;
+    }, z.union([z.string().trim().max(500), z.null()]).optional()),
+    faviconPath: z.preprocess((value) => {
+      if (value === null) return null;
+      if (typeof value === "string" && value.trim() === "") return null;
+      return value;
+    }, z.union([z.string().trim().max(500), z.null()]).optional()),
+    currency: companyCurrencySchema.optional(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    if (data.taxId != null && data.taxId !== undefined) {
+      if (!normalizeRomanianCui(data.taxId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["taxId"],
+          message: "CUI invalid",
+        });
+      }
+    }
+    if (data.registrationNumber != null && data.registrationNumber !== undefined) {
+      if (!normalizeRomanianRegistrationNumber(data.registrationNumber)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["registrationNumber"],
+          message: "Număr Registrul Comerțului invalid",
+        });
+      }
+    }
+    if (data.publicEmail != null && data.publicEmail !== undefined) {
+      const email = data.publicEmail.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["publicEmail"],
+          message: "Email invalid",
+        });
+      }
+    }
+    if (data.publicPhone != null && data.publicPhone !== undefined) {
+      if (!normalizePublicContactNumber(data.publicPhone)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["publicPhone"],
+          message: "Telefon invalid",
+        });
+      }
+    }
+    if (data.website != null && data.website !== undefined) {
+      try {
+        const url = new URL(
+          /^https?:\/\//i.test(data.website) ? data.website : `https://${data.website}`,
+        );
+        if (url.protocol !== "http:" && url.protocol !== "https:") {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["website"],
+            message: "Website invalid",
+          });
+        }
+      } catch {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["website"],
+          message: "Website invalid",
+        });
+      }
+    }
+    if (data.logoPath != null && data.logoPath !== undefined) {
+      if (!normalizeBrandAssetPath(data.logoPath)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["logoPath"],
+          message: "Referință logo invalidă",
+        });
+      }
+    }
+    if (data.faviconPath != null && data.faviconPath !== undefined) {
+      if (!normalizeBrandAssetPath(data.faviconPath)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["faviconPath"],
+          message: "Referință favicon invalidă",
+        });
+      }
+    }
+    const country = data.country ?? "RO";
+    if (country === "RO" && data.postalCode) {
+      if (!/^\d{6}$/.test(data.postalCode.trim())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["postalCode"],
+          message: "Codul poștal din România trebuie să aibă 6 cifre",
+        });
+      }
+    }
+    if (country === "RO" && data.postalCode && !data.city) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["city"],
+        message: "Localitatea este obligatorie când este setat codul poștal",
+      });
+    }
+  })
+  .transform((data) => {
+    const taxId =
+      data.taxId == null || data.taxId === undefined
+        ? data.taxId
+        : normalizeRomanianCui(data.taxId);
+    const registrationNumber =
+      data.registrationNumber == null || data.registrationNumber === undefined
+        ? data.registrationNumber
+        : normalizeRomanianRegistrationNumber(data.registrationNumber);
+    const publicEmail =
+      data.publicEmail == null || data.publicEmail === undefined
+        ? data.publicEmail
+        : data.publicEmail.trim().toLowerCase();
+    const publicPhone =
+      data.publicPhone == null || data.publicPhone === undefined
+        ? data.publicPhone
+        : normalizePublicContactNumber(data.publicPhone);
+    let website = data.website;
+    if (website != null && website !== undefined) {
+      const withProto = /^https?:\/\//i.test(website) ? website : `https://${website}`;
+      website = new URL(withProto).toString().replace(/\/$/, "");
+    }
+    const logoPath =
+      data.logoPath == null || data.logoPath === undefined
+        ? data.logoPath
+        : normalizeBrandAssetPath(data.logoPath);
+    const faviconPath =
+      data.faviconPath == null || data.faviconPath === undefined
+        ? data.faviconPath
+        : normalizeBrandAssetPath(data.faviconPath);
+
+    return {
+      tradingName: data.tradingName,
+      legalName: data.legalName === undefined ? undefined : data.legalName,
+      taxId: taxId === undefined ? undefined : taxId,
+      registrationNumber:
+        registrationNumber === undefined ? undefined : registrationNumber,
+      entityType: data.entityType === undefined ? undefined : data.entityType,
+      publicEmail: publicEmail === undefined ? undefined : publicEmail,
+      publicPhone: publicPhone === undefined ? undefined : publicPhone,
+      website: website === undefined ? undefined : website,
+      registeredAddress:
+        data.registeredAddress === undefined ? undefined : data.registeredAddress,
+      showroomAddress:
+        data.showroomAddress === undefined ? undefined : data.showroomAddress,
+      city: data.city === undefined ? undefined : data.city,
+      county: data.county === undefined ? undefined : data.county,
+      country: data.country === undefined ? undefined : data.country,
+      postalCode: data.postalCode === undefined ? undefined : data.postalCode,
+      businessHours: data.businessHours,
+      logoPath: logoPath === undefined ? undefined : logoPath,
+      faviconPath: faviconPath === undefined ? undefined : faviconPath,
+      currency: data.currency,
+    };
+  });
+export type UpsertCompanyProfileInput = z.infer<typeof upsertCompanyProfileInputSchema>;
+
+/**
+ * Explicit public company projection for storefront (no tenant id, no timestamps).
+ * All fields optional — empty profile yields an empty-friendly view.
+ */
+export type PublicCompanyView = {
+  legalName?: string;
+  tradingName?: string;
+  taxId?: string;
+  registrationNumber?: string;
+  entityType?: CompanyEntityType;
+  publicEmail?: string;
+  publicPhone?: string;
+  website?: string;
+  registeredAddress?: string;
+  showroomAddress?: string;
+  city?: string;
+  county?: string;
+  country?: string;
+  postalCode?: string;
+  businessHours?: BusinessHours;
+  logoPath?: string;
+  faviconPath?: string;
+  currency?: CompanyCurrency;
+};
+
+/** Staff dashboard view — still no secrets; includes timestamps for UI only. */
+export type CompanyProfileView = PublicCompanyView & {
+  updatedAt?: string;
+};

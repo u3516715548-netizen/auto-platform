@@ -9,7 +9,9 @@ import {
 import {
   resolveStorefrontHeaderCta,
   resolveStorefrontShellClass,
+  storefrontFooterAddressLine,
   storefrontFooterContactLinks,
+  storefrontFooterLegalLine,
 } from "@/lib/storefront/storefront-shell-helpers";
 import {
   resolveStickyContactActions,
@@ -53,11 +55,14 @@ export function PublicStorefrontShell({
   const shellClass = resolveStorefrontShellClass(tenant.templateId);
   const headerCta = resolveStorefrontHeaderCta(tenant);
   const footerContacts = storefrontFooterContactLinks(tenant);
+  const footerAddress = storefrontFooterAddressLine(tenant.company);
+  const footerLegal = storefrontFooterLegalLine(tenant.company);
   const stickyActions =
     stickySurface === "detail"
       ? resolveStickyContactActions(tenant, stickySurface)
       : [];
   const showMobileNav = stickySurface === "catalog";
+  const mobilePhone = tenant.phone ?? tenant.company?.publicPhone;
 
   const tokenStyle = {
     ["--sf-accent" as string]: accent,
@@ -134,6 +139,12 @@ export function PublicStorefrontShell({
             <div className="flex flex-col gap-3 px-8 py-5 text-sm lg:flex-row lg:items-center lg:justify-between lg:px-10">
               <div className="flex flex-col gap-1">
                 <p className="font-medium text-[var(--sf-text)]">{tenant.name}</p>
+                {footerAddress ? (
+                  <p className="text-[var(--sf-text-muted)]">{footerAddress}</p>
+                ) : null}
+                {footerLegal ? (
+                  <p className="text-xs text-[var(--sf-text-muted)]">{footerLegal}</p>
+                ) : null}
                 <Link
                   href={catalogHref}
                   className={`w-fit text-[var(--sf-text-muted)] underline-offset-2 hover:underline ${focusLink}`}
@@ -217,10 +228,10 @@ export function PublicStorefrontShell({
                   Compară
                 </Link>
               </li>
-              {tenant.phone ? (
+              {mobilePhone ? (
                 <li className="min-w-0 flex-1">
                   <a
-                    href={`tel:${tenant.phone.replace(/\s+/g, "")}`}
+                    href={`tel:${mobilePhone.replace(/\s+/g, "")}`}
                     className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-[var(--sf-text-muted)] ${focusLink}`}
                   >
                     <span className="flex size-8 items-center justify-center" aria-hidden>

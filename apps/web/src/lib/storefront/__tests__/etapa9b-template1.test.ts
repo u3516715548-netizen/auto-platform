@@ -52,6 +52,10 @@ describe("Etapa 9B Template 1 shell helpers", () => {
     ]);
   });
 
+  it("footer remains stable when company projection is empty", () => {
+    expect(storefrontFooterContactLinks(view({ company: {} }))).toEqual([]);
+  });
+
   it("header CTA prefers phone, then WhatsApp, else catalog — never invents contact", () => {
     expect(resolveStorefrontHeaderCta(view())).toEqual({
       href: "/",

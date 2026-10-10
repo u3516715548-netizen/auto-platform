@@ -16,6 +16,16 @@ export const tenantInvitationStatusEnum = pgEnum("tenant_invitation_status", [
   "expired",
   "revoked",
 ]);
+
+/** Etapa 22 — Romanian company entity kinds (structural only). */
+export const companyEntityTypeEnum = pgEnum("company_entity_type", [
+  "srl",
+  "sa",
+  "pfa",
+  "ii",
+  "other",
+]);
+
 export const vehicleStatusEnum = pgEnum("vehicle_status", [
   "draft",
   "available",

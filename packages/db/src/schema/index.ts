@@ -7,6 +7,7 @@ export * from "./vehicle-media";
 export * from "./leads";
 export * from "./finance-applications";
 export * from "./tenant-invitations";
+export * from "./tenant-company-profiles";
 export * from "./reservations";
 export * from "./audit-logs";
 export * from "./tenant-features";

@@ -3,51 +3,47 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { Button, Input, Label } from "@auto-platform/ui";
+import type { CompanyProfileView } from "@auto-platform/types";
 import {
-  updateCompanyNameAction,
-  type UpdateCompanyNameState,
-} from "@/lib/settings/update-company-name";
+  upsertCompanyProfileAction,
+  type UpsertCompanyProfileState,
+} from "@/lib/settings/upsert-company-profile";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
 
-const initialState: UpdateCompanyNameState = { error: null, success: false };
+const initialState: UpsertCompanyProfileState = { error: null, success: false };
+
+const ENTITY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "", label: "Neselectat" },
+  { value: "srl", label: "SRL" },
+  { value: "sa", label: "SA" },
+  { value: "pfa", label: "PFA" },
+  { value: "ii", label: "II" },
+  { value: "other", label: "Altă formă" },
+];
+
+const DAY_LABELS: Array<{ key: string; label: string }> = [
+  { key: "mon", label: "Luni" },
+  { key: "tue", label: "Marți" },
+  { key: "wed", label: "Miercuri" },
+  { key: "thu", label: "Joi" },
+  { key: "fri", label: "Vineri" },
+  { key: "sat", label: "Sâmbătă" },
+  { key: "sun", label: "Duminică" },
+];
 
 type CompanySettingsFormProps = {
-  commercialName: string;
-  publicPhone: string | null;
-  publicWhatsapp: string | null;
+  profile: CompanyProfileView;
+  brandingPhone: string | null;
+  brandingWhatsapp: string | null;
 };
 
-function PendingField({
-  id,
-  label,
-  hint,
-}: {
-  id: string;
-  label: string;
-  hint?: string;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        type="text"
-        disabled
-        placeholder="Disponibil după migrare"
-        className="bg-zinc-50"
-      />
-      {hint ? <p className="text-xs text-zinc-500">{hint}</p> : null}
-    </div>
-  );
-}
-
 export function CompanySettingsForm({
-  commercialName,
-  publicPhone,
-  publicWhatsapp,
+  profile,
+  brandingPhone,
+  brandingWhatsapp,
 }: CompanySettingsFormProps) {
   const [state, formAction, pending] = useActionState(
-    updateCompanyNameAction,
+    upsertCompanyProfileAction,
     initialState,
   );
 
@@ -58,110 +54,347 @@ export function CompanySettingsForm({
       ) : null}
       {state?.success ? (
         <FeedbackBanner variant="success">
-          Numele comercial a fost salvat.
+          Detaliile firmei au fost salvate.
         </FeedbackBanner>
       ) : null}
-
-      <FeedbackBanner variant="info">
-        Doar numele comercial poate fi salvat acum. Celelalte câmpuri așteaptă o migrare de
-        schemă — nu sunt stocate în browser și nu apar pe storefront până nu există un DTO
-        public explicit.
-      </FeedbackBanner>
 
       <form action={formAction} className="flex flex-col gap-8">
         <section className="flex flex-col gap-4">
           <div>
-            <h3 className="text-base font-semibold text-zinc-900">Identitate firmă</h3>
+            <h3 className="text-base font-semibold text-zinc-900">Identitate</h3>
             <p className="mt-1 text-sm text-zinc-600">
               Datele legale și de identificare ale dealerului.
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="company-commercialName">Nume comercial</Label>
+            <Label htmlFor="company-tradingName">Nume comercial / brand</Label>
             <Input
-              id="company-commercialName"
-              name="commercialName"
+              id="company-tradingName"
+              name="tradingName"
               type="text"
-              defaultValue={commercialName}
+              defaultValue={profile.tradingName ?? ""}
               required
               maxLength={120}
               disabled={pending}
             />
           </div>
-          <PendingField id="company-legalName" label="Denumire legală" />
-          <PendingField id="company-cui" label="CUI" />
-          <PendingField id="company-regCom" label="Număr Registrul Comerțului" />
-          <PendingField id="company-hours" label="Program" />
-        </section>
-
-        <section className="flex flex-col gap-4">
-          <div>
-            <h3 className="text-base font-semibold text-zinc-900">Adresă</h3>
-            <p className="mt-1 text-sm text-zinc-600">Sediu / locație showroom.</p>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="company-legalName">Denumire legală</Label>
+            <Input
+              id="company-legalName"
+              name="legalName"
+              type="text"
+              defaultValue={profile.legalName ?? ""}
+              maxLength={200}
+              disabled={pending}
+            />
           </div>
-          <PendingField id="company-address" label="Adresă" />
-          <PendingField id="company-city" label="Localitate" />
-          <PendingField id="company-county" label="Județ" />
-          <PendingField id="company-postal" label="Cod poștal" />
-          <PendingField id="company-country" label="Țară" />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="company-taxId">CUI / CIF</Label>
+            <Input
+              id="company-taxId"
+              name="taxId"
+              type="text"
+              defaultValue={profile.taxId ?? ""}
+              maxLength={16}
+              disabled={pending}
+              placeholder="RO12345678"
+              autoComplete="off"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="company-registrationNumber">
+              Număr Registrul Comerțului
+            </Label>
+            <Input
+              id="company-registrationNumber"
+              name="registrationNumber"
+              type="text"
+              defaultValue={profile.registrationNumber ?? ""}
+              maxLength={32}
+              disabled={pending}
+              placeholder="J40/1234/2020"
+              autoComplete="off"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="company-entityType">Formă juridică</Label>
+            <select
+              id="company-entityType"
+              name="entityType"
+              defaultValue={profile.entityType ?? ""}
+              disabled={pending}
+              className="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+            >
+              {ENTITY_OPTIONS.map((opt) => (
+                <option key={opt.value || "empty"} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="company-currency">Monedă</Label>
+            <select
+              id="company-currency"
+              name="currency"
+              defaultValue={profile.currency ?? "EUR"}
+              disabled={pending}
+              className="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+            >
+              <option value="EUR">EUR</option>
+              <option value="RON">RON</option>
+            </select>
+          </div>
         </section>
 
         <section className="flex flex-col gap-4">
           <div>
             <h3 className="text-base font-semibold text-zinc-900">Contact</h3>
             <p className="mt-1 text-sm text-zinc-600">
-              Contactul public actual (telefon / WhatsApp) se editează la{" "}
+              Date publice de contact. WhatsApp rămâne la{" "}
               <Link
-                href="/dashboard/settings/customization"
+                href="/dashboard/settings/customization/preferences"
                 className="font-medium text-teal-800 underline-offset-2 hover:underline"
               >
-                Personalizare
+                Personalizare → Preferințe
               </Link>
-              .
+              {brandingWhatsapp ? ` (setat: ${brandingWhatsapp})` : ""}.
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="company-phone">Telefon principal (public)</Label>
+            <Label htmlFor="company-publicEmail">Email public</Label>
             <Input
-              id="company-phone"
-              type="text"
-              value={publicPhone ?? ""}
-              readOnly
-              disabled
-              placeholder="Nesetat"
-              className="bg-zinc-50"
+              id="company-publicEmail"
+              name="publicEmail"
+              type="email"
+              defaultValue={profile.publicEmail ?? ""}
+              maxLength={160}
+              disabled={pending}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="company-whatsapp">WhatsApp (public)</Label>
+            <Label htmlFor="company-publicPhone">Telefon public</Label>
             <Input
-              id="company-whatsapp"
+              id="company-publicPhone"
+              name="publicPhone"
               type="text"
-              value={publicWhatsapp ?? ""}
-              readOnly
-              disabled
-              placeholder="Nesetat"
-              className="bg-zinc-50"
+              defaultValue={profile.publicPhone ?? brandingPhone ?? ""}
+              maxLength={40}
+              disabled={pending}
+              placeholder="+40722123456"
+            />
+            {brandingPhone && !profile.publicPhone ? (
+              <p className="text-xs text-zinc-500">
+                Valoare precompletată din branding (Personalizare).
+              </p>
+            ) : null}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="company-website">Website</Label>
+            <Input
+              id="company-website"
+              name="website"
+              type="url"
+              defaultValue={profile.website ?? ""}
+              maxLength={300}
+              disabled={pending}
+              placeholder="https://exemplu.ro"
             />
           </div>
-          <PendingField id="company-phone2" label="Telefon secundar" />
-          <PendingField id="company-email" label="Email contact" />
-          <PendingField id="company-leadsEmail" label="Email pentru lead-uri" />
         </section>
 
         <section className="flex flex-col gap-4">
           <div>
-            <h3 className="text-base font-semibold text-zinc-900">Prezență online</h3>
-            <p className="mt-1 text-sm text-zinc-600">Linkuri publice ale dealerului.</p>
+            <h3 className="text-base font-semibold text-zinc-900">Adresă</h3>
+            <p className="mt-1 text-sm text-zinc-600">
+              Sediu social și, opțional, adresa showroom.
+            </p>
           </div>
-          <PendingField id="company-website" label="Website" />
-          <PendingField id="company-facebook" label="Link Facebook" />
-          <PendingField id="company-instagram" label="Link Instagram" />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="company-registeredAddress">Adresă sediu</Label>
+            <Input
+              id="company-registeredAddress"
+              name="registeredAddress"
+              type="text"
+              defaultValue={profile.registeredAddress ?? ""}
+              maxLength={300}
+              disabled={pending}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="company-showroomAddress">Adresă showroom</Label>
+            <Input
+              id="company-showroomAddress"
+              name="showroomAddress"
+              type="text"
+              defaultValue={profile.showroomAddress ?? ""}
+              maxLength={300}
+              disabled={pending}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="company-city">Localitate</Label>
+              <Input
+                id="company-city"
+                name="city"
+                type="text"
+                defaultValue={profile.city ?? ""}
+                maxLength={80}
+                disabled={pending}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="company-county">Județ</Label>
+              <Input
+                id="company-county"
+                name="county"
+                type="text"
+                defaultValue={profile.county ?? ""}
+                maxLength={80}
+                disabled={pending}
+              />
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="company-postalCode">Cod poștal</Label>
+              <Input
+                id="company-postalCode"
+                name="postalCode"
+                type="text"
+                defaultValue={profile.postalCode ?? ""}
+                maxLength={16}
+                disabled={pending}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="company-country">Țară (ISO)</Label>
+              <Input
+                id="company-country"
+                name="country"
+                type="text"
+                defaultValue={profile.country ?? "RO"}
+                maxLength={2}
+                disabled={pending}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-4">
+          <div>
+            <h3 className="text-base font-semibold text-zinc-900">Branding</h3>
+            <p className="mt-1 text-sm text-zinc-600">
+              Referințe către logo / favicon (cale storage sau URL https). Upload-ul
+              fișierelor este amânat.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="company-logoPath">Logo (cale / URL)</Label>
+            <Input
+              id="company-logoPath"
+              name="logoPath"
+              type="text"
+              defaultValue={profile.logoPath ?? ""}
+              maxLength={500}
+              disabled={pending}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="company-faviconPath">Favicon (cale / URL)</Label>
+            <Input
+              id="company-faviconPath"
+              name="faviconPath"
+              type="text"
+              defaultValue={profile.faviconPath ?? ""}
+              maxLength={500}
+              disabled={pending}
+            />
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-4">
+          <div>
+            <h3 className="text-base font-semibold text-zinc-900">Program</h3>
+            <p className="mt-1 text-sm text-zinc-600">
+              Ore HH:MM pe zi. Lasă gol sau bifează „Închis” pentru zile fără program.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            {DAY_LABELS.map(({ key, label }) => {
+              const day =
+                profile.businessHours?.[
+                  key as keyof NonNullable<CompanyProfileView["businessHours"]>
+                ];
+              const hours =
+                day && typeof day === "object" && "open" in day ? day : null;
+              const closed = !hours;
+              return (
+                <div
+                  key={key}
+                  className="grid grid-cols-[5rem_1fr_1fr_auto] items-end gap-2"
+                >
+                  <span className="pb-2 text-sm font-medium text-zinc-700">{label}</span>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor={`hours_${key}_open`} className="sr-only">
+                      Deschidere {label}
+                    </Label>
+                    <Input
+                      id={`hours_${key}_open`}
+                      name={`hours_${key}_open`}
+                      type="text"
+                      placeholder="09:00"
+                      defaultValue={hours?.open ?? ""}
+                      maxLength={5}
+                      disabled={pending}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor={`hours_${key}_close`} className="sr-only">
+                      Închidere {label}
+                    </Label>
+                    <Input
+                      id={`hours_${key}_close`}
+                      name={`hours_${key}_close`}
+                      type="text"
+                      placeholder="18:00"
+                      defaultValue={hours?.close ?? ""}
+                      maxLength={5}
+                      disabled={pending}
+                    />
+                  </div>
+                  <label className="flex items-center gap-1.5 pb-2 text-xs text-zinc-600">
+                    <input
+                      type="checkbox"
+                      name={`hours_${key}_closed`}
+                      defaultChecked={closed}
+                      disabled={pending}
+                    />
+                    Închis
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="company-hoursNote">Notă program</Label>
+            <Input
+              id="company-hoursNote"
+              name="hoursNote"
+              type="text"
+              defaultValue={profile.businessHours?.note ?? ""}
+              maxLength={200}
+              disabled={pending}
+              placeholder="ex. Închis în sărbători legale"
+            />
+          </div>
         </section>
 
         <div>
           <Button type="submit" disabled={pending}>
-            {pending ? "Se salvează…" : "Salvează numele comercial"}
+            {pending ? "Se salvează…" : "Salvează detaliile firmei"}
           </Button>
         </div>
       </form>

@@ -12,8 +12,9 @@ export function resolveStorefrontHeaderCta(tenant: PublicTenantView): {
   label: string;
 } {
   const catalogHref = publicCatalogPath();
-  if (tenant.phone) {
-    return { href: buildStorefrontTelHref(tenant.phone), label: "Sună" };
+  const phone = tenant.phone ?? tenant.company?.publicPhone;
+  if (phone) {
+    return { href: buildStorefrontTelHref(phone), label: "Sună" };
   }
   if (tenant.whatsapp) {
     return { href: buildStorefrontWhatsAppHref(tenant.whatsapp), label: "WhatsApp" };
@@ -31,8 +32,9 @@ export function storefrontFooterContactLinks(tenant: PublicTenantView): Array<{
   external?: boolean;
 }> {
   const links: Array<{ href: string; label: string; external?: boolean }> = [];
-  if (tenant.phone) {
-    links.push({ href: buildStorefrontTelHref(tenant.phone), label: "Telefon" });
+  const phone = tenant.phone ?? tenant.company?.publicPhone;
+  if (phone) {
+    links.push({ href: buildStorefrontTelHref(phone), label: "Telefon" });
   }
   if (tenant.whatsapp) {
     links.push({
@@ -41,5 +43,45 @@ export function storefrontFooterContactLinks(tenant: PublicTenantView): Array<{
       external: true,
     });
   }
+  if (tenant.company?.publicEmail) {
+    links.push({
+      href: `mailto:${tenant.company.publicEmail}`,
+      label: "Email",
+    });
+  }
+  if (tenant.company?.website) {
+    links.push({
+      href: tenant.company.website,
+      label: "Website",
+      external: true,
+    });
+  }
   return links;
+}
+
+/** Compact public address line for footer — omits when empty. */
+export function storefrontFooterAddressLine(
+  company: PublicTenantView["company"],
+): string | null {
+  if (!company) return null;
+  const parts = [
+    company.showroomAddress || company.registeredAddress,
+    [company.postalCode, company.city].filter(Boolean).join(" "),
+    company.county,
+  ].filter((part) => Boolean(part && String(part).trim()));
+  if (parts.length === 0) return null;
+  return parts.join(", ");
+}
+
+/** Legal identity line (name + CUI) for footer — omits when empty. */
+export function storefrontFooterLegalLine(
+  company: PublicTenantView["company"],
+): string | null {
+  if (!company) return null;
+  const bits: string[] = [];
+  if (company.legalName) bits.push(company.legalName);
+  if (company.taxId) bits.push(`CUI ${company.taxId}`);
+  if (company.registrationNumber) bits.push(company.registrationNumber);
+  if (bits.length === 0) return null;
+  return bits.join(" · ");
 }

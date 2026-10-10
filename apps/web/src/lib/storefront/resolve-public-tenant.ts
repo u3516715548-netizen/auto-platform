@@ -9,7 +9,9 @@ import {
   isHobbyDemoPublicLeadsDisabledFromRequest,
   resolveHobbyDemoTenantSlugFromRequest,
 } from "@/lib/tenant/vercel-demo-only";
+import type { PublicCompanyView } from "@auto-platform/types";
 import { clearPublicSessionGucs } from "./clear-public-session";
+import { loadPublicCompanyView } from "./load-public-company";
 import { parsePublicBranding } from "./public-dto";
 
 /** Server-only public tenant (includes id/status for server logic). */
@@ -27,6 +29,7 @@ export type PublicTenantRecord = {
 /**
  * Safe client-facing tenant view — no id, no raw branding, no status.
  * primaryColor / templateId always resolved with Template 1 fallbacks.
+ * `company` is an explicit PublicCompanyView (never a full DB row).
  */
 export type PublicTenantView = {
   slug: string;
@@ -37,6 +40,8 @@ export type PublicTenantView = {
   whatsapp?: string;
   /** Whether public lead form is allowed (active only). */
   leadsEnabled: boolean;
+  /** Optional public company projection (Etapa 22). */
+  company?: PublicCompanyView;
 };
 
 export type ResolvePublicTenantResult =
@@ -130,7 +135,7 @@ export async function loadPublicTenantBySlug(
 
 export function toPublicTenantView(
   tenant: PublicTenantRecord,
-  options?: { publicLeadsDisabled?: boolean },
+  options?: { publicLeadsDisabled?: boolean; company?: PublicCompanyView | null },
 ): PublicTenantView {
   const publicLeadsDisabled = options?.publicLeadsDisabled === true;
   return {
@@ -141,11 +146,13 @@ export function toPublicTenantView(
     ...(tenant.phone ? { phone: tenant.phone } : {}),
     ...(tenant.whatsapp ? { whatsapp: tenant.whatsapp } : {}),
     leadsEnabled: tenant.status === "active" && !publicLeadsDisabled,
+    ...(options?.company ? { company: options.company } : {}),
   };
 }
 
 /**
  * Builds the public tenant view including HOBBY_DEMO lead disable (server Host/env).
+ * Loads PublicCompanyView via SECURITY DEFINER (never full-row anon SELECT).
  * Call from Server Components / actions only.
  */
 export async function toPublicTenantViewForRequest(
@@ -154,8 +161,10 @@ export async function toPublicTenantViewForRequest(
   const headerStore = await headers();
   const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
   const rootDomain = getRootDomain();
+  const company = await loadPublicCompanyView(tenant.tenantId);
   return toPublicTenantView(tenant, {
     publicLeadsDisabled: isHobbyDemoPublicLeadsDisabledFromRequest(host, rootDomain),
+    company,
   });
 }
 

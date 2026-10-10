@@ -85,6 +85,13 @@
       "when": 1791523200000,
       "tag": "0011_tenant_member_email_helper",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791524000000,
+      "tag": "0012_tenant_company_profiles",
+      "breakpoints": true
     }
   ]
 }

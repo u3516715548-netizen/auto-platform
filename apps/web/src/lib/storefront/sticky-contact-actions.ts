@@ -20,10 +20,11 @@ export type StickyContactAction = {
  * Catalog never includes Mesaj. Detail includes Mesaj only when leadsEnabled.
  */
 export function resolveStickyContactActions(
-  tenant: Pick<PublicTenantView, "phone" | "whatsapp" | "leadsEnabled">,
+  tenant: Pick<PublicTenantView, "phone" | "whatsapp" | "leadsEnabled" | "company">,
   surface: StickyContactSurface,
 ): StickyContactAction[] {
   const actions: StickyContactAction[] = [];
+  const phone = tenant.phone ?? tenant.company?.publicPhone;
 
   if (surface === "detail" && tenant.leadsEnabled) {
     actions.push({
@@ -33,11 +34,11 @@ export function resolveStickyContactActions(
     });
   }
 
-  if (tenant.phone) {
+  if (phone) {
     actions.push({
       kind: "call",
       label: "Sună",
-      href: buildStorefrontTelHref(tenant.phone),
+      href: buildStorefrontTelHref(phone),
     });
   }
 
@@ -54,7 +55,7 @@ export function resolveStickyContactActions(
 }
 
 export function stickyContactBarVisible(
-  tenant: Pick<PublicTenantView, "phone" | "whatsapp" | "leadsEnabled">,
+  tenant: Pick<PublicTenantView, "phone" | "whatsapp" | "leadsEnabled" | "company">,
   surface: StickyContactSurface,
 ): boolean {
   return resolveStickyContactActions(tenant, surface).length > 0;
