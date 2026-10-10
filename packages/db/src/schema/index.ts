@@ -8,6 +8,8 @@ export * from "./leads";
 export * from "./finance-applications";
 export * from "./tenant-invitations";
 export * from "./tenant-company-profiles";
+export * from "./tenant-pages";
+export * from "./tenant-seo-settings";
 export * from "./reservations";
 export * from "./audit-logs";
 export * from "./tenant-features";

@@ -17,6 +17,7 @@ import {
 } from "@/lib/storefront/public-dto";
 import { parseVehicleSlugParam } from "@/lib/storefront/parse-public-lead";
 import { publicCatalogPath } from "@/lib/storefront/paths";
+import { loadPublicSeoSettings } from "@/lib/seo/load-public-seo-settings";
 import { STOREFRONT_CONTACT_ANCHOR_ID } from "@/lib/storefront/storefront-contact-links";
 import { PublicStorefrontShell } from "@/components/storefront/public-shell";
 import { PublicLeadForm } from "@/components/storefront/public-lead-form";
@@ -44,9 +45,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!vehicle) {
     return { title: "Vehicul indisponibil" };
   }
+  const seo = await loadPublicSeoSettings(resolved.tenant.tenantId);
   return {
     title: buildPublicVehicleDetailTitle(vehicle, resolved.tenant.name),
     description: buildPublicVehicleDetailDescription(vehicle),
+    alternates: { canonical: `/vehicles/${slug}` },
+    robots:
+      seo.indexingEnabled === false
+        ? { index: false, follow: true }
+        : { index: true, follow: true },
+    ...(seo.faviconPath ? { icons: { icon: seo.faviconPath } } : {}),
   };
 }
 

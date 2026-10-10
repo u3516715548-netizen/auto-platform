@@ -1405,3 +1405,305 @@ export type PublicCompanyView = {
 export type CompanyProfileView = PublicCompanyView & {
   updatedAt?: string;
 };
+
+/* ─── Etapa 23A — CMS pages + basic SEO ─────────────────────────────────── */
+
+export const tenantPageStatusSchema = z.enum(["draft", "published"]);
+export type TenantPageStatus = z.infer<typeof tenantPageStatusSchema>;
+
+export const tenantPageKindSchema = z.enum([
+  "custom",
+  "about",
+  "contact",
+  "terms",
+  "privacy",
+  "cookies",
+]);
+export type TenantPageKind = z.infer<typeof tenantPageKindSchema>;
+
+/** Fixed legal slugs (RO) mapped to page_kind. */
+export const LEGAL_PAGE_SLUGS = [
+  "despre",
+  "contact",
+  "termeni",
+  "confidentialitate",
+  "cookies",
+] as const;
+export type LegalPageSlug = (typeof LEGAL_PAGE_SLUGS)[number];
+
+export const LEGAL_SLUG_TO_KIND: Record<LegalPageSlug, TenantPageKind> = {
+  despre: "about",
+  contact: "contact",
+  termeni: "terms",
+  confidentialitate: "privacy",
+  cookies: "cookies",
+};
+
+export const KIND_TO_LEGAL_SLUG: Partial<Record<TenantPageKind, LegalPageSlug>> = {
+  about: "despre",
+  contact: "contact",
+  terms: "termeni",
+  privacy: "confidentialitate",
+  cookies: "cookies",
+};
+
+const PAGE_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * Normalizes a CMS slug (lowercase kebab). Returns null when invalid.
+ * Reserved legal slugs are allowed; arbitrary HTML/path segments are rejected.
+ */
+export function normalizeTenantPageSlug(raw: string): string | null {
+  const slug = raw.trim().toLowerCase().replace(/\s+/g, "-");
+  if (slug.length < 2 || slug.length > 64) return null;
+  if (!PAGE_SLUG_RE.test(slug)) return null;
+  if (slug.includes("..") || slug.includes("/") || slug.includes("\\")) return null;
+  return slug;
+}
+
+/**
+ * Strips HTML/script/iframe and rejects javascript: URLs.
+ * Returns sanitized plain text (markdown punctuation may remain as text).
+ */
+export function sanitizeTenantPageBody(raw: string): string | null {
+  if (typeof raw !== "string") return null;
+  let body = raw.replace(/\u0000/g, "");
+  if (/javascript\s*:/i.test(body)) return null;
+  if (/<\s*(script|iframe|object|embed|link|meta|style)\b/i.test(body)) return null;
+  if (/on\w+\s*=/i.test(body)) return null;
+  // Strip remaining tags.
+  body = body.replace(/<[^>]*>/g, "");
+  body = body.replace(/\r\n/g, "\n");
+  if (body.length > 50_000) return null;
+  return body;
+}
+
+export function sanitizeOptionalSeoField(
+  raw: string | null | undefined,
+  max: number,
+): string | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed.length > max) return null;
+  if (/[<>]/.test(trimmed) || /javascript\s*:/i.test(trimmed)) return null;
+  return trimmed;
+}
+
+export const createTenantPageInputSchema = z
+  .object({
+    title: z.string().trim().min(1, "Titlul este obligatoriu").max(160),
+    slug: z.string().trim().min(2).max(64),
+    body: z.string().max(50_000).default(""),
+    pageKind: tenantPageKindSchema.default("custom"),
+    seoTitle: z.string().trim().max(70).optional().nullable(),
+    seoDescription: z.string().trim().max(160).optional().nullable(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    const slug = normalizeTenantPageSlug(data.slug);
+    if (!slug) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["slug"],
+        message: "Slug invalid",
+      });
+      return;
+    }
+    const kind = data.pageKind;
+    if (kind !== "custom") {
+      const expected = KIND_TO_LEGAL_SLUG[kind];
+      if (expected && slug !== expected) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["slug"],
+          message: "Slug-ul legal nu poate fi schimbat",
+        });
+      }
+    }
+    // custom + legal slug is allowed; transform upgrades pageKind automatically.
+    const body = sanitizeTenantPageBody(data.body);
+    if (body === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["body"],
+        message: "Conținut invalid",
+      });
+    }
+    if (sanitizeOptionalSeoField(data.seoTitle, 70) === null && data.seoTitle?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["seoTitle"],
+        message: "Titlu SEO invalid",
+      });
+    }
+    if (
+      sanitizeOptionalSeoField(data.seoDescription, 160) === null &&
+      data.seoDescription?.trim()
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["seoDescription"],
+        message: "Descriere SEO invalidă",
+      });
+    }
+  })
+  .transform((data) => {
+    const slug = normalizeTenantPageSlug(data.slug)!;
+    let pageKind = data.pageKind;
+    if ((LEGAL_PAGE_SLUGS as readonly string[]).includes(slug)) {
+      pageKind = LEGAL_SLUG_TO_KIND[slug as LegalPageSlug];
+    }
+    return {
+      title: data.title.trim(),
+      slug,
+      body: sanitizeTenantPageBody(data.body) ?? "",
+      pageKind,
+      seoTitle: sanitizeOptionalSeoField(data.seoTitle, 70) ?? null,
+      seoDescription: sanitizeOptionalSeoField(data.seoDescription, 160) ?? null,
+    };
+  });
+export type CreateTenantPageInput = z.infer<typeof createTenantPageInputSchema>;
+
+export const updateTenantPageInputSchema = z
+  .object({
+    pageId: z.string().uuid("Pagină invalidă"),
+    title: z.string().trim().min(1).max(160),
+    slug: z.string().trim().min(2).max(64),
+    body: z.string().max(50_000).default(""),
+    pageKind: tenantPageKindSchema,
+    seoTitle: z.string().trim().max(70).optional().nullable(),
+    seoDescription: z.string().trim().max(160).optional().nullable(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    const slug = normalizeTenantPageSlug(data.slug);
+    if (!slug) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["slug"],
+        message: "Slug invalid",
+      });
+      return;
+    }
+    if (data.pageKind !== "custom") {
+      const expected = KIND_TO_LEGAL_SLUG[data.pageKind];
+      if (expected && slug !== expected) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["slug"],
+          message: "Slug-ul legal nu poate fi schimbat",
+        });
+      }
+    }
+    if (sanitizeTenantPageBody(data.body) === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["body"],
+        message: "Conținut invalid",
+      });
+    }
+  })
+  .transform((data) => ({
+    pageId: data.pageId,
+    title: data.title.trim(),
+    slug: normalizeTenantPageSlug(data.slug)!,
+    body: sanitizeTenantPageBody(data.body) ?? "",
+    pageKind:
+      (LEGAL_PAGE_SLUGS as readonly string[]).includes(normalizeTenantPageSlug(data.slug)!)
+        ? LEGAL_SLUG_TO_KIND[normalizeTenantPageSlug(data.slug)! as LegalPageSlug]
+        : data.pageKind === "custom"
+          ? "custom"
+          : data.pageKind,
+    seoTitle: sanitizeOptionalSeoField(data.seoTitle, 70) ?? null,
+    seoDescription: sanitizeOptionalSeoField(data.seoDescription, 160) ?? null,
+  }));
+export type UpdateTenantPageInput = z.infer<typeof updateTenantPageInputSchema>;
+
+export const tenantPageIdInputSchema = z
+  .object({
+    pageId: z.string().uuid("Pagină invalidă"),
+  })
+  .strict();
+
+export const upsertTenantSeoSettingsInputSchema = z
+  .object({
+    seoTitleDefault: z.string().trim().max(70).optional().nullable(),
+    seoDescriptionDefault: z.string().trim().max(160).optional().nullable(),
+    faviconPath: z.string().trim().max(500).optional().nullable(),
+    indexingEnabled: z.boolean(),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    if (
+      data.seoTitleDefault != null &&
+      data.seoTitleDefault !== "" &&
+      sanitizeOptionalSeoField(data.seoTitleDefault, 70) === null
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["seoTitleDefault"],
+        message: "Titlu SEO invalid",
+      });
+    }
+    if (
+      data.seoDescriptionDefault != null &&
+      data.seoDescriptionDefault !== "" &&
+      sanitizeOptionalSeoField(data.seoDescriptionDefault, 160) === null
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["seoDescriptionDefault"],
+        message: "Descriere SEO invalidă",
+      });
+    }
+    if (
+      data.faviconPath != null &&
+      data.faviconPath !== "" &&
+      !normalizeBrandAssetPath(data.faviconPath)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["faviconPath"],
+        message: "Referință favicon invalidă",
+      });
+    }
+  })
+  .transform((data) => ({
+    seoTitleDefault: sanitizeOptionalSeoField(data.seoTitleDefault, 70) ?? null,
+    seoDescriptionDefault: sanitizeOptionalSeoField(data.seoDescriptionDefault, 160) ?? null,
+    faviconPath:
+      data.faviconPath == null || data.faviconPath === ""
+        ? null
+        : normalizeBrandAssetPath(data.faviconPath),
+    indexingEnabled: data.indexingEnabled,
+  }));
+export type UpsertTenantSeoSettingsInput = z.infer<typeof upsertTenantSeoSettingsInputSchema>;
+
+export type PublicTenantPageView = {
+  slug: string;
+  title: string;
+  body: string;
+  pageKind: TenantPageKind;
+  seoTitle?: string;
+  seoDescription?: string;
+};
+
+export type PublicSeoSettingsView = {
+  seoTitleDefault?: string;
+  seoDescriptionDefault?: string;
+  faviconPath?: string;
+  indexingEnabled: boolean;
+};
+
+export type TenantPageListItem = {
+  /** Opaque form id — never shown in public UI labels. */
+  pageId: string;
+  slug: string;
+  title: string;
+  status: TenantPageStatus;
+  pageKind: TenantPageKind;
+  updatedAt: string;
+  publishedAt?: string;
+};

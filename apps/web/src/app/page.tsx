@@ -16,6 +16,8 @@ import {
   buildPublicCatalogMetadata,
   catalogUrlHasQueryString,
 } from "@/lib/storefront/catalog-seo";
+import { applySeoDefaultsToCatalogMetadata } from "@/lib/seo/build-page-metadata";
+import { loadPublicSeoSettings } from "@/lib/seo/load-public-seo-settings";
 import { PublicStorefrontShell } from "@/components/storefront/public-shell";
 import { PublicVehicleList } from "@/components/storefront/public-vehicle-list";
 import {
@@ -48,10 +50,12 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const hasQuery = catalogUrlHasQueryString(params);
 
   if (resolved.kind === "ok") {
-    return buildPublicCatalogMetadata({
+    const base = buildPublicCatalogMetadata({
       dealerName: resolved.tenant.name,
       hasQuery,
     });
+    const seo = await loadPublicSeoSettings(resolved.tenant.tenantId);
+    return applySeoDefaultsToCatalogMetadata(base, seo, resolved.tenant.name);
   }
   if (resolved.kind === "apex") {
     return {
