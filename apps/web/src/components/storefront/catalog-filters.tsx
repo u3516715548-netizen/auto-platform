@@ -39,7 +39,7 @@ type CatalogFiltersProps = {
 };
 
 const fieldShell =
-  "flex min-h-12 items-center rounded-lg border border-[var(--sf-border)] bg-white focus-within:border-[var(--sf-accent)] focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--sf-accent)_20%,transparent)]";
+  "flex min-h-12 items-center rounded-lg border border-[var(--sf-border)] bg-[var(--sf-surface)] focus-within:border-[var(--sf-accent)] focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--sf-accent)_20%,transparent)]";
 
 const ghostInput =
   "min-h-12 w-full min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-[var(--sf-text)] outline-none placeholder:text-[var(--sf-text-muted)]";
@@ -66,7 +66,7 @@ function FilterAccordion({
   children: ReactNode;
 }) {
   return (
-    <details className="group rounded-xl border border-[var(--sf-border)] bg-white px-3 open:pb-1">
+    <details className="group rounded-xl border border-[var(--sf-border)] bg-[var(--sf-surface)] px-3 open:pb-1">
       <summary className="flex min-h-14 cursor-pointer list-none items-center gap-2 py-3 marker:content-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] [&::-webkit-details-marker]:hidden">
         <span className="text-[var(--sf-accent)]" aria-hidden>
           {icon}

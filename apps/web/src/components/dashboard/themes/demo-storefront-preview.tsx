@@ -31,6 +31,7 @@ import {
   IconFuel,
   IconGrid,
   IconHome,
+  IconList,
   IconPhone,
   IconSearch,
   IconSort,
@@ -227,27 +228,30 @@ function CatalogView({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">
         <div>
           <p className="text-lg font-bold tracking-tight text-[var(--sf-text)]">
             {count === 1 ? "1 mașină" : `${count} mașini`}
           </p>
           <p className="text-sm text-[var(--sf-text-muted,#71717a)]">în stoc · date demo</p>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5 md:justify-end">
           <span
             className="inline-flex size-10 items-center justify-center rounded-xl border border-[var(--sf-border,#e4e4e7)] bg-white text-[var(--sf-text-muted,#71717a)]"
             aria-hidden
           >
             <IconGrid size={16} />
           </span>
-          <span className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[var(--sf-border,#e4e4e7)] bg-white px-2.5 text-xs font-semibold">
-            <IconBookmark size={14} />
-            Salvează
+          <span
+            className="inline-flex size-10 items-center justify-center rounded-xl border border-[var(--sf-border,#e4e4e7)] bg-white text-[var(--sf-text-muted,#71717a)]"
+            aria-hidden
+          >
+            <IconList size={16} />
           </span>
           <span
             className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[var(--sf-border,#e4e4e7)] bg-white px-2.5 text-xs font-semibold"
             style={{ color: "var(--sf-accent)" }}
+            aria-hidden
           >
             <IconSort size={14} />
             Recente

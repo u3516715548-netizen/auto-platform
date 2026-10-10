@@ -81,7 +81,11 @@ textarea:focus-visible,
   --catalog-filter-lift: 0px;
   --catalog-filter-opacity: 1;
   opacity: var(--catalog-filter-opacity, 1);
-  background-color: #ffffff;
+  /*
+   * Must match the storefront surface behind the rounded filter card.
+   * Hardcoded #ffffff caused white corner triangles on Template 2 (dark).
+   */
+  background-color: var(--sf-surface, #ffffff);
 }
 
 body[data-sf-catalog-overlay="open"] .catalog-scroll-filter-host {
@@ -102,10 +106,16 @@ body[data-sf-catalog-overlay="open"] .catalog-scroll-filter-host {
   }
 }
 
-/* Results count + Salvează / Recente — solid so it stays readable over fading filters. */
+/* Results count + view/sort controls — solid so it stays readable over fading filters. */
 .catalog-results-toolbar {
-  background-color: #ffffff;
+  background-color: var(--sf-surface, #ffffff);
   box-shadow: 0 1px 0 rgba(24, 24, 27, 0.04);
+}
+
+/* Explicit T2: filter chrome host never peeks white at rounded card corners. */
+.storefront-template-2 .catalog-scroll-filter-host,
+.storefront-template-2 .catalog-results-toolbar {
+  background-color: var(--sf-surface);
 }
 
 /**
