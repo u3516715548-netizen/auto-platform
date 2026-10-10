@@ -15,6 +15,7 @@ import {
 } from "@auto-platform/db";
 import { requireRole } from "@/lib/auth/require-role";
 import { vehiclesPath } from "@/lib/dashboard/nav";
+import { revalidatePublicStorefrontPaths } from "@/lib/perf/public-storefront-cache";
 import { VEHICLE_MUTATION_ROLES } from "@/lib/vehicles/permissions";
 import {
   formAttemptsTenantId,
@@ -128,6 +129,8 @@ export async function createVehicleAction(
     return { error: "Crearea vehiculului a eșuat. Încearcă din nou." };
   }
 
+  // Draft is not public, but keep storefront tags aligned for publish follow-ups.
+  revalidatePublicStorefrontPaths({ tenantId });
   redirect(vehiclesPath());
 }
 

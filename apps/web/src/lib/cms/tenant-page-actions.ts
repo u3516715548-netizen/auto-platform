@@ -13,6 +13,7 @@ import {
 } from "@auto-platform/types";
 import { requireRole } from "@/lib/auth/require-role";
 import { SETTINGS_OWNER_ROLES } from "@/lib/dashboard/settings-nav";
+import { revalidatePublicStorefrontPaths } from "@/lib/perf/public-storefront-cache";
 import { rejectTenantIdFromForm } from "@/lib/vehicles/parse-update-form";
 
 export type TenantPageActionState = {
@@ -38,13 +39,13 @@ async function requireOwner() {
   }
 }
 
-function revalidateCms(slug?: string) {
+function revalidateCms(tenantId: string, slug?: string) {
   revalidatePath("/dashboard/settings/customization/pages");
   revalidatePath("/dashboard/settings/customization/pages", "layout");
   if (slug) {
     revalidatePath(`/p/${slug}`);
   }
-  revalidatePath("/");
+  revalidatePublicStorefrontPaths({ tenantId });
 }
 
 export async function createTenantPageAction(
@@ -131,7 +132,7 @@ export async function createTenantPageAction(
     return { error: NEUTRAL_ERROR, success: false };
   }
 
-  revalidateCms(input.slug);
+  revalidateCms(tenantId, input.slug);
   return { error: null, success: true };
 }
 
@@ -218,7 +219,7 @@ export async function updateTenantPageAction(
     return { error: NEUTRAL_ERROR, success: false };
   }
 
-  revalidateCms(input.slug);
+  revalidateCms(tenantId, input.slug);
   return { error: null, success: true };
 }
 
@@ -288,7 +289,7 @@ async function setPageStatus(
     return { error: NEUTRAL_ERROR, success: false };
   }
 
-  revalidateCms(slug);
+  revalidateCms(tenantId, slug);
   return { error: null, success: true };
 }
 
@@ -339,6 +340,6 @@ export async function deleteTenantPageAction(
     return { error: NEUTRAL_ERROR, success: false };
   }
 
-  revalidateCms(slug);
+  revalidateCms(tenantId, slug);
   return { error: null, success: true };
 }

@@ -50,6 +50,7 @@ export async function cancelReservationFormAction(
     reservationId: result.data.id,
     vehicleId: result.data.vehicleId,
     vehicleSlug,
+    tenantId: session.tenant.tenantId,
   });
   redirect(reservationDetailPath(result.data.id, { cancelled: "1" }));
 }

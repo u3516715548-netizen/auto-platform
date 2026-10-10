@@ -2,29 +2,30 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { getDb, vehicles, withTenantContext } from "@auto-platform/db";
 import { reservationDetailPath, vehicleEditPath } from "@/lib/dashboard/nav";
+import { revalidatePublicStorefrontPaths } from "@/lib/perf/public-storefront-cache";
 
 /**
  * Shared revalidation after reservation create / cancel / convert.
  *
- * Public paths use Next path revalidation (layout + optional slug page).
+ * Public paths use Next path + tenant tag revalidation (layout + optional slug page).
  * Limitation: not Host-aware for custom-domain edge caches — Etapa 12.
- * Storefront pages also set `dynamic = "force-dynamic"` so DB status is read fresh.
+ * Storefront uses short `revalidate` (30s) + explicit invalidation on mutations.
  */
 export function revalidateAfterReservationMutation(input: {
   reservationId: string;
   vehicleId: string;
   vehicleSlug?: string | null;
+  tenantId?: string | null;
 }): void {
   revalidatePath("/dashboard/reservations");
   revalidatePath(reservationDetailPath(input.reservationId));
   revalidatePath(vehicleEditPath(input.vehicleId));
   revalidatePath("/dashboard/vehicles");
   revalidatePath("/dashboard", "layout");
-  revalidatePath("/", "layout");
-  revalidatePath("/vehicles", "layout");
-  if (input.vehicleSlug) {
-    revalidatePath(`/vehicles/${input.vehicleSlug}`);
-  }
+  revalidatePublicStorefrontPaths({
+    vehicleSlug: input.vehicleSlug,
+    tenantId: input.tenantId,
+  });
 }
 
 /**

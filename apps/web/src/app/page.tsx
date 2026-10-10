@@ -38,8 +38,13 @@ import { publicSavedPath } from "@/lib/storefront/paths";
 import { withPerfRoute } from "@/lib/perf/server-timing";
 import { IconBookmark, IconGrid, IconSort } from "@/components/storefront/icons";
 
-/** Always read fresh inventory — reserved/sold must not linger in storefront cache. */
-export const dynamic = "force-dynamic";
+/**
+ * Short public HTML / data freshness window (Etapa 23A.2).
+ * Must be a numeric literal for Next static analysis — keep in sync with
+ * `PUBLIC_STOREFRONT_REVALIDATE_SECONDS` in `lib/perf/public-storefront-cache.ts`.
+ * Mutations call `revalidatePublicStorefrontPaths` so reserved/sold do not linger.
+ */
+export const revalidate = 30;
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -56,6 +61,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
       hasQuery,
     });
     const seo = await loadPublicSeoSettings(resolved.tenant.tenantId);
+    // SEO settings are independent of catalog query parsing above.
     return applySeoDefaultsToCatalogMetadata(base, seo, resolved.tenant.name);
   }
   if (resolved.kind === "apex") {
@@ -94,13 +100,21 @@ export default async function RootPage({ searchParams }: PageProps) {
     notFound();
   }
 
-  const tenantView = await toPublicTenantViewForRequest(resolved.tenant);
   const params = await searchParams;
   let catalog: PublicCatalogResult | null = null;
   let listError: string | null = null;
-  try {
-    catalog = await listPublicVehiclesForCatalog(resolved.tenant.tenantId, params);
-  } catch {
+
+  // tenant branding/company and catalog inventory are independent after Host resolve.
+  const [tenantView, catalogOutcome] = await Promise.all([
+    toPublicTenantViewForRequest(resolved.tenant),
+    listPublicVehiclesForCatalog(resolved.tenant.tenantId, params)
+      .then((result) => ({ ok: true as const, result }))
+      .catch(() => ({ ok: false as const })),
+  ]);
+
+  if (catalogOutcome.ok) {
+    catalog = catalogOutcome.result;
+  } else {
     listError = "Stocul nu poate fi afișat momentan. Încearcă din nou mai târziu.";
   }
 

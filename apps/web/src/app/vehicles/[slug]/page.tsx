@@ -28,8 +28,13 @@ import { IconChevronLeft } from "@/components/storefront/icons";
 import { toStorefrontVehicleLite } from "@/lib/storefront/storefront-vehicle-lite";
 import { withPerfRoute } from "@/lib/perf/server-timing";
 
-/** Always read fresh inventory — reserved/sold → 404, never stale public detail. */
-export const dynamic = "force-dynamic";
+/**
+ * Short public HTML / data freshness window (Etapa 23A.2).
+ * Must be a numeric literal for Next static analysis — keep in sync with
+ * `PUBLIC_STOREFRONT_REVALIDATE_SECONDS` in `lib/perf/public-storefront-cache.ts`.
+ * Mutations revalidate this path so reserved/sold return 404 promptly.
+ */
+export const revalidate = 30;
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -42,11 +47,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (resolved.kind !== "ok" || !slug) {
     return { title: "Vehicul" };
   }
-  const vehicle = await getPublicVehicleBySlug(resolved.tenant.tenantId, slug);
+  const [vehicle, seo] = await Promise.all([
+    getPublicVehicleBySlug(resolved.tenant.tenantId, slug),
+    loadPublicSeoSettings(resolved.tenant.tenantId),
+  ]);
   if (!vehicle) {
     return { title: "Vehicul indisponibil" };
   }
-  const seo = await loadPublicSeoSettings(resolved.tenant.tenantId);
   return {
     title: buildPublicVehicleDetailTitle(vehicle, resolved.tenant.name),
     description: buildPublicVehicleDetailDescription(vehicle),
@@ -72,12 +79,15 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const vehicle = await getPublicVehicleDetailBySlug(resolved.tenant.tenantId, slug);
+  // Detail + tenant shell are independent; alternatives need the resolved slug/vehicle.
+  const [vehicle, tenantView] = await Promise.all([
+    getPublicVehicleDetailBySlug(resolved.tenant.tenantId, slug),
+    toPublicTenantViewForRequest(resolved.tenant),
+  ]);
   if (!vehicle) {
     notFound();
   }
 
-  const tenantView = await toPublicTenantViewForRequest(resolved.tenant);
   const accent = tenantView.primaryColor;
   const cover = vehicle.images.find((img) => img.url) ?? vehicle.images[0] ?? null;
   const lite = toStorefrontVehicleLite({

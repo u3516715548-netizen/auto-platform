@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublicStorefrontPaths } from "@/lib/perf/public-storefront-cache";
 import { eq } from "drizzle-orm";
 import { InsufficientRoleError } from "@auto-platform/core";
 import {
@@ -243,8 +244,7 @@ export async function upsertCompanyProfileAction(
 
   revalidatePath("/dashboard/settings/company");
   revalidatePath("/dashboard", "layout");
-  revalidatePath("/");
-  revalidatePath("/vehicles", "layout");
+  revalidatePublicStorefrontPaths({ tenantId });
 
   return { error: null, success: true };
 }

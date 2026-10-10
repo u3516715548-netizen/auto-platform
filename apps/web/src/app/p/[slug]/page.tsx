@@ -11,8 +11,12 @@ import { buildPublicCmsPageMetadata } from "@/lib/seo/build-page-metadata";
 import { loadPublicSeoSettings } from "@/lib/seo/load-public-seo-settings";
 import { PublicStorefrontShell } from "@/components/storefront/public-shell";
 import { normalizeTenantPageSlug } from "@auto-platform/types";
-
-export const dynamic = "force-dynamic";
+/**
+ * Short public HTML freshness for published CMS pages (Etapa 23A.2).
+ * Must be a numeric literal for Next static analysis — keep in sync with
+ * `PUBLIC_STOREFRONT_REVALIDATE_SECONDS` in `lib/perf/public-storefront-cache.ts`.
+ */
+export const revalidate = 30;
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -26,12 +30,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "Pagină", robots: { index: false, follow: true } };
   }
 
-  const page = await loadPublicTenantPage(resolved.tenant.tenantId, slug);
+  const [page, seo] = await Promise.all([
+    loadPublicTenantPage(resolved.tenant.tenantId, slug),
+    loadPublicSeoSettings(resolved.tenant.tenantId),
+  ]);
   if (!page) {
     return { title: "Pagină indisponibilă", robots: { index: false, follow: true } };
   }
 
-  const seo = await loadPublicSeoSettings(resolved.tenant.tenantId);
   return buildPublicCmsPageMetadata({
     page,
     dealerName: resolved.tenant.name,
@@ -52,10 +58,12 @@ export default async function PublicCmsPage({ params }: PageProps) {
     notFound();
   }
 
-  const page = await loadPublicTenantPage(resolved.tenant.tenantId, slug);
+  const [page, tenantView] = await Promise.all([
+    loadPublicTenantPage(resolved.tenant.tenantId, slug),
+    toPublicTenantViewForRequest(resolved.tenant),
+  ]);
   if (!page) notFound();
 
-  const tenantView = await toPublicTenantViewForRequest(resolved.tenant);
   const bodyHtml = renderTenantPageBodyHtml(page.body);
 
   return (

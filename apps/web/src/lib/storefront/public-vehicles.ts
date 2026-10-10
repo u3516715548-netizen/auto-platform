@@ -13,6 +13,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { getDb, vehicles } from "@auto-platform/db";
+import { runPublicStorefrontCached } from "@/lib/perf/public-storefront-cache";
 import { withPerfSpan } from "@/lib/perf/server-timing";
 import { clearPublicSessionGucs } from "./clear-public-session";
 import { toPublicVehicleDto, type PublicVehicleDto } from "./public-dto";
@@ -295,57 +296,97 @@ export async function listPublicVehicles(tenantId: string): Promise<PublicVehicl
     .map((row) => toPublicVehicleDto(row));
 }
 
+function catalogCacheKeyParts(tenantId: string, query: CatalogQuery): string[] {
+  return [
+    tenantId,
+    query.q ?? "",
+    query.make.slice().sort().join(","),
+    query.fuel.slice().sort().join(","),
+    query.transmission.slice().sort().join(","),
+    query.bodyType.slice().sort().join(","),
+    String(query.priceMin ?? ""),
+    String(query.priceMax ?? ""),
+    String(query.yearMin ?? ""),
+    String(query.yearMax ?? ""),
+    String(query.kmMin ?? ""),
+    String(query.kmMax ?? ""),
+    query.sort,
+    String(query.page),
+  ];
+}
+
+type CachedCatalogPayload = {
+  attach: { vehicle: PublicVehicleDto; vehicleId: string }[];
+  total: number;
+  page: number;
+  pageSize: typeof CATALOG_PAGE_SIZE;
+  totalPages: number;
+  query: CatalogQuery;
+};
+
 /**
  * Public catalog with Zod-validated filters, sort allowlist, fixed pageSize=12.
  * Tenant and status are never taken from the client query.
+ * Data Cache (≤30s) stores inventory rows only — signed cover URLs are signed per request.
  */
 export async function listPublicVehiclesForCatalog(
   tenantId: string,
   queryInput?: CatalogQuery | URLSearchParams | Record<string, string | string[] | undefined>,
 ): Promise<PublicCatalogResult> {
-  return withPerfSpan("catalog.vehicles", async () => {
-    const parsed = resolveCatalogQuery(queryInput);
-    const db = getDb();
-    await clearPublicSessionGucs(db);
+  const parsed = resolveCatalogQuery(queryInput);
+  const cached = await runPublicStorefrontCached(
+    ["public-catalog", ...catalogCacheKeyParts(tenantId, parsed)],
+    tenantId,
+    async (): Promise<CachedCatalogPayload> => {
+      return withPerfSpan("catalog.vehicles", async () => {
+        const db = getDb();
+        await clearPublicSessionGucs(db);
 
-    const where = buildPublicCatalogWhere(tenantId, parsed);
+        const where = buildPublicCatalogWhere(tenantId, parsed);
 
-    const [countRow] = await db.select({ value: count() }).from(vehicles).where(where);
-    const total = Number(countRow?.value ?? 0);
-    const page = clampCatalogPage(parsed.page, total);
-    const query: CatalogQuery = { ...parsed, page };
-    const totalPages = Math.max(1, Math.ceil(total / CATALOG_PAGE_SIZE) || 1);
-    const offset = (page - 1) * CATALOG_PAGE_SIZE;
+        const [countRow] = await db.select({ value: count() }).from(vehicles).where(where);
+        const total = Number(countRow?.value ?? 0);
+        const page = clampCatalogPage(parsed.page, total);
+        const query: CatalogQuery = { ...parsed, page };
+        const totalPages = Math.max(1, Math.ceil(total / CATALOG_PAGE_SIZE) || 1);
+        const offset = (page - 1) * CATALOG_PAGE_SIZE;
 
-    const rows = await db
-      .select(publicCatalogVehicleSelect)
-      .from(vehicles)
-      .where(where)
-      .orderBy(...orderBySort(query.sort))
-      .limit(CATALOG_PAGE_SIZE)
-      .offset(offset);
+        const rows = await db
+          .select(publicCatalogVehicleSelect)
+          .from(vehicles)
+          .where(where)
+          .orderBy(...orderBySort(query.sort))
+          .limit(CATALOG_PAGE_SIZE)
+          .offset(offset);
 
-    const catalogRows = rows.filter(
-      (row) => row.tenantId === tenantId && row.status === "available",
-    );
+        const catalogRows = rows.filter(
+          (row) => row.tenantId === tenantId && row.status === "available",
+        );
 
-    const items = await attachPublicCoverImages(
-      tenantId,
-      catalogRows.map((row) => ({
-        vehicle: toPublicCatalogVehicleDto(row),
-        vehicleId: row.id,
-      })),
-    );
+        return {
+          attach: catalogRows.map((row) => ({
+            vehicle: toPublicCatalogVehicleDto(row),
+            vehicleId: row.id,
+          })),
+          total,
+          page,
+          pageSize: CATALOG_PAGE_SIZE,
+          totalPages: total === 0 ? 1 : totalPages,
+          query,
+        };
+      });
+    },
+  );
 
-    return {
-      items,
-      total,
-      page,
-      pageSize: CATALOG_PAGE_SIZE,
-      totalPages: total === 0 ? 1 : totalPages,
-      query,
-    };
-  });
+  const items = await attachPublicCoverImages(tenantId, cached.attach);
+  return {
+    items,
+    total: cached.total,
+    page: cached.page,
+    pageSize: cached.pageSize,
+    totalPages: cached.totalPages,
+    query: cached.query,
+  };
 }
 
 /**
@@ -356,31 +397,37 @@ export async function getPublicVehicleBySlug(
   tenantId: string,
   slug: string,
 ): Promise<PublicVehicleDto | null> {
-  return withPerfSpan(
-    "vehicle.detail",
-    async () => {
-      const db = getDb();
-      await clearPublicSessionGucs(db);
+  return runPublicStorefrontCached(
+    ["public-vehicle-meta", tenantId, slug],
+    tenantId,
+    async (): Promise<PublicVehicleDto | null> => {
+      return withPerfSpan(
+        "vehicle.detail",
+        async () => {
+          const db = getDb();
+          await clearPublicSessionGucs(db);
 
-      const [row] = await db
-        .select(publicVehicleSelect)
-        .from(vehicles)
-        .where(
-          and(
-            eq(vehicles.tenantId, tenantId),
-            eq(vehicles.slug, slug),
-            eq(vehicles.status, "available"),
-          ),
-        )
-        .limit(1);
+          const [row] = await db
+            .select(publicVehicleSelect)
+            .from(vehicles)
+            .where(
+              and(
+                eq(vehicles.tenantId, tenantId),
+                eq(vehicles.slug, slug),
+                eq(vehicles.status, "available"),
+              ),
+            )
+            .limit(1);
 
-      if (!row || row.tenantId !== tenantId || row.status !== "available") {
-        return null;
-      }
+          if (!row || row.tenantId !== tenantId || row.status !== "available") {
+            return null;
+          }
 
-      return toPublicVehicleDto(row);
+          return toPublicVehicleDto(row);
+        },
+        { kind: "bySlug" },
+      );
     },
-    { kind: "bySlug" },
   );
 }
 
@@ -388,33 +435,41 @@ export async function getPublicVehicleDetailBySlug(
   tenantId: string,
   slug: string,
 ): Promise<PublicVehicleDetailDto | null> {
-  return withPerfSpan(
-    "vehicle.detail",
-    async () => {
-      const db = getDb();
-      await clearPublicSessionGucs(db);
+  const cached = await runPublicStorefrontCached(
+    ["public-vehicle-detail", tenantId, slug],
+    tenantId,
+    async (): Promise<{ dto: PublicVehicleDto; vehicleId: string } | null> => {
+      return withPerfSpan(
+        "vehicle.detail",
+        async () => {
+          const db = getDb();
+          await clearPublicSessionGucs(db);
 
-      const [row] = await db
-        .select(publicVehicleSelect)
-        .from(vehicles)
-        .where(
-          and(
-            eq(vehicles.tenantId, tenantId),
-            eq(vehicles.slug, slug),
-            eq(vehicles.status, "available"),
-          ),
-        )
-        .limit(1);
+          const [row] = await db
+            .select(publicVehicleSelect)
+            .from(vehicles)
+            .where(
+              and(
+                eq(vehicles.tenantId, tenantId),
+                eq(vehicles.slug, slug),
+                eq(vehicles.status, "available"),
+              ),
+            )
+            .limit(1);
 
-      if (!row || row.tenantId !== tenantId || row.status !== "available") {
-        return null;
-      }
+          if (!row || row.tenantId !== tenantId || row.status !== "available") {
+            return null;
+          }
 
-      const dto = toPublicVehicleDto(row);
-      return attachPublicDetailImages(tenantId, dto, row.id);
+          return { dto: toPublicVehicleDto(row), vehicleId: row.id };
+        },
+        { kind: "full" },
+      );
     },
-    { kind: "full" },
   );
+  if (!cached) return null;
+  // Signed gallery URLs are never stored in Data Cache.
+  return attachPublicDetailImages(tenantId, cached.dto, cached.vehicleId);
 }
 
 export { filterPublicAlternativeRows } from "./public-vehicle-alternatives";
@@ -431,31 +486,35 @@ export async function listPublicVehicleAlternatives(
   const safeLimit = Math.min(10, Math.max(0, Math.floor(limit)));
   if (safeLimit === 0 || !excludeSlug) return [];
 
-  const db = getDb();
-  await clearPublicSessionGucs(db);
-
-  const rows = await db
-    .select(publicCatalogVehicleSelect)
-    .from(vehicles)
-    .where(
-      and(
-        eq(vehicles.tenantId, tenantId),
-        eq(vehicles.status, "available"),
-        ne(vehicles.slug, excludeSlug),
-      ),
-    )
-    .orderBy(desc(vehicles.createdAt), asc(vehicles.id))
-    .limit(safeLimit);
-
-  const filtered = filterPublicAlternativeRows(rows, tenantId, excludeSlug);
-
-  return attachPublicCoverImages(
+  const cached = await runPublicStorefrontCached(
+    ["public-vehicle-alts", tenantId, excludeSlug, String(safeLimit)],
     tenantId,
-    filtered.map((row) => ({
-      vehicle: toPublicCatalogVehicleDto(row),
-      vehicleId: row.id,
-    })),
+    async (): Promise<{ vehicle: PublicVehicleDto; vehicleId: string }[]> => {
+      const db = getDb();
+      await clearPublicSessionGucs(db);
+
+      const rows = await db
+        .select(publicCatalogVehicleSelect)
+        .from(vehicles)
+        .where(
+          and(
+            eq(vehicles.tenantId, tenantId),
+            eq(vehicles.status, "available"),
+            ne(vehicles.slug, excludeSlug),
+          ),
+        )
+        .orderBy(desc(vehicles.createdAt), asc(vehicles.id))
+        .limit(safeLimit);
+
+      const filtered = filterPublicAlternativeRows(rows, tenantId, excludeSlug);
+
+      return filtered.map((row) => ({
+        vehicle: toPublicCatalogVehicleDto(row),
+        vehicleId: row.id,
+      }));
+    },
   );
+  return attachPublicCoverImages(tenantId, cached);
 }
 
 /** Server-only: resolve vehicle id for lead attribution (never expose to client DTO). */

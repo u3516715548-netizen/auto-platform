@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublicStorefrontPaths } from "@/lib/perf/public-storefront-cache";
 import { eq } from "drizzle-orm";
 import { InsufficientRoleError } from "@auto-platform/core";
 import { getDb, tenants, withTenantContext, writeAuditLog } from "@auto-platform/db";
@@ -90,8 +91,7 @@ export async function updateTenantBrandingAction(
   revalidatePath("/dashboard/settings/customization/preferences");
   revalidatePath("/dashboard/settings/customization/themes");
   revalidatePath("/dashboard/settings/company");
-  revalidatePath("/");
-  revalidatePath("/vehicles", "layout");
+  revalidatePublicStorefrontPaths({ tenantId });
 
   return { error: null, success: true };
 }

@@ -11,6 +11,7 @@ import {
 } from "@auto-platform/db";
 import { requireRole } from "@/lib/auth/require-role";
 import { vehicleEditPath } from "@/lib/dashboard/nav";
+import { revalidatePublicStorefrontPaths } from "@/lib/perf/public-storefront-cache";
 import { VEHICLE_MUTATION_ROLES } from "@/lib/vehicles/permissions";
 import {
   parseUpdateVehicleForm,
@@ -52,6 +53,7 @@ export async function updateVehicleAction(
   const tenantId = session.tenant.tenantId;
   const profileId = session.user.profile.id;
   const data = parsed.data;
+  let previousSlug: string | null = null;
 
   try {
     await withTenantContext(getDb(), { profileId, tenantId }, async (db) => {
@@ -62,6 +64,7 @@ export async function updateVehicleAction(
         throw new Error("NOT_FOUND");
       }
       assertTenantAccess(tenantId, existing.tenantId);
+      previousSlug = existing.slug;
 
       const updatedRows = await db
         .update(vehicles)
@@ -136,6 +139,10 @@ export async function updateVehicleAction(
     return { error: "Actualizarea a eșuat. Încearcă din nou." };
   }
 
+  revalidatePublicStorefrontPaths({ vehicleSlug: data.slug, tenantId });
+  if (previousSlug && previousSlug !== data.slug) {
+    revalidatePublicStorefrontPaths({ vehicleSlug: previousSlug, tenantId });
+  }
   redirect(vehicleEditPath(idParsed.id, { saved: "1" }));
 }
 

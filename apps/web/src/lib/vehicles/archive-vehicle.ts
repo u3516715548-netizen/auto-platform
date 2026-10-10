@@ -11,6 +11,7 @@ import {
 } from "@auto-platform/db";
 import { requireRole } from "@/lib/auth/require-role";
 import { vehiclesPath } from "@/lib/dashboard/nav";
+import { revalidatePublicStorefrontPaths } from "@/lib/perf/public-storefront-cache";
 import { VEHICLE_MUTATION_ROLES } from "@/lib/vehicles/permissions";
 import {
   parseVehicleId,
@@ -52,6 +53,7 @@ export async function archiveVehicleAction(
 
   const tenantId = session.tenant.tenantId;
   const profileId = session.user.profile.id;
+  let vehicleSlug: string | null = null;
 
   try {
     await withTenantContext(getDb(), { profileId, tenantId }, async (db) => {
@@ -66,6 +68,8 @@ export async function archiveVehicleAction(
       if (existing.status === "archived") {
         throw new Error("ALREADY_ARCHIVED");
       }
+
+      vehicleSlug = existing.slug;
 
       const updatedRows = await db
         .update(vehicles)
@@ -105,5 +109,6 @@ export async function archiveVehicleAction(
     return { error: "Arhivarea a eșuat. Încearcă din nou." };
   }
 
+  revalidatePublicStorefrontPaths({ vehicleSlug, tenantId });
   redirect(vehiclesPath({ view: "archived", notice: "archived" }));
 }

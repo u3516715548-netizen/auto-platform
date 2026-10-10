@@ -50,6 +50,7 @@ export async function convertReservationFormAction(
     reservationId: result.data.id,
     vehicleId: result.data.vehicleId,
     vehicleSlug,
+    tenantId: session.tenant.tenantId,
   });
   redirect(reservationDetailPath(result.data.id, { converted: "1" }));
 }

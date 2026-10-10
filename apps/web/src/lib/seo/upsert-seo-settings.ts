@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublicStorefrontPaths } from "@/lib/perf/public-storefront-cache";
 import { eq } from "drizzle-orm";
 import { InsufficientRoleError } from "@auto-platform/core";
 import {
@@ -114,9 +115,7 @@ export async function upsertSeoSettingsAction(
   }
 
   revalidatePath("/dashboard/settings/customization/preferences");
-  revalidatePath("/");
-  revalidatePath("/vehicles", "layout");
-  revalidatePath("/p", "layout");
+  revalidatePublicStorefrontPaths({ tenantId });
 
   return { error: null, success: true };
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublicStorefrontPaths } from "@/lib/perf/public-storefront-cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { InsufficientRoleError, assertTenantAccess } from "@auto-platform/core";
@@ -146,11 +147,7 @@ export async function updateVehicleStatusAction(
   revalidatePath(vehicleEditPath(idParsed.id));
   revalidatePath("/dashboard/vehicles");
   revalidatePath("/dashboard", "layout");
-  revalidatePath("/", "layout");
-  revalidatePath("/vehicles", "layout");
-  if (vehicleSlug) {
-    revalidatePath(`/vehicles/${vehicleSlug}`);
-  }
+  revalidatePublicStorefrontPaths({ vehicleSlug, tenantId });
 
   redirect(vehicleEditPath(idParsed.id, { status: "1" }));
 }
