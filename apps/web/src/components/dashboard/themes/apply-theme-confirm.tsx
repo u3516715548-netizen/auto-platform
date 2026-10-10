@@ -55,10 +55,12 @@ export function ApplyThemeConfirm({
           Folosești „{templateLabel}”?
         </h2>
         <p className="mt-3 text-sm leading-6 text-zinc-600">
-          Vei schimba structura vizuală a site-ului tău.
+          Vei schimba aspectul vizual al site-ului tău. Activarea folosește datele reale ale
+          dealerului.
         </p>
         <p className="mt-2 text-sm leading-6 text-zinc-600">
           Mașinile, datele firmei, contactele și culorile de branding existente nu vor fi șterse.
+          Previzualizarea rămâne izolată cu date demo.
         </p>
         <div className="mt-5 flex flex-wrap justify-end gap-2">
           <Button

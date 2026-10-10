@@ -24,7 +24,7 @@ export type ApplyStorefrontTemplateState = {
 
 /**
  * Persists only `branding.templateId` for the Host tenant (owner).
- * Rejects coming_soon / unknown IDs — Zod allowlist is template-1 only.
+ * Rejects coming_soon / unknown IDs — Zod allowlist is ready templates only.
  */
 export async function applyStorefrontTemplateAction(
   _prev: ApplyStorefrontTemplateState | null,

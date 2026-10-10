@@ -685,7 +685,7 @@ export const primaryColorHexSchema = z
 export const TEMPLATE_1_FALLBACK_PRIMARY_COLOR = "#2563eb" as const;
 
 /** Selectable storefront template IDs (update allowlist). Future IDs stay out until ready. */
-export const STOREFRONT_TEMPLATE_IDS = ["template-1"] as const;
+export const STOREFRONT_TEMPLATE_IDS = ["template-1", "template-2"] as const;
 export type StorefrontTemplateId = (typeof STOREFRONT_TEMPLATE_IDS)[number];
 export const DEFAULT_STOREFRONT_TEMPLATE_ID = "template-1" as const satisfies StorefrontTemplateId;
 

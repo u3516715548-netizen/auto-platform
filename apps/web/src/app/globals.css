@@ -255,8 +255,8 @@ body[data-sf-catalog-overlay="open"] .catalog-scroll-filter-host {
 }
 
 /**
- * Template 2 preview shell — coming soon (not selectable).
- * Distinct visual language for settings preview iframe only.
+ * Template 2 — Etapa 24: same layout as T1, dark CSS tokens only.
+ * Live + DEMO preview share this class; structure stays identical to Template 1.
  */
 .storefront-template-2 {
   --sf-bg: #0c0c0e;
@@ -296,10 +296,82 @@ body[data-sf-catalog-overlay="open"] .catalog-scroll-filter-host {
   color: var(--sf-text);
 }
 
+.storefront-template-2 .sf-section-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--sf-text);
+}
+
+.storefront-template-2 .sf-spec-tile {
+  border-radius: var(--sf-radius);
+  border: 1px solid var(--sf-border);
+  background: var(--sf-surface);
+  padding: 0.875rem;
+}
+
+.storefront-template-2 .sf-canvas {
+  position: relative;
+  isolation: isolate;
+  background-color: transparent;
+  background-image: none;
+}
+
+@media (min-width: 768px) {
+  .storefront-template-2 .sf-canvas {
+    background-color: var(--sf-surface);
+  }
+}
+
+.storefront-template-2 .sf-glow-pattern,
 .storefront-template-2 .sf-solid-card {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   background-color: var(--sf-surface);
   box-shadow: none;
+}
+
+.storefront-template-2 .sf-glow-pattern::before,
+.storefront-template-2 .sf-glow-pattern::after,
+.storefront-template-2 .sf-solid-card::before,
+.storefront-template-2 .sf-solid-card::after {
+  content: none;
+}
+
+.storefront-template-2 .sf-glow-ambient {
+  position: relative;
+  z-index: 0;
+}
+
+/* Remap hardcoded light utilities inside T2 without changing component JSX. */
+.storefront-template-2 :is(.bg-white, .bg-white\/90, .bg-white\/95) {
+  background-color: var(--sf-surface) !important;
+}
+
+.storefront-template-2 :is(.bg-zinc-50, .bg-zinc-100, .bg-zinc-200) {
+  background-color: var(--sf-surface-muted) !important;
+}
+
+.storefront-template-2 :is(.text-zinc-900, .text-zinc-800, .text-zinc-700) {
+  color: var(--sf-text) !important;
+}
+
+.storefront-template-2 :is(.text-zinc-600, .text-zinc-500, .text-zinc-400) {
+  color: var(--sf-text-muted) !important;
+}
+
+.storefront-template-2 :is(.border-zinc-200, .border-zinc-100) {
+  border-color: var(--sf-border) !important;
+}
+
+.storefront-template-2 header {
+  background-color: color-mix(in srgb, var(--sf-surface) 92%, transparent) !important;
+  border-color: var(--sf-border);
+}
+
+.storefront-template-2 footer {
+  border-color: var(--sf-border);
+  color: var(--sf-text-muted);
 }

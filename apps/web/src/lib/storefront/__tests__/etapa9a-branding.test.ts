@@ -32,10 +32,11 @@ describe("Etapa 9A public branding parse", () => {
     });
     expect(parsePublicBranding({ templateId: "template-2", primaryColor: "#abc" })).toEqual({
       primaryColor: "#abc",
-      templateId: "template-1",
+      templateId: "template-2",
     });
     expect(resolveStorefrontTemplateId(undefined)).toBe("template-1");
     expect(resolveStorefrontTemplateId("evil")).toBe("template-1");
+    expect(resolveStorefrontTemplateId("template-2")).toBe("template-2");
   });
 
   it("keeps valid primaryColor and omits invalid phone/whatsapp", () => {
@@ -95,8 +96,9 @@ describe("Etapa 9A public branding parse", () => {
         logoUrl: "https://x",
       }).success,
     ).toBe(false);
-    expect(storefrontTemplateIdSchema.safeParse("template-2").success).toBe(false);
+    expect(storefrontTemplateIdSchema.safeParse("template-2").success).toBe(true);
     expect(storefrontTemplateIdSchema.safeParse("template-1").success).toBe(true);
+    expect(storefrontTemplateIdSchema.safeParse("template-99").success).toBe(false);
   });
 
   it("PublicTenantView never exposes raw branding or internal fields", () => {
@@ -129,20 +131,26 @@ describe("Etapa 9A public branding parse", () => {
 });
 
 describe("Etapa 9A template registry", () => {
-  it("only template-1 is ready and selectable; template-2 is coming soon", () => {
+  it("template-1 and template-2 are ready and selectable; invalid falls back to T1", () => {
     expect(
       STOREFRONT_TEMPLATE_REGISTRY.map((t) => ({ id: t.id, labelRo: t.labelRo, status: t.status })),
     ).toEqual([
       { id: "template-1", labelRo: "Template 1", status: "ready" },
-      { id: "template-2", labelRo: "Template 2", status: "coming_soon" },
+      { id: "template-2", labelRo: "Template 2", status: "ready" },
     ]);
     expect(STOREFRONT_TEMPLATE_REGISTRY.every((t) => t.descriptionRo.length > 0)).toBe(true);
+    expect(
+      getStorefrontTemplate("template-2").descriptionRo,
+    ).toContain("Activarea folosește datele reale ale dealerului");
     expect(isStorefrontTemplateReady("template-1")).toBe(true);
-    expect(isStorefrontTemplateReady("template-2")).toBe(false);
-    expect(listSelectableStorefrontTemplates().map((t) => t.id)).toEqual(["template-1"]);
+    expect(isStorefrontTemplateReady("template-2")).toBe(true);
+    expect(listSelectableStorefrontTemplates().map((t) => t.id)).toEqual([
+      "template-1",
+      "template-2",
+    ]);
     expect(getStorefrontTemplate("missing").id).toBe("template-1");
     expect(getStorefrontTemplate("template-1").status).toBe("ready");
-    expect(getStorefrontTemplate("template-2").status).toBe("coming_soon");
+    expect(getStorefrontTemplate("template-2").status).toBe("ready");
     expect(listPreviewableStorefrontTemplates().map((t) => t.id)).toEqual([
       "template-1",
       "template-2",

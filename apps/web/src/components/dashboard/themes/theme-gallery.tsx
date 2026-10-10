@@ -106,6 +106,10 @@ function ThemeCard({
         <p className="border-t border-zinc-100 px-4 py-2.5 text-xs text-zinc-500">
           Poți previzualiza tema. Activarea va fi disponibilă când statusul trece la gata de folosit.
         </p>
+      ) : canApply ? (
+        <p className="border-t border-zinc-100 px-4 py-2.5 text-xs text-zinc-500">
+          Previzualizarea folosește date demo. Activarea folosește datele reale ale dealerului.
+        </p>
       ) : null}
     </article>
   );

@@ -17,30 +17,39 @@ import {
 } from "@/lib/storefront/templates/registry";
 
 describe("theme preview isolation from live storefront", () => {
-  it("keeps Template 1 as the only ready / selectable template", () => {
+  it("keeps Template 1 and Template 2 ready / selectable", () => {
     expect(STOREFRONT_TEMPLATE_REGISTRY.map((t) => t.id)).toEqual([
       "template-1",
       "template-2",
     ]);
     expect(STOREFRONT_TEMPLATE_REGISTRY[0]?.labelRo).toBe("Template 1");
     expect(isStorefrontTemplateReady("template-1")).toBe(true);
-    expect(isStorefrontTemplateReady("template-2")).toBe(false);
-    expect(listSelectableStorefrontTemplates().map((t) => t.id)).toEqual(["template-1"]);
-    expect(storefrontTemplateIdSchema.safeParse("template-2").success).toBe(false);
+    expect(isStorefrontTemplateReady("template-2")).toBe(true);
+    expect(listSelectableStorefrontTemplates().map((t) => t.id)).toEqual([
+      "template-1",
+      "template-2",
+    ]);
+    expect(storefrontTemplateIdSchema.safeParse("template-2").success).toBe(true);
     expect(storefrontTemplateIdSchema.safeParse("template-1").success).toBe(true);
+    expect(
+      STOREFRONT_TEMPLATE_REGISTRY.find((t) => t.id === "template-2")?.descriptionRo,
+    ).toContain("Activarea folosește datele reale ale dealerului");
   });
 
-  it("resolves branding templateId to template-1 and never auto-applies template-2", () => {
-    expect(resolveStorefrontTemplateId("template-2")).toBe("template-1");
+  it("resolves branding templateId for live T1 and T2; invalid falls back to T1", () => {
+    expect(resolveStorefrontTemplateId("template-2")).toBe("template-2");
     expect(resolveStorefrontTemplateId("evil")).toBe("template-1");
     expect(resolveStorefrontTemplateId("template-1")).toBe("template-1");
   });
 
-  it("allows preview of template-2 without making it selectable", () => {
+  it("keeps preview of template-2 isolated (DEMO path, no auto-apply)", () => {
     expect(resolvePreviewableTemplateId("template-2")).toBe("template-2");
     expect(resolveStorefrontLayoutId("template-2")).toBe("template-2");
     expect(listPreviewableStorefrontTemplates().map((t) => t.id)).toContain("template-2");
-    expect(listSelectableStorefrontTemplates().map((t) => t.id)).not.toContain("template-2");
+    expect(listSelectableStorefrontTemplates().map((t) => t.id)).toContain("template-2");
+    // Preview URL is GET-only — apply requires explicit server action + confirm.
+    expect(themePreviewPath("template-2")).toContain("templateId=template-2");
+    expect(themePreviewPath("template-2")).not.toContain("apply");
   });
 
   it("builds preview URLs that do not mutate branding by themselves", () => {
@@ -48,7 +57,6 @@ describe("theme preview isolation from live storefront", () => {
       "/dashboard/settings/customization/themes/preview?templateId=template-1",
     );
     expect(themePreviewPath("template-2")).toContain("templateId=template-2");
-    // Opening preview is a GET path — apply requires explicit server action + confirm.
     expect(themePreviewPath("template-1")).not.toContain("apply");
   });
 

@@ -1,5 +1,6 @@
 import {
   DEFAULT_STOREFRONT_TEMPLATE_ID,
+  storefrontTemplateIdSchema,
   type StorefrontTemplateId,
 } from "@auto-platform/types";
 
@@ -22,7 +23,8 @@ export type StorefrontTemplateDefinition = {
  * Only `ready` templates are selectable / accepted by tenantBrandingUpdateSchema.
  * Future entries may use `coming_soon` without being selectable.
  *
- * Template 1 = tema activă / layout-ul public actual (storefront-template-1).
+ * Template 1 = layout-ul public baseline (storefront-template-1).
+ * Template 2 = aceeași structură, tokeni dark (storefront-template-2) — Etapa 24.
  */
 export const STOREFRONT_TEMPLATE_REGISTRY: readonly StorefrontTemplateDefinition[] = [
   {
@@ -37,8 +39,8 @@ export const STOREFRONT_TEMPLATE_REGISTRY: readonly StorefrontTemplateDefinition
     id: "template-2",
     labelRo: "Template 2",
     descriptionRo:
-      "Variantă alternativă în lucru. Poți previzualiza acum; activarea vine ulterior.",
-    status: "coming_soon",
+      "Temă dark pe același layout. Previzualizarea folosește date demo. Activarea folosește datele reale ale dealerului.",
+    status: "ready",
     layoutId: "template-2",
   },
 ] as const;
@@ -74,9 +76,8 @@ export function listPreviewableStorefrontTemplates(): StorefrontTemplateDefiniti
  */
 export function resolveStorefrontTemplateId(raw: unknown): StorefrontTemplateId {
   if (typeof raw === "string" && isStorefrontTemplateReady(raw)) {
-    if (raw === DEFAULT_STOREFRONT_TEMPLATE_ID) {
-      return DEFAULT_STOREFRONT_TEMPLATE_ID;
-    }
+    const parsed = storefrontTemplateIdSchema.safeParse(raw);
+    if (parsed.success) return parsed.data;
   }
   return DEFAULT_STOREFRONT_TEMPLATE_ID;
 }
