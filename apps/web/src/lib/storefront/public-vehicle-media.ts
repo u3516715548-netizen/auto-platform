@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb, vehicleMedia, vehicles } from "@auto-platform/db";
 import { createSignedDownloadUrls } from "@/lib/media/sign-storage-url";
+import { withPerfSpan } from "@/lib/perf/server-timing";
 import { clearPublicSessionGucs } from "./clear-public-session";
 import type { PublicVehicleDto } from "./public-dto";
 import {
@@ -45,40 +46,46 @@ async function loadAvailableVehicleMediaRows(
   vehicleIds: string[],
 ): Promise<MediaRow[]> {
   if (vehicleIds.length === 0) return [];
-  const db = getDb();
-  await clearPublicSessionGucs(db);
+  return withPerfSpan(
+    "media.query",
+    async () => {
+      const db = getDb();
+      await clearPublicSessionGucs(db);
 
-  return db
-    .select({
-      vehicleId: vehicleMedia.vehicleId,
-      storagePath: vehicleMedia.storagePath,
-      sortOrder: vehicleMedia.sortOrder,
-      altText: vehicleMedia.altText,
-      status: vehicles.status,
-      rowTenantId: vehicleMedia.tenantId,
-    })
-    .from(vehicleMedia)
-    .innerJoin(vehicles, eq(vehicles.id, vehicleMedia.vehicleId))
-    .where(
-      and(
-        eq(vehicleMedia.tenantId, tenantId),
-        eq(vehicles.tenantId, tenantId),
-        eq(vehicles.status, "available"),
-        eq(vehicleMedia.type, "image"),
-        inArray(vehicleMedia.vehicleId, vehicleIds),
-      ),
-    )
-    .orderBy(asc(vehicleMedia.sortOrder), asc(vehicleMedia.createdAt))
-    .then((rows) =>
-      rows
-        .filter((r) => r.rowTenantId === tenantId && r.status === "available")
-        .map(({ vehicleId, storagePath, sortOrder, altText }) => ({
-          vehicleId,
-          storagePath,
-          sortOrder,
-          altText,
-        })),
-    );
+      return db
+        .select({
+          vehicleId: vehicleMedia.vehicleId,
+          storagePath: vehicleMedia.storagePath,
+          sortOrder: vehicleMedia.sortOrder,
+          altText: vehicleMedia.altText,
+          status: vehicles.status,
+          rowTenantId: vehicleMedia.tenantId,
+        })
+        .from(vehicleMedia)
+        .innerJoin(vehicles, eq(vehicles.id, vehicleMedia.vehicleId))
+        .where(
+          and(
+            eq(vehicleMedia.tenantId, tenantId),
+            eq(vehicles.tenantId, tenantId),
+            eq(vehicles.status, "available"),
+            eq(vehicleMedia.type, "image"),
+            inArray(vehicleMedia.vehicleId, vehicleIds),
+          ),
+        )
+        .orderBy(asc(vehicleMedia.sortOrder), asc(vehicleMedia.createdAt))
+        .then((rows) =>
+          rows
+            .filter((r) => r.rowTenantId === tenantId && r.status === "available")
+            .map(({ vehicleId, storagePath, sortOrder, altText }) => ({
+              vehicleId,
+              storagePath,
+              sortOrder,
+              altText,
+            })),
+        );
+    },
+    { count: vehicleIds.length, kind: "gallery" },
+  );
 }
 
 /**
@@ -89,55 +96,61 @@ async function loadAvailableCoverMediaRows(
   vehicleIds: string[],
 ): Promise<MediaRow[]> {
   if (vehicleIds.length === 0) return [];
-  const db = getDb();
-  await clearPublicSessionGucs(db);
+  return withPerfSpan(
+    "media.query",
+    async () => {
+      const db = getDb();
+      await clearPublicSessionGucs(db);
 
-  const idList = sql.join(
-    vehicleIds.map((id) => sql`${id}::uuid`),
-    sql`, `,
+      const idList = sql.join(
+        vehicleIds.map((id) => sql`${id}::uuid`),
+        sql`, `,
+      );
+
+      const result = await db.execute(sql`
+        SELECT DISTINCT ON (vm.vehicle_id)
+          vm.vehicle_id AS "vehicleId",
+          vm.storage_path AS "storagePath",
+          vm.sort_order AS "sortOrder",
+          vm.alt_text AS "altText"
+        FROM vehicle_media vm
+        INNER JOIN vehicles v ON v.id = vm.vehicle_id
+        WHERE vm.tenant_id = ${tenantId}::uuid
+          AND v.tenant_id = ${tenantId}::uuid
+          AND v.status = 'available'
+          AND vm.type = 'image'
+          AND vm.vehicle_id IN (${idList})
+        ORDER BY vm.vehicle_id, vm.sort_order ASC, vm.created_at ASC
+      `);
+
+      const rows = Array.isArray(result)
+        ? result
+        : ((result as { rows?: unknown }).rows ?? []);
+      if (!Array.isArray(rows)) return [];
+
+      return rows.flatMap((raw) => {
+        const r = raw as Record<string, unknown>;
+        const vehicleId = typeof r.vehicleId === "string" ? r.vehicleId : null;
+        const storagePath = typeof r.storagePath === "string" ? r.storagePath : null;
+        const sortOrder =
+          typeof r.sortOrder === "number"
+            ? r.sortOrder
+            : typeof r.sortOrder === "string"
+              ? Number(r.sortOrder)
+              : NaN;
+        if (!vehicleId || !storagePath || !Number.isFinite(sortOrder)) return [];
+        return [
+          {
+            vehicleId,
+            storagePath,
+            sortOrder: Math.trunc(sortOrder),
+            altText: typeof r.altText === "string" ? r.altText : null,
+          },
+        ];
+      });
+    },
+    { count: vehicleIds.length, kind: "cover" },
   );
-
-  const result = await db.execute(sql`
-    SELECT DISTINCT ON (vm.vehicle_id)
-      vm.vehicle_id AS "vehicleId",
-      vm.storage_path AS "storagePath",
-      vm.sort_order AS "sortOrder",
-      vm.alt_text AS "altText"
-    FROM vehicle_media vm
-    INNER JOIN vehicles v ON v.id = vm.vehicle_id
-    WHERE vm.tenant_id = ${tenantId}::uuid
-      AND v.tenant_id = ${tenantId}::uuid
-      AND v.status = 'available'
-      AND vm.type = 'image'
-      AND vm.vehicle_id IN (${idList})
-    ORDER BY vm.vehicle_id, vm.sort_order ASC, vm.created_at ASC
-  `);
-
-  const rows = Array.isArray(result)
-    ? result
-    : ((result as { rows?: unknown }).rows ?? []);
-  if (!Array.isArray(rows)) return [];
-
-  return rows.flatMap((raw) => {
-    const r = raw as Record<string, unknown>;
-    const vehicleId = typeof r.vehicleId === "string" ? r.vehicleId : null;
-    const storagePath = typeof r.storagePath === "string" ? r.storagePath : null;
-    const sortOrder =
-      typeof r.sortOrder === "number"
-        ? r.sortOrder
-        : typeof r.sortOrder === "string"
-          ? Number(r.sortOrder)
-          : NaN;
-    if (!vehicleId || !storagePath || !Number.isFinite(sortOrder)) return [];
-    return [
-      {
-        vehicleId,
-        storagePath,
-        sortOrder: Math.trunc(sortOrder),
-        altText: typeof r.altText === "string" ? r.altText : null,
-      },
-    ];
-  });
 }
 
 /**

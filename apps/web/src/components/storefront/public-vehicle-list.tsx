@@ -71,6 +71,7 @@ function CardNav({
   return (
     <Link
       href={href}
+      prefetch={false}
       className={className}
       aria-label={ariaLabel}
     >

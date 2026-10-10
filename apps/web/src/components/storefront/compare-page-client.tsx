@@ -57,6 +57,7 @@ export function ComparePageClient() {
         </p>
         <Link
           href={publicCatalogPath()}
+          prefetch={false}
           className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-semibold text-white"
           style={{ backgroundColor: "var(--sf-accent)" }}
         >
@@ -118,6 +119,7 @@ export function ComparePageClient() {
                     <div className="p-3 text-left">
                       <Link
                         href={publicVehiclePath(vehicle.slug)}
+                        prefetch={false}
                         className="text-base font-bold text-[var(--sf-text)] underline-offset-2 hover:underline"
                       >
                         {vehicle.make} {vehicle.model}

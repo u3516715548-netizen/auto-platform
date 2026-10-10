@@ -446,6 +446,7 @@ export function CatalogFilterDrawer({
                 {hasFilters ? (
                   <Link
                     href={resetCatalogHref()}
+                    prefetch={false}
                     className="text-sm font-medium text-[var(--sf-accent)] underline underline-offset-2"
                     onClick={close}
                   >
@@ -547,6 +548,7 @@ export function CatalogFilterDrawer({
               <div className="shrink-0 border-b border-[var(--sf-border)] px-4 py-2 text-center">
                 <Link
                   href={resetCatalogHref()}
+                  prefetch={false}
                   className="text-sm font-medium text-[var(--sf-accent)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
                   onClick={close}
                 >

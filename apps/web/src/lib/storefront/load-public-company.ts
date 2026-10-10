@@ -7,6 +7,7 @@ import {
   companyEntityTypeSchema,
   type PublicCompanyView,
 } from "@auto-platform/types";
+import { withPerfSpan } from "@/lib/perf/server-timing";
 import { clearPublicSessionGucs } from "./clear-public-session";
 
 type PublicCompanyRow = {
@@ -75,16 +76,18 @@ function toPublicCompanyView(row: PublicCompanyRow): PublicCompanyView {
  */
 export const loadPublicCompanyView = cache(
   async (tenantId: string): Promise<PublicCompanyView | null> => {
-    const db = getDb();
-    await clearPublicSessionGucs(db);
+    return withPerfSpan("company.profile", async () => {
+      const db = getDb();
+      await clearPublicSessionGucs(db);
 
-    const rows = await db.execute<PublicCompanyRow>(sql`
-      select * from app.public_company_profile(${tenantId}::uuid)
-    `);
-    const list = Array.from(rows as unknown as PublicCompanyRow[]);
-    const row = list[0];
-    if (!row) return null;
-    return toPublicCompanyView(row);
+      const rows = await db.execute<PublicCompanyRow>(sql`
+        select * from app.public_company_profile(${tenantId}::uuid)
+      `);
+      const list = Array.from(rows as unknown as PublicCompanyRow[]);
+      const row = list[0];
+      if (!row) return null;
+      return toPublicCompanyView(row);
+    });
   },
 );
 

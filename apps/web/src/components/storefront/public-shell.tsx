@@ -81,6 +81,7 @@ export function PublicStorefrontShell({
               <div className="flex min-w-0 items-center gap-3 md:gap-5">
                 <Link
                   href={catalogHref}
+                  prefetch={false}
                   className={`min-w-0 ${focusLink}`}
                   aria-label={`${tenant.name} — pagina principală`}
                 >
@@ -94,6 +95,7 @@ export function PublicStorefrontShell({
                 >
                   <Link
                     href={catalogHref}
+                    prefetch={false}
                     className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-[var(--sf-text)] ${focusLink}`}
                   >
                     <IconCar size={16} />
@@ -101,6 +103,7 @@ export function PublicStorefrontShell({
                   </Link>
                   <Link
                     href={publicSavedPath()}
+                    prefetch={false}
                     className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-[var(--sf-text)] ${focusLink}`}
                   >
                     <IconBookmark size={16} />
@@ -108,6 +111,7 @@ export function PublicStorefrontShell({
                   </Link>
                   <Link
                     href={publicComparePath()}
+                    prefetch={false}
                     className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-[var(--sf-text)] ${focusLink}`}
                   >
                     <IconCompare size={16} />
@@ -147,6 +151,7 @@ export function PublicStorefrontShell({
                 ) : null}
                 <Link
                   href={catalogHref}
+                  prefetch={false}
                   className={`w-fit text-[var(--sf-text-muted)] underline-offset-2 hover:underline ${focusLink}`}
                 >
                   Mașini în stoc
@@ -183,6 +188,7 @@ export function PublicStorefrontShell({
               <li className="min-w-0 flex-1">
                 <Link
                   href={catalogHref}
+                  prefetch={false}
                   className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-[var(--sf-text-muted)] ${focusLink}`}
                 >
                   <span className="flex size-8 items-center justify-center" aria-hidden>
@@ -194,6 +200,7 @@ export function PublicStorefrontShell({
               <li className="min-w-0 flex-1">
                 <Link
                   href={catalogHref}
+                  prefetch={false}
                   className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold text-[var(--sf-text)] ${focusLink}`}
                 >
                   <span
@@ -209,6 +216,7 @@ export function PublicStorefrontShell({
               <li className="min-w-0 flex-1">
                 <Link
                   href={publicSavedPath()}
+                  prefetch={false}
                   className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-[var(--sf-text-muted)] ${focusLink}`}
                 >
                   <span className="flex size-8 items-center justify-center" aria-hidden>
@@ -220,6 +228,7 @@ export function PublicStorefrontShell({
               <li className="min-w-0 flex-1">
                 <Link
                   href={publicComparePath()}
+                  prefetch={false}
                   className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-[var(--sf-text-muted)] ${focusLink}`}
                 >
                   <span className="flex size-8 items-center justify-center" aria-hidden>

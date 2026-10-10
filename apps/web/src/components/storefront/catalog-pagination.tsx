@@ -19,6 +19,7 @@ export function CatalogPagination({ query, page, totalPages }: CatalogPagination
       {page > 1 ? (
         <Link
           href={buildCatalogHref({ ...query, page: page - 1 })}
+          prefetch={false}
           className="inline-flex min-h-11 items-center rounded-xl border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           rel="prev"
         >
@@ -44,6 +45,7 @@ export function CatalogPagination({ query, page, totalPages }: CatalogPagination
             <li key={item}>
               <Link
                 href={buildCatalogHref({ ...query, page: item })}
+                prefetch={false}
                 aria-current={isCurrent ? "page" : undefined}
                 className={
                   isCurrent
@@ -61,6 +63,7 @@ export function CatalogPagination({ query, page, totalPages }: CatalogPagination
       {page < totalPages ? (
         <Link
           href={buildCatalogHref({ ...query, page: page + 1 })}
+          prefetch={false}
           className="inline-flex min-h-11 items-center rounded-xl border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           rel="next"
         >

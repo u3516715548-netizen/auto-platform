@@ -10,6 +10,7 @@ import { publicCatalogPath } from "@/lib/storefront/paths";
 import { PublicStorefrontShell } from "@/components/storefront/public-shell";
 import { SavedPageClient } from "@/components/storefront/saved-page-client";
 import { IconChevronLeft } from "@/components/storefront/icons";
+import { withPerfRoute } from "@/lib/perf/server-timing";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function SavedPage() {
+  return withPerfRoute("salvate", async () => {
   const resolved = await resolvePublicTenantFromHost();
   if (shouldDenyPublicStorefront(resolved) || resolved.kind !== "ok") {
     notFound();
@@ -35,6 +37,7 @@ export default async function SavedPage() {
         <div className="flex items-center gap-3">
           <Link
             href={publicCatalogPath()}
+            prefetch={false}
             className="inline-flex min-h-10 items-center gap-1 rounded-full border border-[var(--sf-border)] bg-white px-3 text-sm font-semibold text-[var(--sf-text)]"
           >
             <IconChevronLeft size={16} />
@@ -51,4 +54,5 @@ export default async function SavedPage() {
       </div>
     </PublicStorefrontShell>
   );
+  });
 }

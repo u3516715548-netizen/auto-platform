@@ -29,6 +29,7 @@ export function SavedPageClient() {
         </p>
         <Link
           href={publicCatalogPath()}
+          prefetch={false}
           className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-semibold text-white"
           style={{ backgroundColor: "var(--sf-accent)" }}
         >
@@ -46,6 +47,7 @@ export function SavedPageClient() {
           <li key={vehicle.slug} className="relative min-w-0">
             <Link
               href={publicVehiclePath(vehicle.slug)}
+              prefetch={false}
               className="flex h-full flex-col overflow-hidden rounded-[var(--sf-radius-lg)] border border-[var(--sf-border)] bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
             >
               <div className="aspect-[4/3] bg-[var(--sf-surface-muted)]">

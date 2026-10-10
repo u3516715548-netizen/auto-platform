@@ -10,6 +10,7 @@ import {
   resolveHobbyDemoTenantSlugFromRequest,
 } from "@/lib/tenant/vercel-demo-only";
 import type { PublicCompanyView } from "@auto-platform/types";
+import { withPerfSpan } from "@/lib/perf/server-timing";
 import { clearPublicSessionGucs } from "./clear-public-session";
 import { loadPublicCompanyView } from "./load-public-company";
 import { parsePublicBranding } from "./public-dto";
@@ -61,23 +62,25 @@ export type ResolvePublicTenantResult =
  */
 export const resolvePublicTenantFromHost = cache(
   async (): Promise<ResolvePublicTenantResult> => {
-    const headerStore = await headers();
-    const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
-    const rootDomain = getRootDomain();
-    const resolved = resolveTenantSlugFromHost(host, rootDomain);
+    return withPerfSpan("tenant.resolve", async () => {
+      const headerStore = await headers();
+      const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
+      const rootDomain = getRootDomain();
+      const resolved = resolveTenantSlugFromHost(host, rootDomain);
 
-    if (resolved.kind === "apex") {
-      const demoSlug = resolveHobbyDemoTenantSlugFromRequest(host, rootDomain);
-      if (demoSlug) {
-        return loadPublicTenantBySlug(demoSlug);
+      if (resolved.kind === "apex") {
+        const demoSlug = resolveHobbyDemoTenantSlugFromRequest(host, rootDomain);
+        if (demoSlug) {
+          return loadPublicTenantBySlug(demoSlug);
+        }
+        return { kind: "apex" };
       }
-      return { kind: "apex" };
-    }
-    if (resolved.kind === "invalid") {
-      return { kind: "not_found" };
-    }
+      if (resolved.kind === "invalid") {
+        return { kind: "not_found" };
+      }
 
-    return loadPublicTenantBySlug(resolved.slug);
+      return loadPublicTenantBySlug(resolved.slug);
+    });
   },
 );
 

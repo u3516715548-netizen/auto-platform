@@ -128,6 +128,7 @@ export function CompareFloatingBar({
           ) : (
             <Link
               href={publicComparePath()}
+              prefetch={false}
               className="inline-flex min-h-9 items-center justify-center rounded-full px-3 text-xs font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
               style={{ backgroundColor: "var(--sf-accent)" }}
             >
@@ -225,6 +226,7 @@ export function CompareFloatingBar({
             ) : (
               <Link
                 href={publicComparePath()}
+                prefetch={false}
                 className="inline-flex min-h-10 items-center justify-center rounded-full px-4 text-sm font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
                 style={{ backgroundColor: "var(--sf-accent)" }}
               >

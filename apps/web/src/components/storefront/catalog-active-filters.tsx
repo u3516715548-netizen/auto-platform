@@ -24,6 +24,7 @@ export function CatalogActiveFilters({ query }: CatalogActiveFiltersProps) {
             <li key={chip.id}>
               <Link
                 href={hrefWithoutChip(query, chip)}
+                prefetch={false}
                 className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-[var(--sf-border)] bg-white px-2.5 text-xs font-medium text-[var(--sf-text)] transition-colors hover:border-[var(--sf-accent)] hover:bg-[var(--sf-surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
               >
                 <span>{chip.label}</span>
@@ -40,6 +41,7 @@ export function CatalogActiveFilters({ query }: CatalogActiveFiltersProps) {
         <div>
           <Link
             href={resetCatalogHref()}
+            prefetch={false}
             className="inline-flex min-h-9 items-center text-sm font-medium text-[var(--sf-accent)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
           >
             Resetează filtre

@@ -332,6 +332,7 @@ export function CatalogFilters({
           {showReset && hasFilters ? (
             <Link
               href={resetCatalogHref()}
+              prefetch={false}
               className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--sf-border)] bg-white px-4 text-sm font-medium text-[var(--sf-accent)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
             >
               Șterge opțiunile

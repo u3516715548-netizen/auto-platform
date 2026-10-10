@@ -26,6 +26,7 @@ import { VehicleAlternativesCarousel } from "@/components/storefront/vehicle-alt
 import { VehicleSaveHeaderButton } from "@/components/storefront/vehicle-list-actions";
 import { IconChevronLeft } from "@/components/storefront/icons";
 import { toStorefrontVehicleLite } from "@/lib/storefront/storefront-vehicle-lite";
+import { withPerfRoute } from "@/lib/perf/server-timing";
 
 /** Always read fresh inventory — reserved/sold → 404, never stale public detail. */
 export const dynamic = "force-dynamic";
@@ -59,6 +60,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function PublicVehicleDetailPage({ params }: PageProps) {
+  return withPerfRoute("vehicle-detail", async () => {
   const { slug: raw } = await params;
   const slug = parseVehicleSlugParam(raw);
   if (!slug) {
@@ -98,6 +100,7 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
         <div className="flex items-center justify-between gap-3">
           <Link
             href={publicCatalogPath()}
+            prefetch={false}
             className="inline-flex min-h-10 items-center gap-1 rounded-full border border-[var(--sf-border)] bg-white px-3 text-sm font-semibold text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
           >
             <IconChevronLeft size={16} />
@@ -137,4 +140,5 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
       ) : null}
     </PublicStorefrontShell>
   );
+  });
 }

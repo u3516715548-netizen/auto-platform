@@ -13,6 +13,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { getDb, vehicles } from "@auto-platform/db";
+import { withPerfSpan } from "@/lib/perf/server-timing";
 import { clearPublicSessionGucs } from "./clear-public-session";
 import { toPublicVehicleDto, type PublicVehicleDto } from "./public-dto";
 import {
@@ -302,47 +303,49 @@ export async function listPublicVehiclesForCatalog(
   tenantId: string,
   queryInput?: CatalogQuery | URLSearchParams | Record<string, string | string[] | undefined>,
 ): Promise<PublicCatalogResult> {
-  const parsed = resolveCatalogQuery(queryInput);
-  const db = getDb();
-  await clearPublicSessionGucs(db);
+  return withPerfSpan("catalog.vehicles", async () => {
+    const parsed = resolveCatalogQuery(queryInput);
+    const db = getDb();
+    await clearPublicSessionGucs(db);
 
-  const where = buildPublicCatalogWhere(tenantId, parsed);
+    const where = buildPublicCatalogWhere(tenantId, parsed);
 
-  const [countRow] = await db.select({ value: count() }).from(vehicles).where(where);
-  const total = Number(countRow?.value ?? 0);
-  const page = clampCatalogPage(parsed.page, total);
-  const query: CatalogQuery = { ...parsed, page };
-  const totalPages = Math.max(1, Math.ceil(total / CATALOG_PAGE_SIZE) || 1);
-  const offset = (page - 1) * CATALOG_PAGE_SIZE;
+    const [countRow] = await db.select({ value: count() }).from(vehicles).where(where);
+    const total = Number(countRow?.value ?? 0);
+    const page = clampCatalogPage(parsed.page, total);
+    const query: CatalogQuery = { ...parsed, page };
+    const totalPages = Math.max(1, Math.ceil(total / CATALOG_PAGE_SIZE) || 1);
+    const offset = (page - 1) * CATALOG_PAGE_SIZE;
 
-  const rows = await db
-    .select(publicCatalogVehicleSelect)
-    .from(vehicles)
-    .where(where)
-    .orderBy(...orderBySort(query.sort))
-    .limit(CATALOG_PAGE_SIZE)
-    .offset(offset);
+    const rows = await db
+      .select(publicCatalogVehicleSelect)
+      .from(vehicles)
+      .where(where)
+      .orderBy(...orderBySort(query.sort))
+      .limit(CATALOG_PAGE_SIZE)
+      .offset(offset);
 
-  const catalogRows = rows.filter(
-    (row) => row.tenantId === tenantId && row.status === "available",
-  );
+    const catalogRows = rows.filter(
+      (row) => row.tenantId === tenantId && row.status === "available",
+    );
 
-  const items = await attachPublicCoverImages(
-    tenantId,
-    catalogRows.map((row) => ({
-      vehicle: toPublicCatalogVehicleDto(row),
-      vehicleId: row.id,
-    })),
-  );
+    const items = await attachPublicCoverImages(
+      tenantId,
+      catalogRows.map((row) => ({
+        vehicle: toPublicCatalogVehicleDto(row),
+        vehicleId: row.id,
+      })),
+    );
 
-  return {
-    items,
-    total,
-    page,
-    pageSize: CATALOG_PAGE_SIZE,
-    totalPages: total === 0 ? 1 : totalPages,
-    query,
-  };
+    return {
+      items,
+      total,
+      page,
+      pageSize: CATALOG_PAGE_SIZE,
+      totalPages: total === 0 ? 1 : totalPages,
+      query,
+    };
+  });
 }
 
 /**
@@ -353,53 +356,65 @@ export async function getPublicVehicleBySlug(
   tenantId: string,
   slug: string,
 ): Promise<PublicVehicleDto | null> {
-  const db = getDb();
-  await clearPublicSessionGucs(db);
+  return withPerfSpan(
+    "vehicle.detail",
+    async () => {
+      const db = getDb();
+      await clearPublicSessionGucs(db);
 
-  const [row] = await db
-    .select(publicVehicleSelect)
-    .from(vehicles)
-    .where(
-      and(
-        eq(vehicles.tenantId, tenantId),
-        eq(vehicles.slug, slug),
-        eq(vehicles.status, "available"),
-      ),
-    )
-    .limit(1);
+      const [row] = await db
+        .select(publicVehicleSelect)
+        .from(vehicles)
+        .where(
+          and(
+            eq(vehicles.tenantId, tenantId),
+            eq(vehicles.slug, slug),
+            eq(vehicles.status, "available"),
+          ),
+        )
+        .limit(1);
 
-  if (!row || row.tenantId !== tenantId || row.status !== "available") {
-    return null;
-  }
+      if (!row || row.tenantId !== tenantId || row.status !== "available") {
+        return null;
+      }
 
-  return toPublicVehicleDto(row);
+      return toPublicVehicleDto(row);
+    },
+    { kind: "bySlug" },
+  );
 }
 
 export async function getPublicVehicleDetailBySlug(
   tenantId: string,
   slug: string,
 ): Promise<PublicVehicleDetailDto | null> {
-  const db = getDb();
-  await clearPublicSessionGucs(db);
+  return withPerfSpan(
+    "vehicle.detail",
+    async () => {
+      const db = getDb();
+      await clearPublicSessionGucs(db);
 
-  const [row] = await db
-    .select(publicVehicleSelect)
-    .from(vehicles)
-    .where(
-      and(
-        eq(vehicles.tenantId, tenantId),
-        eq(vehicles.slug, slug),
-        eq(vehicles.status, "available"),
-      ),
-    )
-    .limit(1);
+      const [row] = await db
+        .select(publicVehicleSelect)
+        .from(vehicles)
+        .where(
+          and(
+            eq(vehicles.tenantId, tenantId),
+            eq(vehicles.slug, slug),
+            eq(vehicles.status, "available"),
+          ),
+        )
+        .limit(1);
 
-  if (!row || row.tenantId !== tenantId || row.status !== "available") {
-    return null;
-  }
+      if (!row || row.tenantId !== tenantId || row.status !== "available") {
+        return null;
+      }
 
-  const dto = toPublicVehicleDto(row);
-  return attachPublicDetailImages(tenantId, dto, row.id);
+      const dto = toPublicVehicleDto(row);
+      return attachPublicDetailImages(tenantId, dto, row.id);
+    },
+    { kind: "full" },
+  );
 }
 
 export { filterPublicAlternativeRows } from "./public-vehicle-alternatives";

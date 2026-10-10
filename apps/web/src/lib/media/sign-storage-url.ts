@@ -1,3 +1,4 @@
+import { withPerfSpan } from "@/lib/perf/server-timing";
 import { createStaffSupabaseClient, createStorageAdminClient } from "@/lib/supabase/storage-server";
 import { MEDIA_BUCKET, VEHICLE_MEDIA_SIGNED_URL_TTL_SEC } from "./constants";
 
@@ -32,40 +33,48 @@ export async function createSignedDownloadUrl(
 export async function createSignedDownloadUrls(
   storagePaths: string[],
 ): Promise<Map<string, string | null>> {
-  const result = new Map<string, string | null>();
-  const unique = [...new Set(storagePaths.filter((p) => typeof p === "string" && p.length > 0))];
-  for (const path of unique) result.set(path, null);
-  if (unique.length === 0) return result;
+  return withPerfSpan(
+    "signedUrls",
+    async () => {
+      const result = new Map<string, string | null>();
+      const unique = [
+        ...new Set(storagePaths.filter((p) => typeof p === "string" && p.length > 0)),
+      ];
+      for (const path of unique) result.set(path, null);
+      if (unique.length === 0) return result;
 
-  const admin = createStorageAdminClient();
-  if (!admin) {
-    console.error("[media] createSignedDownloadUrls: missing SUPABASE_SERVICE_ROLE_KEY");
-    return result;
-  }
+      const admin = createStorageAdminClient();
+      if (!admin) {
+        console.error("[media] createSignedDownloadUrls: missing SUPABASE_SERVICE_ROLE_KEY");
+        return result;
+      }
 
-  const { data, error } = await admin.storage
-    .from(MEDIA_BUCKET)
-    .createSignedUrls(unique, VEHICLE_MEDIA_SIGNED_URL_TTL_SEC);
+      const { data, error } = await admin.storage
+        .from(MEDIA_BUCKET)
+        .createSignedUrls(unique, VEHICLE_MEDIA_SIGNED_URL_TTL_SEC);
 
-  if (error || !data) {
-    console.error("[media] createSignedUrls failed", {
-      bucket: MEDIA_BUCKET,
-      count: unique.length,
-      message: error?.message,
-    });
-    return result;
-  }
+      if (error || !data) {
+        console.error("[media] createSignedUrls failed", {
+          bucket: MEDIA_BUCKET,
+          count: unique.length,
+          message: error?.message,
+        });
+        return result;
+      }
 
-  for (const item of data) {
-    if (!item.path) continue;
-    if (item.error || !item.signedUrl) {
-      result.set(item.path, null);
-      continue;
-    }
-    result.set(item.path, item.signedUrl);
-  }
+      for (const item of data) {
+        if (!item.path) continue;
+        if (item.error || !item.signedUrl) {
+          result.set(item.path, null);
+          continue;
+        }
+        result.set(item.path, item.signedUrl);
+      }
 
-  return result;
+      return result;
+    },
+    { count: storagePaths.length },
+  );
 }
 
 export type SignedUploadResult =

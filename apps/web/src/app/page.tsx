@@ -35,6 +35,7 @@ import {
   type CatalogQuery,
 } from "@/lib/storefront/catalog-query";
 import { publicSavedPath } from "@/lib/storefront/paths";
+import { withPerfRoute } from "@/lib/perf/server-timing";
 import { IconBookmark, IconGrid, IconSort } from "@/components/storefront/icons";
 
 /** Always read fresh inventory — reserved/sold must not linger in storefront cache. */
@@ -78,6 +79,7 @@ function nextSortHref(query: CatalogQuery): string {
  * Tenant host → public catalog with Etapa 8 filters + pagination.
  */
 export default async function RootPage({ searchParams }: PageProps) {
+  return withPerfRoute("catalog", async () => {
   const resolved = await resolvePublicTenantFromHost();
 
   if (shouldDenyPublicStorefront(resolved)) {
@@ -195,6 +197,7 @@ export default async function RootPage({ searchParams }: PageProps) {
                       </span>
                       <Link
                         href={publicSavedPath()}
+                        prefetch={false}
                         className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[var(--sf-border)] bg-[var(--sf-surface-muted)] px-2.5 text-xs font-semibold text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
                       >
                         <IconBookmark size={14} />
@@ -202,6 +205,7 @@ export default async function RootPage({ searchParams }: PageProps) {
                       </Link>
                       <Link
                         href={nextSortHref(query)}
+                        prefetch={false}
                         className="inline-flex min-h-10 max-w-[7.5rem] items-center gap-1.5 truncate rounded-xl border border-[var(--sf-border)] bg-[var(--sf-surface-muted)] px-2.5 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
                         style={{ color: "var(--sf-accent)" }}
                         title={`Sortare: ${sortLabel}. Apasă pentru următoarea.`}
@@ -226,6 +230,7 @@ export default async function RootPage({ searchParams }: PageProps) {
                           </p>
                           <Link
                             href={resetCatalogHref()}
+                            prefetch={false}
                             className="mt-4 inline-flex min-h-11 items-center justify-center rounded-[var(--sf-radius)] px-4 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
                             style={{ backgroundColor: tenantView.primaryColor }}
                           >
@@ -258,6 +263,7 @@ export default async function RootPage({ searchParams }: PageProps) {
       </div>
     </PublicStorefrontShell>
   );
+  });
 }
 
 function ApexLanding() {
