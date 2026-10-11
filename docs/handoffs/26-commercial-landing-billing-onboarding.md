@@ -339,6 +339,7 @@ node apps/web/scripts/_smoke-26a.mjs → 6/6 OK
 - Auth-first: `/login?plan=` (signup pe apex) → `/checkout` → `PaymentAdapter` → Stripe Checkout sau noop
 - Migrare `0014_billing_checkout_entitlements`: `tenant_entitlements`, `billing_checkout_sessions`, `billing_subscriptions`, `billing_webhook_events` + FORCE RLS (fără anon)
 - SECURITY DEFINER: `begin_self_serve_checkout`, `attach_checkout_provider_session`, `activate_tenant_from_checkout` (idempotent pe `event_id`)
+- **Securitate:** `activate_tenant_from_checkout` — EXECUTE doar `postgres` (revocat `authenticated`/`anon`, migrare `0015`); begin/attach leagă `p_profile_id` de `auth.uid()` când există JWT; `noop-complete` doar `PAYMENT_PROVIDER=noop` **și** `NODE_ENV` development|test (+ owner autentificat); în Production → 404
 - Webhook `POST /api/billing/webhook` (semnătură; fără cookie session; fără `service_role`)
 - Activare: tenant `suspended` → `active`, entitlement + subscription, `revalidatePublicStorefrontPaths`
 - Enterprise: fără checkout (neschimbat)

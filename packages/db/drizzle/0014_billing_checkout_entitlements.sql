@@ -445,6 +445,6 @@ END;
 $$;--> statement-breakpoint
 
 REVOKE ALL ON FUNCTION app.activate_tenant_from_checkout(text, text, text, text, text, text) FROM PUBLIC;--> statement-breakpoint
--- Webhook path uses DATABASE_URL (server) — not cookie session. Grant to postgres + authenticated.
-GRANT EXECUTE ON FUNCTION app.activate_tenant_from_checkout(text, text, text, text, text, text) TO postgres;--> statement-breakpoint
-GRANT EXECUTE ON FUNCTION app.activate_tenant_from_checkout(text, text, text, text, text, text) TO authenticated;
+-- Server-only (DATABASE_URL / postgres). NEVER grant to authenticated/anon —
+-- signature verification lives in the Node webhook; DB must not be callable as JWT RPC.
+GRANT EXECUTE ON FUNCTION app.activate_tenant_from_checkout(text, text, text, text, text, text) TO postgres;

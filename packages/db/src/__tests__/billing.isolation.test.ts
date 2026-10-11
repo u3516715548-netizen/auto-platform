@@ -65,6 +65,29 @@ describe.skipIf(!canRunOnline)(
       });
     });
 
+    it("authenticated cannot execute activate_tenant_from_checkout (server-only)", async () => {
+      await withRlsRole(db, "authenticated", async (tx) => {
+        try {
+          await tx.execute(sql`
+            select app.activate_tenant_from_checkout(
+              'noop',
+              'evt_should_deny',
+              'checkout.session.completed',
+              'noop_cs_should_deny',
+              'noop_sub_x',
+              null
+            )
+          `);
+          expect.fail("activate should be denied for authenticated");
+        } catch (error) {
+          expect(isRlsOrPrivilegeDenial(error)).toBe(true);
+        }
+        throw new IntentionalRlsRollback();
+      }).catch((error) => {
+        if (!(error instanceof IntentionalRlsRollback)) throw error;
+      });
+    });
+
     it("member cannot insert entitlements from client role", async () => {
       await withRlsRole(
         db,

@@ -5,6 +5,7 @@ import type {
   PaymentAdapter,
   VerifiedWebhookEvent,
 } from "@/lib/billing/payment-adapter";
+import { isNoopCompleteRuntimeAllowed } from "@/lib/billing/noop-complete-guard";
 
 function noopWebhookSecret(): string {
   return (
@@ -25,6 +26,11 @@ export function createNoopPaymentAdapter(appOrigin: string): PaymentAdapter {
     async createCheckoutSession(
       input: CreateCheckoutSessionInput,
     ): Promise<CreateCheckoutSessionResult> {
+      if (!isNoopCompleteRuntimeAllowed()) {
+        throw new Error(
+          "noop checkout is only available in development/test (not Production)",
+        );
+      }
       const externalSessionId = `noop_cs_${input.checkoutId.replace(/-/g, "").slice(0, 24)}`;
       const url = new URL("/api/billing/noop-complete", appOrigin);
       url.searchParams.set("session_id", externalSessionId);
