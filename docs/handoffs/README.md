@@ -54,6 +54,7 @@ Ordinea de mai jos este **obligatorie** ca roadmap. Nu se sare peste o etapă f�
 | 23 | `23-pages-cms-seo` | CMS Pagini + SEO | Pagini CMS + SEO de bază pe tenant |
 | 24 | `24-template-2` | Template 2 | Template 2 activ (nu doar preview) |
 | 25 | `25-mobile-expo` | Mobile Expo | Aplicație / shell Expo |
+| 26 | `26-commercial-landing-billing-onboarding` | Landing comercială + billing + onboarding | Apex SaaS: prețuri, checkout (adapter), webhook, entitlements, onboarding — vezi plan `26-commercial-landing-billing-onboarding.md` |
 
 ### Notă — Etapa 15 (Audit performanță)
 

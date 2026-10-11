@@ -25,6 +25,14 @@ body {
   overflow-x: clip;
 }
 
+/** Apex commercial marketing (Etapa 26A) — scoped; does not affect tenant storefront. */
+.saas-marketing {
+  --saas-ink: #04161a;
+  --saas-teal: #2dd4bf;
+  background: var(--saas-ink);
+  color: #ecfdf5;
+}
+
 /* Visible keyboard focus for interactive elements without a dedicated component style */
 a:focus-visible,
 button:focus-visible,

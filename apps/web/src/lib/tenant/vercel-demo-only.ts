@@ -4,10 +4,15 @@
  * NOT for production. Local / real multi-tenant Host resolution stays unchanged.
  * Never reads tenant from query, path, cookie, body, or any client-controlled input.
  *
+ * Etapa 26A: apex Host defaults to the commercial SaaS landing. Loading a demo
+ * tenant catalog on apex requires an explicit opt-in (`HOBBY_DEMO_APEX_CATALOG`).
+ * Normal demo storefront remains on `{slug}.{root}` (e.g. acme.localhost).
+ *
  * Note: custom env vars MUST NOT use the `VERCEL_` prefix — Vercel reserves it
  * (UI shows "Populated by System" and blocks user values).
  *
- * Active only when ALL gates pass (see isHobbyDemoOnlyEnvironmentActive).
+ * Environment gate: isHobbyDemoOnlyEnvironmentActive.
+ * Apex catalog slug: resolveHobbyDemoTenantSlug (environment + APEX_CATALOG opt-in).
  */
 
 import { tenantSlugSchema } from "@auto-platform/types";
@@ -21,6 +26,11 @@ export type HobbyDemoEnvInput = {
   hobbyDemoTenantSlug?: string | null;
   /** process.env.HOBBY_DEMO_DISABLE_PUBLIC_LEADS — must be exactly "true" to disable */
   hobbyDemoDisablePublicLeads?: string | null;
+  /**
+   * process.env.HOBBY_DEMO_APEX_CATALOG — opt-in apex catalog (Etapa 26A).
+   * Must be exactly "1" or "true". Absent/other → apex stays commercial landing.
+   */
+  hobbyDemoApexCatalog?: string | null;
   /** process.env.VERCEL_URL — deployment host without protocol */
   vercelUrl?: string | null;
   /** process.env.VERCEL_PROJECT_PRODUCTION_URL — production alias host */
@@ -110,13 +120,23 @@ export function isHobbyDemoOnlyEnvironmentActive(input: HobbyDemoEnvInput): bool
   return true;
 }
 
+/** Explicit opt-in to serve a demo tenant catalog on the Hobby apex Host. */
+export function isHobbyDemoApexCatalogEnabled(input: HobbyDemoEnvInput): boolean {
+  const flag = input.hobbyDemoApexCatalog?.trim();
+  return flag === "1" || flag === "true";
+}
+
 /**
- * Returns the server-configured demo tenant slug, or null when the gate is closed /
- * slug is missing / slug fails strict validation.
- * Never defaults to another tenant.
+ * Returns the server-configured demo tenant slug for apex catalog, or null when
+ * the Hobby environment gate is closed, apex catalog opt-in is off, slug is
+ * missing, or slug fails strict validation.
+ * Never defaults to another tenant. Fail-closed: default apex = no catalog.
  */
 export function resolveHobbyDemoTenantSlug(input: HobbyDemoEnvInput): string | null {
   if (!isHobbyDemoOnlyEnvironmentActive(input)) {
+    return null;
+  }
+  if (!isHobbyDemoApexCatalogEnabled(input)) {
     return null;
   }
 
@@ -151,6 +171,7 @@ export function readHobbyDemoOnlyEnvFromProcess(host: string, rootDomain: string
     hobbyDemoOnly: process.env.HOBBY_DEMO_ONLY,
     hobbyDemoTenantSlug: process.env.HOBBY_DEMO_TENANT_SLUG,
     hobbyDemoDisablePublicLeads: process.env.HOBBY_DEMO_DISABLE_PUBLIC_LEADS,
+    hobbyDemoApexCatalog: process.env.HOBBY_DEMO_APEX_CATALOG,
     vercelUrl: process.env.VERCEL_URL,
     vercelProjectProductionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL,
     host,

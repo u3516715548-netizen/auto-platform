@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { SaasLanding } from "@/components/marketing/saas-landing";
 import {
   resolvePublicTenantFromHost,
   shouldDenyPublicStorefront,
@@ -59,15 +60,16 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   }
   if (resolved.kind === "apex") {
     return {
-      title: "Auto Platform",
-      description: "Platformă multi-tenant pentru dealeri auto.",
+      title: "Auto Platform — storefront pentru dealeri auto",
+      description:
+        "Publică stocul auto pe subdomeniu propriu. Planuri lunare în RON: 50, Business, Premium și Enterprise.",
     };
   }
   return { title: "Negăsit" };
 }
 
 /**
- * Apex → platform landing.
+ * Apex → commercial SaaS landing (Etapa 26A).
  * Tenant host → public catalog with Etapa 8 filters + pagination.
  */
 export default async function RootPage({ searchParams }: PageProps) {
@@ -79,7 +81,7 @@ export default async function RootPage({ searchParams }: PageProps) {
   }
 
   if (resolved.kind === "apex") {
-    return <ApexLanding />;
+    return <SaasLanding />;
   }
 
   if (resolved.kind !== "ok") {
@@ -226,30 +228,4 @@ export default async function RootPage({ searchParams }: PageProps) {
     </PublicStorefrontShell>
   );
   });
-}
-
-function ApexLanding() {
-  return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-4 py-10 sm:max-w-2xl sm:px-6 sm:py-16">
-      <p className="text-sm font-medium tracking-wide text-teal-800 uppercase">Auto Platform</p>
-      <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
-        Platformă pentru dealeri auto
-      </h1>
-      <p className="text-base leading-7 text-zinc-600">
-        Storefront-ul public este pe hostul dealerului (ex.{" "}
-        <span className="font-mono text-xs">acme.localhost:3000</span>
-        ). Dashboard-ul staff rămâne pe{" "}
-        <span className="font-mono text-xs">/login</span> și{" "}
-        <span className="font-mono text-xs">/dashboard</span>.
-      </p>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Link
-          href="/login"
-          className="inline-flex min-h-11 items-center justify-center rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
-        >
-          Autentificare dealer
-        </Link>
-      </div>
-    </main>
-  );
 }

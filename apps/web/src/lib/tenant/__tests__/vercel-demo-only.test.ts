@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isHobbyDemoApexCatalogEnabled,
   isHobbyDemoOnlyEnvironmentActive,
   isHobbyDemoPublicLeadsDisabled,
   isVercelHobbyAppHostname,
@@ -15,6 +16,8 @@ function baseDemoInput(overrides: Partial<HobbyDemoEnvInput> = {}): HobbyDemoEnv
     hobbyDemoOnly: "true",
     hobbyDemoTenantSlug: "acme",
     hobbyDemoDisablePublicLeads: undefined,
+    /** Etapa 26A: apex catalog is opt-in; tests that need slug must set this. */
+    hobbyDemoApexCatalog: "1",
     vercelUrl: DEMO_HOST,
     vercelProjectProductionUrl: DEMO_HOST,
     host: DEMO_HOST,
@@ -98,9 +101,25 @@ describe("HOBBY_DEMO_ONLY gate", () => {
     ).toBeNull();
   });
 
-  it("activates only when every Hobby demo condition is met", () => {
+  it("activates apex catalog slug only when every Hobby condition + APEX_CATALOG opt-in are met", () => {
     expect(resolveHobbyDemoTenantSlug(baseDemoInput())).toBe("acme");
     expect(isHobbyDemoOnlyEnvironmentActive(baseDemoInput())).toBe(true);
+    expect(isHobbyDemoApexCatalogEnabled(baseDemoInput())).toBe(true);
+  });
+
+  it("keeps commercial landing on apex by default (no APEX_CATALOG flag)", () => {
+    expect(
+      resolveHobbyDemoTenantSlug(baseDemoInput({ hobbyDemoApexCatalog: undefined })),
+    ).toBeNull();
+    expect(resolveHobbyDemoTenantSlug(baseDemoInput({ hobbyDemoApexCatalog: "0" }))).toBeNull();
+    expect(resolveHobbyDemoTenantSlug(baseDemoInput({ hobbyDemoApexCatalog: "TRUE" }))).toBeNull();
+    // Environment gate may still be open for other Hobby helpers — catalog slug stays closed.
+    expect(
+      isHobbyDemoOnlyEnvironmentActive(baseDemoInput({ hobbyDemoApexCatalog: undefined })),
+    ).toBe(true);
+    expect(isHobbyDemoApexCatalogEnabled(baseDemoInput({ hobbyDemoApexCatalog: undefined }))).toBe(
+      false,
+    );
   });
 
   it("accepts production URL alias when it matches Host", () => {

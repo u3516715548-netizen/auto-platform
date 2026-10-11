@@ -55,7 +55,8 @@ export type ResolvePublicTenantResult =
  * Does not set staff session GUCs (keeps app.current_profile_id NULL for RLS).
  * Never trusts client tenant_id.
  *
- * HOBBY_DEMO_ONLY: on Hobby apex Host only, may load a single server-env slug.
+ * HOBBY_DEMO_ONLY + HOBBY_DEMO_APEX_CATALOG: optional apex catalog (Etapa 26A).
+ * Default apex → commercial landing (`kind: "apex"`). Opt-in may load one server-env slug.
  * Missing/inactive demo slug → not_found (fail-closed), never another tenant.
  *
  * Wrapped in React `cache()` so `generateMetadata` + page share one resolve per request.

@@ -20,7 +20,8 @@ function requestHost(headerStore: Awaited<ReturnType<typeof headers>>): string {
  * Resolve tenant from the request Host header (server-side).
  * Does not trust client-supplied tenant_id.
  *
- * HOBBY_DEMO_ONLY: on Hobby apex Host only, may load a single server-env slug.
+ * HOBBY_DEMO_ONLY + HOBBY_DEMO_APEX_CATALOG: optional apex demo tenant (Etapa 26A).
+ * Default apex has no tenant — commercial landing; demo storefront stays on slug host.
  * Local / production Host-based tenancy is unchanged.
  */
 export async function getCurrentTenant(): Promise<CurrentTenant | null> {
