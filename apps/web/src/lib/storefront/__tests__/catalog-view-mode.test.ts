@@ -144,7 +144,7 @@ describe("catalog view toggle a11y + layout semantics", () => {
     expect(source).toContain('data-catalog-layout="grid-card"');
   });
 
-  it("results toolbar has Grid/List/Sort only — no redundant Salvează CTA", () => {
+  it("results toolbar has view/sort dropdowns only — no redundant Salvează CTA", () => {
     const toolbar = readFileSync(
       resolve(
         __dirname,
@@ -152,9 +152,11 @@ describe("catalog view toggle a11y + layout semantics", () => {
       ),
       "utf8",
     );
-    expect(toolbar).toContain("data-catalog-view-toggle");
+    expect(toolbar).toContain("CatalogViewMenu");
     expect(toolbar).toContain("CatalogSortMenu");
+    expect(toolbar).toContain("whitespace-nowrap");
     expect(toolbar).not.toContain("sortHref");
+    expect(toolbar).not.toContain("data-catalog-view-toggle");
     expect(toolbar).not.toContain("publicSavedPath");
     expect(toolbar).not.toContain("IconBookmark");
     expect(toolbar).not.toMatch(/>\s*Salvează\s*</);

@@ -81,7 +81,7 @@ describe("mobile filter sheet layout contracts", () => {
   it("uses a single shared nav clearance + z-index stack", () => {
     expect(CATALOG_MOBILE_INPUT_FONT_PX).toBe(16);
     expect(SF_MOBILE_NAV_CLEARANCE_CSS).toContain("--sf-mobile-nav-clearance");
-    expect(SF_MOBILE_NAV_CLEARANCE_CSS).toContain("3.75rem");
+    expect(SF_MOBILE_NAV_CLEARANCE_CSS).toContain("4rem");
     expect(SF_Z.sheet).toBeLessThan(SF_Z.mobileNav);
     expect(SF_Z.mobileNav).toBeLessThan(SF_Z.catalogOverlayElevated);
     expect(SF_Z.catalogOverlayElevated).toBeLessThan(
@@ -97,9 +97,10 @@ describe("mobile filter sheet layout contracts", () => {
     expect(shell).toContain("shouldCloseSheetFromDrag");
     expect(shell).toContain("prefers-reduced-motion");
     expect(shell).toContain("SF_MOBILE_NAV_CLEARANCE_CSS");
+    expect(shell).toContain('data-sheet-nav-clearance="true"');
+    expect(shell).toContain("catalog-filter-sheet-drag");
     expect(shell).toContain("bg-[var(--sf-surface)]");
     expect(shell).toContain('event.key === "Escape"');
-    expect(shell).toContain("catalog-filter-sheet-drag");
     expect(shell).toContain("min(80dvh, 100svh)");
   });
 
@@ -133,14 +134,15 @@ describe("mobile filter sheet layout contracts", () => {
     const shell = readSrc("components/storefront/public-shell.tsx");
 
     expect(css).toContain("--sf-mobile-nav-clearance");
-    expect(css).toContain("3.75rem");
+    expect(css).toContain("4rem");
     expect(css).toContain("--sf-z-mobile-nav");
     expect(css).toContain("--sf-z-modal");
     expect(css).toContain(
       'body[data-sf-catalog-overlay="open"] .sf-mobile-nav',
     );
     expect(css).toContain(".catalog-filter-sheet-footer");
-    expect(css).toContain("padding-bottom: var(--sf-mobile-nav-clearance");
+    expect(css).toContain("padding-bottom: var(");
+    expect(css).toContain("--sf-mobile-nav-clearance");
     expect(shell).toContain("sf-mobile-nav");
     expect(shell).toContain("env(safe-area-inset-bottom");
   });

@@ -8,6 +8,10 @@ import {
   type CatalogQuery,
 } from "@/lib/storefront/catalog-query";
 import { CATALOG_SORT_SHORT_LABELS_RO } from "@/components/storefront/catalog-sort-menu";
+import {
+  CATALOG_TOOLBAR_MENU_PANEL_CLASS,
+  computeCatalogToolbarMenuBox,
+} from "@/lib/storefront/catalog-toolbar-menu";
 
 const webRoot = resolve(__dirname, "../../..");
 
@@ -31,9 +35,24 @@ describe("CatalogSortMenu", () => {
     expect(source).toContain("ArrowDown");
     expect(source).toContain("data-placement={menuBox.placement}");
     expect(source).toContain('position: "fixed"');
-    expect(source).toContain("zIndex: 120");
     expect(source).toContain("createPortal");
-    expect(source).toContain("document.body");
+    expect(source).toContain("getCatalogToolbarMenuPortalRoot");
+  });
+
+  it("uses opaque white panel chrome with per-option icons and active check", () => {
+    const source = readSrc("components/storefront/catalog-sort-menu.tsx");
+    expect(source).toContain("CATALOG_TOOLBAR_MENU_PANEL_CLASS");
+    expect(source).toContain('backgroundColor: "#ffffff"');
+    expect(source).toContain("SORT_OPTION_ICONS");
+    expect(source).toContain("IconClock");
+    expect(source).toContain("IconArrowUp");
+    expect(source).toContain("IconArrowDown");
+    expect(source).toContain("IconCalendar");
+    expect(source).toContain("IconGauge");
+    expect(source).toContain("IconCheck");
+    expect(source).toContain('data-catalog-sort-option-icon={value}');
+    expect(CATALOG_TOOLBAR_MENU_PANEL_CLASS).toContain("bg-white");
+    expect(CATALOG_TOOLBAR_MENU_PANEL_CLASS).toContain("text-zinc-900");
   });
 
   it("preserves other query params when changing sort", () => {
@@ -62,5 +81,53 @@ describe("CatalogSortMenu", () => {
     expect(Object.keys(CATALOG_SORT_SHORT_LABELS_RO).sort()).toEqual(
       [...CATALOG_SORT_VALUES].sort(),
     );
+  });
+
+  it("prefers opening above the trigger on mobile viewports", () => {
+    const menuHelper = readSrc("lib/storefront/catalog-toolbar-menu.ts");
+    expect(menuHelper).toContain("max-width: 767px");
+    expect(menuHelper).toContain('placeAbove');
+    expect(menuHelper).toContain("260");
+
+    const g = globalThis as typeof globalThis & {
+      window?: {
+        innerHeight: number;
+        innerWidth: number;
+        matchMedia: (q: string) => { matches: boolean };
+      };
+    };
+    const prev = g.window;
+    g.window = {
+      innerHeight: 812,
+      innerWidth: 375,
+      matchMedia: (query: string) => ({
+        matches: query.includes("max-width: 767px"),
+      }),
+    };
+    try {
+      const rect = {
+        top: 420,
+        bottom: 460,
+        left: 40,
+        width: 160,
+        height: 40,
+        right: 200,
+        x: 40,
+        y: 420,
+        toJSON() {
+          return this;
+        },
+      } as DOMRect;
+      const box = computeCatalogToolbarMenuBox(rect);
+      expect(box.placement).toBe("above");
+      expect(box.width).toBeLessThanOrEqual(260);
+      expect(box.width).toBeGreaterThanOrEqual(200);
+    } finally {
+      if (prev === undefined) {
+        delete g.window;
+      } else {
+        g.window = prev;
+      }
+    }
   });
 });

@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type ComponentType,
 } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -18,7 +19,25 @@ import {
   type CatalogQuery,
   type CatalogSort,
 } from "@/lib/storefront/catalog-query";
-import { IconCheck, IconChevronDown, IconSort } from "@/components/storefront/icons";
+import {
+  CATALOG_TOOLBAR_MENU_PANEL_CLASS,
+  CATALOG_TOOLBAR_MENU_Z,
+  CATALOG_TOOLBAR_TRIGGER_CLASS,
+  computeCatalogToolbarMenuBox,
+  getCatalogToolbarMenuPortalRoot,
+  type CatalogToolbarMenuBox,
+} from "@/lib/storefront/catalog-toolbar-menu";
+import {
+  IconArrowDown,
+  IconArrowUp,
+  IconCalendar,
+  IconCheck,
+  IconChevronDown,
+  IconClock,
+  IconGauge,
+  IconSort,
+  type IconProps,
+} from "@/components/storefront/icons";
 
 export const CATALOG_SORT_SHORT_LABELS_RO: Record<CatalogSort, string> = {
   newest: "Recente",
@@ -28,28 +47,27 @@ export const CATALOG_SORT_SHORT_LABELS_RO: Record<CatalogSort, string> = {
   mileage_asc: "Km ↑",
 };
 
+const SORT_OPTION_ICONS: Record<
+  CatalogSort,
+  ComponentType<IconProps>
+> = {
+  newest: IconClock,
+  price_asc: IconArrowUp,
+  price_desc: IconArrowDown,
+  year_desc: IconCalendar,
+  mileage_asc: IconGauge,
+};
+
 type CatalogSortMenuProps = {
   query: CatalogQuery;
 };
 
-type MenuBox = {
-  placement: "below" | "above";
-  /** CSS `top` when below; unused when above. */
-  top: number | "auto";
-  /** CSS `bottom` when above; unused when below. */
-  bottom: number | "auto";
-  left: number;
-  width: number;
-  maxHeight: number;
-};
-
 /**
- * Accessible sort dropdown — options match URL-supported CatalogSort values only.
- * Menu uses fixed positioning so it is not clipped by filter chrome stacking.
+ * Accessible sort dropdown — opaque white panel (T1/T2), option icons, portal.
  */
 export function CatalogSortMenu({ query }: CatalogSortMenuProps) {
   const [open, setOpen] = useState(false);
-  const [menuBox, setMenuBox] = useState<MenuBox | null>(null);
+  const [menuBox, setMenuBox] = useState<CatalogToolbarMenuBox | null>(null);
   const [mounted, setMounted] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -72,25 +90,7 @@ export function CatalogSortMenu({ query }: CatalogSortMenuProps) {
   const updateMenuBox = useCallback(() => {
     const trigger = triggerRef.current;
     if (!trigger) return;
-    const rect = trigger.getBoundingClientRect();
-    const navClearance = 80;
-    const gap = 6;
-    const spaceBelow = window.innerHeight - rect.bottom - navClearance;
-    const spaceAbove = rect.top - 8;
-    const preferredMax = 288;
-    const placeAbove = spaceBelow < 200 && spaceAbove > spaceBelow;
-    const maxHeight = Math.min(
-      preferredMax,
-      Math.max(120, placeAbove ? spaceAbove - gap : spaceBelow - gap),
-    );
-    setMenuBox({
-      placement: placeAbove ? "above" : "below",
-      top: placeAbove ? "auto" : rect.bottom + gap,
-      bottom: placeAbove ? window.innerHeight - rect.top + gap : "auto",
-      left: rect.left,
-      width: Math.max(rect.width, 176),
-      maxHeight,
-    });
+    setMenuBox(computeCatalogToolbarMenuBox(trigger.getBoundingClientRect()));
   }, []);
 
   useLayoutEffect(() => {
@@ -165,16 +165,18 @@ export function CatalogSortMenu({ query }: CatalogSortMenuProps) {
         left: menuBox.left,
         width: menuBox.width,
         maxHeight: menuBox.maxHeight,
-        zIndex: 120,
+        zIndex: CATALOG_TOOLBAR_MENU_Z,
+        backgroundColor: "#ffffff",
+        color: "#18181b",
       }
     : undefined;
 
   return (
-    <div ref={rootRef} className="relative min-w-0 flex-1 sm:flex-initial">
+    <div ref={rootRef} className="relative min-w-0 flex-1 md:flex-initial">
       <button
         ref={triggerRef}
         type="button"
-        className="inline-flex min-h-10 w-full min-w-0 items-center justify-center gap-1.5 rounded-xl border border-[var(--sf-border)] bg-[var(--sf-surface-muted)] px-2.5 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+        className={CATALOG_TOOLBAR_TRIGGER_CLASS}
         style={{ color: "var(--sf-accent)" }}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -207,12 +209,13 @@ export function CatalogSortMenu({ query }: CatalogSortMenuProps) {
               aria-label="Opțiuni de sortare"
               data-catalog-sort-menu="true"
               data-placement={menuBox.placement}
-              className="overflow-y-auto overscroll-contain rounded-xl border border-[var(--sf-border)] bg-[var(--sf-surface)] py-1 shadow-lg"
+              className={CATALOG_TOOLBAR_MENU_PANEL_CLASS}
               style={menuStyle}
             >
               {CATALOG_SORT_VALUES.map((value, index) => {
                 const selected = value === query.sort;
                 const href = buildCatalogHref({ ...query, sort: value, page: 1 });
+                const OptionIcon = SORT_OPTION_ICONS[value];
                 return (
                   <li key={value} role="presentation">
                     <Link
@@ -225,22 +228,33 @@ export function CatalogSortMenu({ query }: CatalogSortMenuProps) {
                       aria-selected={selected}
                       tabIndex={-1}
                       data-catalog-sort-option={value}
-                      className="flex min-h-10 items-center gap-2 px-3 text-sm font-medium text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--sf-accent)] hover:bg-[var(--sf-surface-muted)]"
+                      className={`flex min-h-10 items-center gap-2 px-2.5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--sf-accent)] ${
+                        selected
+                          ? "bg-[color-mix(in_srgb,var(--sf-accent)_12%,#ffffff)] text-[var(--sf-accent)]"
+                          : "text-zinc-900 hover:bg-zinc-100"
+                      }`}
                       onClick={() => {
                         setOpen(false);
                         setMenuBox(null);
                       }}
                     >
+                      <OptionIcon
+                        size={16}
+                        className="shrink-0"
+                        data-catalog-sort-option-icon={value}
+                      />
+                      <span className="min-w-0 flex-1">
+                        {CATALOG_SORT_LABELS_RO[value]}
+                      </span>
                       <span className="inline-flex size-4 shrink-0 items-center justify-center text-[var(--sf-accent)]">
                         {selected ? <IconCheck size={14} /> : null}
                       </span>
-                      <span>{CATALOG_SORT_LABELS_RO[value]}</span>
                     </Link>
                   </li>
                 );
               })}
             </ul>,
-            document.body,
+            getCatalogToolbarMenuPortalRoot(),
           )
         : null}
     </div>

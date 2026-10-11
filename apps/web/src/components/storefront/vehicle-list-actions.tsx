@@ -62,21 +62,30 @@ export function VehicleListActions({ vehicle, variant = "card" }: VehicleListAct
       <button
         type="button"
         onClick={onSave}
-        className="absolute top-3 right-3 z-10 inline-flex size-9 items-center justify-center rounded-full bg-white/95 text-[var(--sf-accent)] shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+        className="catalog-card-bookmark absolute top-1.5 right-1.5 z-10 inline-flex size-7 items-center justify-center rounded-full bg-white/95 text-[var(--sf-accent)] shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] md:top-3 md:right-3 md:size-9"
         aria-pressed={saved}
         aria-label={saved ? "Elimină din salvate" : "Salvează"}
+        data-catalog-bookmark="true"
       >
-        {saved ? <IconBookmarkFilled size={16} /> : <IconBookmark size={16} />}
+        {saved ? <IconBookmarkFilled size={15} /> : <IconBookmark size={15} />}
       </button>
     </>
   );
 }
 
 /** Compact Compară control for the catalog card tags row. */
-export function VehicleCardCompareButton({ vehicle }: { vehicle: StorefrontVehicleLite }) {
+export function VehicleCardCompareButton({
+  vehicle,
+  density = "default",
+}: {
+  vehicle: StorefrontVehicleLite;
+  /** `grid-mobile` → icon-only under md (aria-label kept). */
+  density?: "default" | "grid-mobile";
+}) {
   const { isCompared, toggleCompare } = useStorefrontLists();
   const [hint, setHint] = useState<string | null>(null);
   const compared = isCompared(vehicle.slug);
+  const compactMobile = density === "grid-mobile";
 
   return (
     <div className="relative shrink-0">
@@ -88,16 +97,21 @@ export function VehicleCardCompareButton({ vehicle }: { vehicle: StorefrontVehic
           const result = toggleCompare(vehicle);
           setHint(result.message ?? null);
         }}
-        className={`inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] ${
+        className={`inline-flex min-h-8 items-center gap-1 rounded-full text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] ${
+          compactMobile ? "px-1.5 md:px-2.5" : "px-2.5"
+        } ${
           compared
             ? "bg-[var(--sf-accent)] text-white"
             : "border border-[var(--sf-border)] bg-white text-[var(--sf-text)]"
         }`}
         aria-pressed={compared}
         aria-label={compared ? "Elimină din comparație" : "Adaugă la comparație"}
+        data-catalog-compare={compactMobile ? "grid-mobile" : "default"}
       >
         <IconCompare size={14} />
-        Compară
+        <span className={compactMobile ? "max-md:sr-only" : undefined}>
+          Compară
+        </span>
       </button>
       {hint ? (
         <p className="absolute right-0 bottom-full mb-1 w-max max-w-[12rem] rounded-md bg-white px-2 py-1 text-[11px] font-medium text-[var(--sf-danger)] shadow-sm ring-1 ring-[var(--sf-border)]">

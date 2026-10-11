@@ -51,8 +51,8 @@ textarea:focus-visible,
  */
 .storefront-template-1,
 .storefront-template-2 {
-  /* ul py-1.5 + min-h-12 links + safe-area — keep in sync with mobile-nav-layout.ts */
-  --sf-mobile-nav-clearance: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+  /* tab bar (~icon+label+py ≈ 4rem) + safe-area — keep in sync with mobile-nav-layout.ts */
+  --sf-mobile-nav-clearance: calc(4rem + env(safe-area-inset-bottom, 0px));
   --sf-z-sheet-backdrop: 70;
   --sf-z-sheet: 75;
   --sf-z-mobile-nav: 90;
@@ -79,9 +79,17 @@ body[data-sf-catalog-overlay="open"] .sf-mobile-nav {
   animation: catalog-drawer-backdrop-in 280ms ease-out;
 }
 
+/**
+ * Sheet extends behind the fixed tab bar. Footer padding equals nav clearance
+ * so „Vezi rezultate” sits flush above the nav on the same surface (no dimmed
+ * strip, no white gap).
+ */
 .catalog-filter-sheet-footer {
   background-color: var(--sf-surface, #ffffff);
-  padding-bottom: var(--sf-mobile-nav-clearance, calc(3.75rem + env(safe-area-inset-bottom, 0px)));
+  padding-bottom: var(
+    --sf-mobile-nav-clearance,
+    calc(4rem + env(safe-area-inset-bottom, 0px))
+  );
 }
 
 /**

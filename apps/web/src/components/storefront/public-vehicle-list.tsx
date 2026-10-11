@@ -262,7 +262,7 @@ export function PublicVehicleList({
                 </CardNav>
                 {vehicle.condition === "new" ? (
                   <span
-                    className="pointer-events-none absolute top-3 left-3 z-[1] rounded-md px-2 py-1 text-[11px] font-bold tracking-wide text-white uppercase"
+                    className="pointer-events-none absolute top-1.5 left-1.5 z-[1] rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase md:top-3 md:left-3 md:rounded-md md:px-2 md:py-1 md:text-[11px]"
                     style={{ backgroundColor: "var(--sf-accent)" }}
                   >
                     Nou
@@ -271,34 +271,37 @@ export function PublicVehicleList({
                 <VehicleListActions vehicle={lite} variant="card" />
               </div>
 
-              <div className="flex flex-1 flex-col gap-1.5 p-3">
+              <div className="flex flex-1 flex-col gap-1 p-2.5 md:gap-1.5 md:p-3">
                 <CardNav
                   href={href}
                   onSelectSlug={onSelectSlug}
                   slug={vehicle.slug}
                   className="text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
                 >
-                  <h3 className="text-base font-bold tracking-tight text-[var(--sf-text)] sm:text-lg">
+                  <h3 className="line-clamp-2 text-sm font-bold tracking-tight text-[var(--sf-text)] md:text-base lg:text-lg">
                     {title}
                   </h3>
                 </CardNav>
 
-                <div className="flex items-end justify-between gap-2 sm:gap-3">
+                <div className="flex items-end justify-between gap-1.5 sm:gap-3">
                   <div className="min-w-0">
-                    <p className="text-xl font-bold tracking-tight text-[var(--sf-text)] sm:text-2xl">
+                    <p className="whitespace-nowrap text-base font-bold tracking-tight text-[var(--sf-text)] tabular-nums md:text-xl lg:text-2xl">
                       {formatPublicVehiclePrice(vehicle)}
                     </p>
                     {vatLabel ? (
-                      <p className="text-xs font-semibold tracking-wide text-[var(--sf-success)] uppercase">
+                      <p className="text-[10px] font-semibold tracking-wide text-[var(--sf-success)] uppercase md:text-xs">
                         {vatLabel}
                       </p>
                     ) : null}
                   </div>
-                  <VehicleCardRate price={vehicle.price} />
+                  <VehicleCardRate
+                    price={vehicle.price}
+                    className="max-md:[&_p:first-child]:text-[9px] max-md:[&_p:last-of-type]:text-xs"
+                  />
                 </div>
 
                 {vehicle.priceNegotiable ? (
-                  <p className="text-xs font-medium" style={{ color: "var(--sf-accent)" }}>
+                  <p className="text-[10px] font-medium md:text-xs" style={{ color: "var(--sf-accent)" }}>
                     Preț negociabil
                   </p>
                 ) : null}
@@ -307,23 +310,23 @@ export function PublicVehicleList({
                   href={href}
                   onSelectSlug={onSelectSlug}
                   slug={vehicle.slug}
-                  className="text-left text-sm text-[var(--sf-text-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+                  className="line-clamp-2 text-left text-xs text-[var(--sf-text-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] md:text-sm"
                 >
                   {buildSpecLine(vehicle)}
                 </CardNav>
 
-                <div className="mt-1 flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 flex-wrap gap-1.5">
-                    <span className="rounded-full bg-[var(--sf-surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--sf-text)]">
+                <div className="mt-0.5 flex items-center justify-between gap-1.5 md:mt-1 md:gap-2">
+                  <div className="flex min-w-0 flex-wrap gap-1 md:gap-1.5">
+                    <span className="rounded-full bg-[var(--sf-surface-muted)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--sf-text)] md:px-2.5 md:py-1 md:text-xs">
                       {mileageTag}
                     </span>
                     {transmissionTag ? (
-                      <span className="rounded-full bg-[var(--sf-surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--sf-text)]">
+                      <span className="rounded-full bg-[var(--sf-surface-muted)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--sf-text)] md:px-2.5 md:py-1 md:text-xs">
                         {transmissionTag}
                       </span>
                     ) : null}
                   </div>
-                  <VehicleCardCompareButton vehicle={lite} />
+                  <VehicleCardCompareButton vehicle={lite} density="grid-mobile" />
                 </div>
               </div>
             </article>

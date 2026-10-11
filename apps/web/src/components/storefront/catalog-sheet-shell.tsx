@@ -17,7 +17,6 @@ import {
   shouldCloseSheetFromDrag,
 } from "@/lib/storefront/catalog-sheet-drag";
 import { SF_MOBILE_NAV_CLEARANCE_CSS } from "@/lib/storefront/mobile-nav-layout";
-
 type CatalogSheetShellProps = {
   title: string;
   subtitle?: string;
@@ -247,6 +246,7 @@ export function CatalogSheetShell({
           <div
             className="catalog-filter-sheet-footer shrink-0 border-t border-[var(--sf-border)] bg-[var(--sf-surface)] px-4 pt-3 shadow-[0_-6px_16px_rgba(24,24,27,0.08)]"
             style={{ paddingBottom: SF_MOBILE_NAV_CLEARANCE_CSS }}
+            data-sheet-nav-clearance="true"
           >
             {footer}
           </div>

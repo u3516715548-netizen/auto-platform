@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-type IconProps = SVGProps<SVGSVGElement> & { size?: number };
+export type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 
 function base({ size = 20, ...props }: IconProps) {
   return {
@@ -203,6 +203,49 @@ export function IconCheck(props: IconProps) {
     <svg {...base(props)}>
       <path
         d="M5 12.5 9.5 17 19 7"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconArrowUp(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path
+        d="M12 19V5M12 5 7 10M12 5l5 5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconArrowDown(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path
+        d="M12 5v14M12 19l-5-5M12 19l5-5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconClock(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M12 8v4.5l3 1.5"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"

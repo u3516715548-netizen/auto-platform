@@ -1,10 +1,12 @@
 /**
  * Single source for mobile tab-bar clearance used by filter sheets + nav.
  * Keep in sync with `.sf-mobile-nav` in globals.css / public-shell:
- * ul py-1.5 (0.75rem) + link min-h-12 (3rem) + safe-area on the nav itself.
+ * measured tab bar (~4rem with icon+label+py) + safe-area.
+ * Applied as padding-bottom on `.catalog-filter-sheet-footer` so the CTA
+ * sits flush above the fixed tab bar on the same surface.
  */
 export const SF_MOBILE_NAV_CLEARANCE_FALLBACK =
-  "calc(3.75rem + env(safe-area-inset-bottom, 0px))";
+  "calc(4rem + env(safe-area-inset-bottom, 0px))";
 
 export const SF_MOBILE_NAV_CLEARANCE_CSS =
   `var(--sf-mobile-nav-clearance, ${SF_MOBILE_NAV_CLEARANCE_FALLBACK})`;
