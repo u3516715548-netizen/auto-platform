@@ -77,9 +77,80 @@ export function getCommercialPlan(code: CommercialPlanCode): CommercialPlan {
   return plan;
 }
 
-/** Auth-first CTA — checkout session is Etapa 26B. */
+/** Auth-first CTA — checkout session is Etapa 26B (only when public self-serve is on). */
 export function commercialPlanSignupHref(code: CommercialPlanCode): string {
   return `/login?plan=${encodeURIComponent(code)}`;
+}
+
+function envFlagOn(value: string | undefined): boolean {
+  const raw = value?.trim().toLowerCase();
+  return raw === "1" || raw === "true";
+}
+
+function envNonEmpty(value: string | undefined): boolean {
+  return Boolean(value?.trim());
+}
+
+/**
+ * True only when Stripe self-serve prices + secrets are present.
+ * Used together with the explicit commercial opt-in flag (both required).
+ */
+export function isStripePublicCheckoutConfigured(
+  env: Record<string, string | undefined> = process.env as Record<
+    string,
+    string | undefined
+  >,
+): boolean {
+  if ((env.PAYMENT_PROVIDER ?? "").trim().toLowerCase() !== "stripe") {
+    return false;
+  }
+  return (
+    envNonEmpty(env.STRIPE_SECRET_KEY) &&
+    envNonEmpty(env.STRIPE_WEBHOOK_SECRET) &&
+    envNonEmpty(env.STRIPE_PRICE_PLAN_50) &&
+    envNonEmpty(env.STRIPE_PRICE_BUSINESS) &&
+    envNonEmpty(env.STRIPE_PRICE_PREMIUM)
+  );
+}
+
+/**
+ * Pre-launch: public self-serve checkout is OFF unless BOTH:
+ * 1) COMMERCIAL_SELF_SERVE_CHECKOUT=1|true (explicit owner opt-in), AND
+ * 2) PAYMENT_PROVIDER=stripe with secret, webhook secret, and all three Price IDs.
+ * Flag alone or noop/Stripe-incomplete never opens public CTAs /checkout.
+ */
+export function isCommercialSelfServeCheckoutEnabled(
+  env: Record<string, string | undefined> = process.env as Record<
+    string,
+    string | undefined
+  >,
+): boolean {
+  if (!envFlagOn(env.COMMERCIAL_SELF_SERVE_CHECKOUT)) {
+    return false;
+  }
+  return isStripePublicCheckoutConfigured(env);
+}
+
+export type CommercialPlanPublicCta = {
+  kind: "checkout" | "contact";
+  href: string;
+  label: string;
+};
+
+/** Public pricing CTA — contact-only when self-serve is disabled. */
+export function commercialPlanPublicCta(plan: CommercialPlan): CommercialPlanPublicCta {
+  if (plan.selfServeCheckout && isCommercialSelfServeCheckoutEnabled()) {
+    return {
+      kind: "checkout",
+      href: commercialPlanSignupHref(plan.code),
+      label: `Începe cu ${plan.name}`,
+    };
+  }
+  return {
+    kind: "contact",
+    href: COMMERCIAL_ENTERPRISE_CONTACT_HREF,
+    label: "Contactează-ne",
+  };
 }
 
 export function formatVehicleLimitRo(max: number | null): string {

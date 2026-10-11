@@ -5,16 +5,25 @@ import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { loginPath } from "@/lib/auth/auth-redirects";
 import { parseSelfServePlanCode } from "@/lib/billing/plan-codes";
+import { isCommercialSelfServeCheckoutEnabled } from "@/lib/marketing/commercial-plans";
 import { getRootDomain } from "@/lib/supabase/env";
 import { resolveTenantSlugFromHost } from "@/lib/tenant/resolve-tenant-from-host";
 import { CheckoutForm } from "./checkout-form";
 import { SaasShell } from "@/components/marketing/saas-shell";
+
+/** Runtime env gate (`COMMERCIAL_SELF_SERVE_CHECKOUT`) — never bake 404 at build. */
+export const dynamic = "force-dynamic";
 
 export default async function CheckoutPage({
   searchParams,
 }: {
   searchParams: Promise<{ plan?: string; canceled?: string }>;
 }) {
+  // Pre-launch: public checkout surface off until COMMERCIAL_SELF_SERVE_CHECKOUT=1.
+  if (!isCommercialSelfServeCheckoutEnabled()) {
+    notFound();
+  }
+
   const params = await searchParams;
   const plan = parseSelfServePlanCode(params.plan);
   if (!plan) {

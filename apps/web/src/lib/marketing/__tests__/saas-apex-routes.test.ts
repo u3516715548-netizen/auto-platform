@@ -26,16 +26,21 @@ describe("apex commercial routes (Etapa 26A/26B)", () => {
     expect(demo).toContain("hobbyDemoApexCatalog");
   });
 
-  it("wires auth-first checkout on apex (26B)", () => {
+  it("wires auth-first checkout on apex (26B) with pre-launch public gate", () => {
     const checkout = readSrc("app/checkout/page.tsx");
     const webhook = readSrc("app/api/billing/webhook/route.ts");
     const login = readSrc("app/login/page.tsx");
+    const plans = readSrc("lib/marketing/commercial-plans.ts");
     expect(checkout).toContain("parseSelfServePlanCode");
+    expect(checkout).toContain("isCommercialSelfServeCheckoutEnabled");
     expect(checkout).toContain('resolved.kind !== "apex"');
     expect(checkout).toContain("getCurrentUser");
     expect(webhook).toContain("parseAndVerifyWebhook");
     expect(webhook).toContain("processVerifiedBillingEvent");
     expect(login).toContain("parseSelfServePlanCode");
     expect(login).toContain("allowSignup");
+    expect(plans).toContain("COMMERCIAL_SELF_SERVE_CHECKOUT");
+    expect(plans).toContain("isCommercialSelfServeCheckoutEnabled");
   });
 });
+

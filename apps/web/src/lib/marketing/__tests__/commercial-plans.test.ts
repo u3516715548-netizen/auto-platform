@@ -2,13 +2,27 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  COMMERCIAL_ENTERPRISE_CONTACT_HREF,
   COMMERCIAL_PLANS,
+  commercialPlanPublicCta,
   commercialPlanSignupHref,
   formatVehicleLimitRo,
   getCommercialPlan,
+  isCommercialSelfServeCheckoutEnabled,
+  isStripePublicCheckoutConfigured,
 } from "@/lib/marketing/commercial-plans";
 
 const webRoot = resolve(__dirname, "../../..");
+
+const stripeReadyEnv = {
+  COMMERCIAL_SELF_SERVE_CHECKOUT: "1",
+  PAYMENT_PROVIDER: "stripe",
+  STRIPE_SECRET_KEY: "sk_test_x",
+  STRIPE_WEBHOOK_SECRET: "whsec_x",
+  STRIPE_PRICE_PLAN_50: "price_50",
+  STRIPE_PRICE_BUSINESS: "price_biz",
+  STRIPE_PRICE_PREMIUM: "price_prem",
+} as const;
 
 describe("commercial plans catalog (Etapa 26A)", () => {
   it("exposes the four confirmed packages with RON monthly prices", () => {
@@ -40,10 +54,94 @@ describe("commercial plans catalog (Etapa 26A)", () => {
     });
   });
 
-  it("routes self-serve CTAs through auth-first login with plan query", () => {
+  it("keeps auth-first signup href helper for when self-serve is enabled", () => {
     expect(commercialPlanSignupHref("business")).toBe("/login?plan=business");
     expect(formatVehicleLimitRo(50)).toBe("50 mașini");
     expect(formatVehicleLimitRo(null)).toBe("Nelimitat*");
+  });
+
+  it("does not enable public checkout from the opt-in flag alone", () => {
+    expect(isCommercialSelfServeCheckoutEnabled({})).toBe(false);
+    expect(
+      isCommercialSelfServeCheckoutEnabled({ COMMERCIAL_SELF_SERVE_CHECKOUT: "1" }),
+    ).toBe(false);
+    expect(
+      isCommercialSelfServeCheckoutEnabled({
+        COMMERCIAL_SELF_SERVE_CHECKOUT: "1",
+        PAYMENT_PROVIDER: "noop",
+      }),
+    ).toBe(false);
+    expect(
+      isCommercialSelfServeCheckoutEnabled({
+        COMMERCIAL_SELF_SERVE_CHECKOUT: "1",
+        PAYMENT_PROVIDER: "stripe",
+        STRIPE_SECRET_KEY: "sk_test_x",
+        // missing webhook + prices
+      }),
+    ).toBe(false);
+  });
+
+  it("requires Stripe provider + secrets + all three price IDs with the opt-in flag", () => {
+    expect(isStripePublicCheckoutConfigured(stripeReadyEnv)).toBe(true);
+    expect(isCommercialSelfServeCheckoutEnabled(stripeReadyEnv)).toBe(true);
+    expect(
+      isCommercialSelfServeCheckoutEnabled({
+        ...stripeReadyEnv,
+        COMMERCIAL_SELF_SERVE_CHECKOUT: "0",
+      }),
+    ).toBe(false);
+    expect(
+      isCommercialSelfServeCheckoutEnabled({
+        ...stripeReadyEnv,
+        STRIPE_PRICE_PREMIUM: "",
+      }),
+    ).toBe(false);
+  });
+
+  it("routes public CTAs to contact when self-serve is off (incl. paid plans)", () => {
+    const keys = [
+      "COMMERCIAL_SELF_SERVE_CHECKOUT",
+      "PAYMENT_PROVIDER",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET",
+      "STRIPE_PRICE_PLAN_50",
+      "STRIPE_PRICE_BUSINESS",
+      "STRIPE_PRICE_PREMIUM",
+    ] as const;
+    const prev = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+    for (const k of keys) delete process.env[k];
+    try {
+      for (const code of ["plan_50", "business", "premium", "enterprise"] as const) {
+        const cta = commercialPlanPublicCta(getCommercialPlan(code));
+        expect(cta.kind).toBe("contact");
+        expect(cta.href).toBe(COMMERCIAL_ENTERPRISE_CONTACT_HREF);
+        expect(cta.href).not.toContain("/login?plan=");
+        expect(cta.href).not.toContain("/checkout");
+      }
+    } finally {
+      for (const k of keys) {
+        if (prev[k] === undefined) delete process.env[k];
+        else process.env[k] = prev[k];
+      }
+    }
+  });
+
+  it("routes self-serve plans to login?plan= only when flag + Stripe are ready", () => {
+    const keys = Object.keys(stripeReadyEnv) as (keyof typeof stripeReadyEnv)[];
+    const prev = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+    Object.assign(process.env, stripeReadyEnv);
+    try {
+      expect(commercialPlanPublicCta(getCommercialPlan("business"))).toMatchObject({
+        kind: "checkout",
+        href: "/login?plan=business",
+      });
+      expect(commercialPlanPublicCta(getCommercialPlan("enterprise")).kind).toBe("contact");
+    } finally {
+      for (const k of keys) {
+        if (prev[k] === undefined) delete process.env[k];
+        else process.env[k] = prev[k];
+      }
+    }
   });
 
   it("keeps plan limits in the shared module (not hardcoded in pricing UI)", () => {
@@ -52,8 +150,10 @@ describe("commercial plans catalog (Etapa 26A)", () => {
       "utf8",
     );
     expect(grid).toContain("COMMERCIAL_PLANS");
-    expect(grid).toContain("Contactează-ne");
+    expect(grid).toContain("commercialPlanPublicCta");
+    expect(grid).toContain("isCommercialSelfServeCheckoutEnabled");
+    expect(grid).toContain("contactează-ne");
     expect(grid).not.toMatch(/149\s*lei/);
-    expect(grid).toContain("commercialPlanSignupHref");
+    expect(grid).not.toContain("commercialPlanSignupHref");
   });
 });

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import {
-  COMMERCIAL_ENTERPRISE_CONTACT_HREF,
   COMMERCIAL_PLANS,
-  commercialPlanSignupHref,
+  commercialPlanPublicCta,
   formatVehicleLimitRo,
+  isCommercialSelfServeCheckoutEnabled,
   type CommercialPlan,
 } from "@/lib/marketing/commercial-plans";
 
@@ -13,32 +13,36 @@ type PricingGridProps = {
 };
 
 function PlanCta({ plan }: { plan: CommercialPlan }) {
-  if (!plan.selfServeCheckout) {
+  const cta = commercialPlanPublicCta(plan);
+
+  if (cta.kind === "contact") {
     return (
       <a
-        href={COMMERCIAL_ENTERPRISE_CONTACT_HREF}
+        href={cta.href}
         className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-teal-200/40 bg-transparent px-4 py-2.5 text-sm font-semibold text-teal-50 transition hover:bg-white/10"
       >
-        Contactează-ne
+        {cta.label}
       </a>
     );
   }
 
   return (
     <Link
-      href={commercialPlanSignupHref(plan.code)}
+      href={cta.href}
       className={`inline-flex min-h-11 w-full items-center justify-center rounded-md px-4 py-2.5 text-sm font-semibold transition ${
         plan.highlighted
           ? "bg-teal-400 text-teal-950 hover:bg-teal-300"
           : "bg-white text-[var(--saas-ink)] hover:bg-teal-50"
       }`}
     >
-      Începe cu {plan.name}
+      {cta.label}
     </Link>
   );
 }
 
 export function PricingGrid({ pageMode = false }: PricingGridProps) {
+  const selfServeOn = isCommercialSelfServeCheckoutEnabled();
+
   return (
     <section
       id="preturi"
@@ -57,8 +61,10 @@ export function PricingGrid({ pageMode = false }: PricingGridProps) {
           Alege volumul de stoc publicat
         </h2>
         <p className="mt-3 text-base leading-7 text-teal-50/75">
-          Prețuri lunare în RON. TVA și facturare se confirmă la contract. Checkout-ul urmează după
-          autentificare.
+          Prețuri lunare în RON. TVA și facturare se confirmă la contract.{" "}
+          {selfServeOn
+            ? "Checkout-ul urmează după autentificare."
+            : "Self-checkout este temporar dezactivat — contactează-ne pentru activare."}
         </p>
       </div>
 

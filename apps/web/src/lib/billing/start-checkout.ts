@@ -15,6 +15,7 @@ import {
   type SelfServePlanCode,
 } from "@/lib/billing/plan-codes";
 import { loginPath } from "@/lib/auth/auth-redirects";
+import { isCommercialSelfServeCheckoutEnabled } from "@/lib/marketing/commercial-plans";
 import { getRootDomain } from "@/lib/supabase/env";
 import { resolveTenantSlugFromHost } from "@/lib/tenant/resolve-tenant-from-host";
 
@@ -57,6 +58,13 @@ export async function startSelfServeCheckoutAction(
   _prev: StartCheckoutState | null,
   formData: FormData,
 ): Promise<StartCheckoutState> {
+  if (!isCommercialSelfServeCheckoutEnabled()) {
+    return {
+      error: "Self-checkout este temporar dezactivat. Contactează-ne pentru activare.",
+      success: false,
+    };
+  }
+
   const headerStore = await headers();
   const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
   const rootDomain = getRootDomain();
