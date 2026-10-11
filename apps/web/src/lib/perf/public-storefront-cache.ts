@@ -71,6 +71,7 @@ export function middlewarePathRequiresAuthSession(pathname: string): boolean {
   if (pathname === "/storefront-template-preview") return true;
   if (pathname === "/login" || pathname.startsWith("/login/")) return true;
   if (pathname === "/invite" || pathname.startsWith("/invite/")) return true;
+  if (pathname === "/checkout" || pathname.startsWith("/checkout/")) return true;
   return false;
 }
 

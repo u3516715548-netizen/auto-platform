@@ -13,3 +13,4 @@ export * from "./tenant-seo-settings";
 export * from "./reservations";
 export * from "./audit-logs";
 export * from "./tenant-features";
+export * from "./billing";

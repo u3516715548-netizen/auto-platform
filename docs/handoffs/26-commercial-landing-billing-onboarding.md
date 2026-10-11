@@ -4,9 +4,9 @@
 - Data: 11 octombrie 2026
 - Workspace: `C:\Users\Wolf\dev\aplicatie-masini`
 - Branch: `master`
-- Ultimul commit (context): `35ff46919f32417217a4a567b8a6428eb0182562` — *26A: landing comercială, prețuri și mutare demo ACME*
-- Status: **26A pe `master`** (commit + push); **fără deploy**; 26B/26C neîncepute
-- Tip document: plan + livrare 26A (secțiune mai jos)
+- Ultimul commit (context): `6abeb1a` — *docs(26A): record pushed delivery* (26B local, necomis)
+- Status: **26A pe `master`**; **26B implementată local** (suite verde); **26C neîncepută**; **fără** commit / push / deploy 26B până la cerere
+- Tip document: plan + livrare 26A + livrare 26B
 - Documente citite:
   - `docs/handoffs/README.md`
   - `docs/handoffs/24-template-2.md`
@@ -256,21 +256,19 @@ Propuse pentru 26B+ (nu se adaugă acum):
 
 ## Ce nu a fost implementat
 
-- **26B / 26C** — checkout, adapter plăți, webhook, entitlements DB, onboarding ghidat, gating publish
-- Migrări DB / RLS billing
-- Stripe / Netopia / chei env de plată
-- Deploy (26A e pe `master`; fără deploy)
+- **26C** — onboarding ghidat, gating publish pe entitlement, wizard branding/prim vehicul
+- Netopia adapter (rezervat; `PAYMENT_PROVIDER=netopia` → 501)
+- Upgrade / downgrade plan, billing portal, Enterprise checkout
+- Deploy (26A e pe `master`; 26B local necomis)
 
-## Decizii rămase (blocker pentru 26B implementare)
+## Decizii blocate în 26B (MVP)
 
-1. **Provider MVP efectiv:** Stripe vs Netopia (adapter-ul e pregătit oricum).
-2. **TVA:** prețurile afișate includ TVA / +TVA / „orientativ” legal copy.
-3. **Facturare:** cine emite factura (Stripe Tax / Netopia / extern).
-4. **Slug tenant:** generare la signup vs la checkout success; reguli rezervate (`www`, `acme` demo, etc.).
-5. **Trial:** există perioadă trial fără card, sau doar plată → active?
-6. **Contact Enterprise:** email/form/lead tip nou vs mailto.
-7. **Migrare dealeri existenți** (ACME/Beta seed): mapare la entitlement manual „grandfather”.
-8. **URL canonic prețuri:** decis în 26A → `/preturi` (+ secțiune pe landing).
+1. **Provider MVP:** **Stripe** (+ `noop` pentru dev/teste). Netopia amânat.
+2. **Slug tenant:** ales pe `/checkout` înainte de redirect la plată; tenant draft `suspended` până la webhook.
+3. **Trial self-serve:** **nu** — activare doar după plată confirmată (`active`).
+4. **Legacy `tenants.plan`:** rămâne `starter|premium`; autoritate limite = `tenant_entitlements.plan_code`.
+5. **URL prețuri:** `/preturi` (26A).
+6. **TVA / facturare / grandfather ACME entitlements / contact Enterprise tip lead:** rămân deschise (nu blochează 26B).
 
 ## Livrare 26A (11 octombrie 2026)
 
@@ -335,10 +333,35 @@ node apps/web/scripts/_smoke-26a.mjs → 6/6 OK
 - Mesaj: `26A: landing comercială, prețuri și mutare demo ACME`
 - Push: `origin master` — **fără deploy**
 
+## Livrare 26B (11 octombrie 2026)
+
+### Scope livrat
+- Auth-first: `/login?plan=` (signup pe apex) → `/checkout` → `PaymentAdapter` → Stripe Checkout sau noop
+- Migrare `0014_billing_checkout_entitlements`: `tenant_entitlements`, `billing_checkout_sessions`, `billing_subscriptions`, `billing_webhook_events` + FORCE RLS (fără anon)
+- SECURITY DEFINER: `begin_self_serve_checkout`, `attach_checkout_provider_session`, `activate_tenant_from_checkout` (idempotent pe `event_id`)
+- Webhook `POST /api/billing/webhook` (semnătură; fără cookie session; fără `service_role`)
+- Activare: tenant `suspended` → `active`, entitlement + subscription, `revalidatePublicStorefrontPaths`
+- Enterprise: fără checkout (neschimbat)
+
+### Env (nume)
+`PAYMENT_PROVIDER`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PLAN_50|BUSINESS|PREMIUM`, opțional `BILLING_NOOP_WEBHOOK_SECRET`
+
+### Verificări
+```text
+pnpm db:migrate                      → 0014 applied
+pnpm db:test                         → 94 passed
+pnpm typecheck                       → OK
+pnpm --filter @auto-platform/web test → 351 passed
+pnpm --filter @auto-platform/web build → OK (`/checkout`, `/api/billing/webhook`)
+```
+
+### OUT (respectat)
+- Fără onboarding UI (26C), fără gating publish, fără Enterprise checkout, fără inventar ACME, fără deploy
+
 ## Următorul pas recomandat
 
-1. Decizie provider (Stripe vs Netopia) → start **26B**.
-2. **26C** după webhook + entitlements stabile.
+1. Commit/push **26B** la cerere explicită (+ configurare Stripe Price ids în env la deploy).
+2. Start **26C** — onboarding + gate `available` pe entitlement + cache.
 
 ## Reguli pentru agentul următor
 
@@ -363,4 +386,4 @@ node apps/web/scripts/_smoke-26a.mjs → 6/6 OK
 
 ---
 
-*Plan: 11 octombrie 2026. Livrare 26A pe `master` (`35ff469`, fără deploy). 26B/26C: 0%.*
+*Plan: 11 octombrie 2026. 26A pe `master`. 26B local (suite verde, necomis). 26C: 0%.*

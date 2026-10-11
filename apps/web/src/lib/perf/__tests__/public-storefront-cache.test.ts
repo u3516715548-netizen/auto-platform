@@ -38,6 +38,8 @@ describe("public-storefront-cache", () => {
     expect(middlewarePathRequiresAuthSession("/login")).toBe(true);
     expect(middlewarePathRequiresAuthSession("/storefront-template-preview")).toBe(true);
     expect(middlewarePathRequiresAuthSession("/invite/abc")).toBe(true);
+    expect(middlewarePathRequiresAuthSession("/checkout")).toBe(true);
+    expect(middlewarePathRequiresAuthSession("/checkout/success")).toBe(true);
   });
 
   it("marks only safe public catalog/detail/CMS paths for short revalidate", () => {

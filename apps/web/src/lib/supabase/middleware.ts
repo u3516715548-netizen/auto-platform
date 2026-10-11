@@ -128,8 +128,29 @@ export async function updateSession(request: NextRequest) {
 
   if (isLogin && user) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = dashboardPath();
-    redirectUrl.search = "";
+    // Etapa 26B: apex commercial login with ?plan= → checkout (not tenant dashboard).
+    const plan = request.nextUrl.searchParams.get("plan")?.trim().toLowerCase();
+    const next = request.nextUrl.searchParams.get("next")?.trim();
+    if (
+      plan &&
+      (plan === "plan_50" || plan === "business" || plan === "premium")
+    ) {
+      redirectUrl.pathname = "/checkout";
+      redirectUrl.search = "";
+      redirectUrl.searchParams.set("plan", plan);
+    } else if (
+      next &&
+      next.startsWith("/") &&
+      !next.startsWith("//") &&
+      !next.includes("://")
+    ) {
+      const dest = new URL(next, request.nextUrl.origin);
+      redirectUrl.pathname = dest.pathname;
+      redirectUrl.search = dest.search;
+    } else {
+      redirectUrl.pathname = dashboardPath();
+      redirectUrl.search = "";
+    }
     if (perfEnabled) {
       logPerfDuration("middleware.total", totalStarted, { path: pathLabel });
     }

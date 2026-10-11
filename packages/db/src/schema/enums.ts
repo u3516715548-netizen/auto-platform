@@ -162,3 +162,39 @@ export const vehicleMediaTypeEnum = pgEnum("vehicle_media_type", [
   "video",
   "document",
 ]);
+
+/** Etapa 26B — commercial plan codes (entitlements; distinct from legacy tenant_plan). */
+export const commercialPlanCodeEnum = pgEnum("commercial_plan_code", [
+  "plan_50",
+  "business",
+  "premium",
+  "enterprise",
+]);
+
+/** Etapa 26B — payment provider key (adapter; not vendor SDK types). */
+export const billingProviderEnum = pgEnum("billing_provider", [
+  "stripe",
+  "netopia",
+  "noop",
+]);
+
+export const billingCheckoutStatusEnum = pgEnum("billing_checkout_status", [
+  "pending",
+  "completed",
+  "expired",
+  "failed",
+]);
+
+export const billingSubscriptionStatusEnum = pgEnum("billing_subscription_status", [
+  "trialing",
+  "active",
+  "past_due",
+  "canceled",
+  "incomplete",
+]);
+
+export const entitlementSourceEnum = pgEnum("entitlement_source", [
+  "checkout",
+  "manual",
+  "legacy",
+]);
