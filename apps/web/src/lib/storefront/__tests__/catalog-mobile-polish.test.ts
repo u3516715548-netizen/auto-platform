@@ -9,19 +9,28 @@ function readSrc(rel: string): string {
 }
 
 describe("catalog mobile UI polish (post-24C)", () => {
-  it("keeps CTA above bottom nav via footer padding clearance", () => {
+  it("keeps CTA above bottom nav via sheet lift + short footer gap", () => {
     const css = readSrc("app/globals.css");
     const shell = readSrc("components/storefront/catalog-sheet-shell.tsx");
     const layout = readSrc("lib/storefront/mobile-nav-layout.ts");
 
+    expect(css).toContain("--sf-filter-sheet-footer-gap");
     expect(css).toMatch(
+      /\.catalog-filter-sheet-drag\s*\{[^}]*margin-bottom:\s*var\(\s*--sf-mobile-nav-clearance/s,
+    );
+    expect(css).toMatch(
+      /\.catalog-filter-sheet-footer\s*\{[^}]*padding-bottom:\s*var\(\s*--sf-filter-sheet-footer-gap/s,
+    );
+    expect(css).not.toMatch(
       /\.catalog-filter-sheet-footer\s*\{[^}]*padding-bottom:\s*var\(\s*--sf-mobile-nav-clearance/s,
     );
     expect(shell).toContain('data-sheet-nav-clearance="true"');
-    expect(shell).toContain("SF_MOBILE_NAV_CLEARANCE_CSS");
+    expect(shell).toContain("catalog-filter-sheet-drag");
     expect(shell).toContain("catalog-filter-sheet-footer");
+    expect(shell).not.toContain("SF_MOBILE_NAV_CLEARANCE_CSS");
     expect(layout).toContain("4rem");
     expect(layout).toContain("safe-area-inset-bottom");
+    expect(layout).toContain("SF_FILTER_SHEET_FOOTER_GAP_CSS");
   });
 
   it("compacts mobile grid cards: hide Compară, Info rate, keep list/desktop", () => {

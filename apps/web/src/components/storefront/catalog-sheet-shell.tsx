@@ -16,7 +16,7 @@ import {
   sheetDragVelocityPxPerMs,
   shouldCloseSheetFromDrag,
 } from "@/lib/storefront/catalog-sheet-drag";
-import { SF_MOBILE_NAV_CLEARANCE_CSS } from "@/lib/storefront/mobile-nav-layout";
+
 type CatalogSheetShellProps = {
   title: string;
   subtitle?: string;
@@ -32,7 +32,8 @@ type CatalogSheetShellProps = {
 
 /**
  * Mobile bottom sheet for catalog filters.
- * - Footer surface extends behind the tab bar (shared clearance) — no canvas gap.
+ * - Sheet sits above the tab bar via `--sf-mobile-nav-clearance` on the drag layer.
+ * - Footer keeps a short theme-surface gap under the CTA (not nav clearance / safe-area).
  * - Nav stays above via CSS z-index (`body[data-sf-catalog-overlay]`).
  * - Drag handle / header swipe-down to dismiss (Pointer Events).
  * - Enter animation + drag translate share the drag layer; max-height uses dvh/svh only.
@@ -168,6 +169,7 @@ export function CatalogSheetShell({
       <div
         className="catalog-filter-sheet-drag relative z-10 w-full max-w-[480px]"
         style={{ maxHeight: sheetMaxHeight }}
+        data-sheet-nav-clearance="true"
       >
         <div
           className="flex w-full flex-col"
@@ -243,11 +245,7 @@ export function CatalogSheetShell({
             {children}
           </div>
 
-          <div
-            className="catalog-filter-sheet-footer shrink-0 border-t border-[var(--sf-border)] bg-[var(--sf-surface)] px-4 pt-3 shadow-[0_-6px_16px_rgba(24,24,27,0.08)]"
-            style={{ paddingBottom: SF_MOBILE_NAV_CLEARANCE_CSS }}
-            data-sheet-nav-clearance="true"
-          >
+          <div className="catalog-filter-sheet-footer shrink-0 border-t border-[var(--sf-border)] bg-[var(--sf-surface)] px-4 pt-3 shadow-[0_-6px_16px_rgba(24,24,27,0.08)]">
             {footer}
           </div>
           </div>

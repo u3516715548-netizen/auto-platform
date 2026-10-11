@@ -47,12 +47,15 @@ textarea:focus-visible,
 
 /**
  * Mobile tab bar + filter sheet stack (T1/T2).
- * Sheet extends behind nav; nav stays above via z-index when overlay is open.
+ * Sheet sits above nav (geometry via --sf-mobile-nav-clearance); nav stays above
+ * via z-index when overlay is open. Safe-area lives only on `.sf-mobile-nav`.
  */
 .storefront-template-1,
 .storefront-template-2 {
-  /* tab bar (~icon+label+py ≈ 4rem) + safe-area — keep in sync with mobile-nav-layout.ts */
+  /* Full nav footprint for sheet positioning — keep in sync with mobile-nav-layout.ts */
   --sf-mobile-nav-clearance: calc(4rem + env(safe-area-inset-bottom, 0px));
+  /* Visible breathing room under „Vezi rezultate” (footer surface, not page canvas) */
+  --sf-filter-sheet-footer-gap: 12px;
   --sf-z-sheet-backdrop: 70;
   --sf-z-sheet: 75;
   --sf-z-mobile-nav: 90;
@@ -80,16 +83,26 @@ body[data-sf-catalog-overlay="open"] .sf-mobile-nav {
 }
 
 /**
- * Sheet extends behind the fixed tab bar. Footer padding equals nav clearance
- * so „Vezi rezultate” sits flush above the nav on the same surface (no dimmed
- * strip, no white gap).
+ * Lift the sheet so its bottom edge meets the top of the fixed tab bar.
+ * Clearance is geometry only — not visible padding under the CTA.
+ * Desktop: nav is hidden (`md:hidden`), so no lift.
+ */
+@media (max-width: 767px) {
+  .catalog-filter-sheet-drag {
+    margin-bottom: var(
+      --sf-mobile-nav-clearance,
+      calc(4rem + env(safe-area-inset-bottom, 0px))
+    );
+  }
+}
+
+/**
+ * Footer surface: lateral + top padding on the component; bottom gap is the
+ * 8–12px band under the CTA (theme surface). Do not re-apply safe-area here.
  */
 .catalog-filter-sheet-footer {
   background-color: var(--sf-surface, #ffffff);
-  padding-bottom: var(
-    --sf-mobile-nav-clearance,
-    calc(4rem + env(safe-area-inset-bottom, 0px))
-  );
+  padding-bottom: var(--sf-filter-sheet-footer-gap, 12px);
 }
 
 /**

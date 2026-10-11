@@ -96,9 +96,10 @@ describe("mobile filter sheet layout contracts", () => {
     expect(shell).toContain("onPointerDown");
     expect(shell).toContain("shouldCloseSheetFromDrag");
     expect(shell).toContain("prefers-reduced-motion");
-    expect(shell).toContain("SF_MOBILE_NAV_CLEARANCE_CSS");
     expect(shell).toContain('data-sheet-nav-clearance="true"');
     expect(shell).toContain("catalog-filter-sheet-drag");
+    expect(shell).toContain("catalog-filter-sheet-footer");
+    expect(shell).not.toContain("SF_MOBILE_NAV_CLEARANCE_CSS");
     expect(shell).toContain("bg-[var(--sf-surface)]");
     expect(shell).toContain('event.key === "Escape"');
     expect(shell).toContain("min(80dvh, 100svh)");
@@ -141,8 +142,11 @@ describe("mobile filter sheet layout contracts", () => {
       'body[data-sf-catalog-overlay="open"] .sf-mobile-nav',
     );
     expect(css).toContain(".catalog-filter-sheet-footer");
-    expect(css).toContain("padding-bottom: var(");
+    expect(css).toContain("--sf-filter-sheet-footer-gap");
     expect(css).toContain("--sf-mobile-nav-clearance");
+    expect(css).toMatch(
+      /\.catalog-filter-sheet-drag\s*\{[^}]*margin-bottom:\s*var\(\s*--sf-mobile-nav-clearance/s,
+    );
     expect(shell).toContain("sf-mobile-nav");
     expect(shell).toContain("env(safe-area-inset-bottom");
   });
