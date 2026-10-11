@@ -212,6 +212,20 @@ export function IconCheck(props: IconProps) {
   );
 }
 
+export function IconInfo(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M12 11v5M12 8.2v.2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function IconArrowUp(props: IconProps) {
   return (
     <svg {...base(props)}>

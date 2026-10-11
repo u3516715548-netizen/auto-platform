@@ -296,7 +296,8 @@ export function PublicVehicleList({
                   </div>
                   <VehicleCardRate
                     price={vehicle.price}
-                    className="max-md:[&_p:first-child]:text-[9px] max-md:[&_p:last-of-type]:text-xs"
+                    compactMobile
+                    vehicleTitle={title}
                   />
                 </div>
 

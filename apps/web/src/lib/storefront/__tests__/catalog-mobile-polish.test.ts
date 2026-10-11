@@ -24,21 +24,25 @@ describe("catalog mobile UI polish (post-24C)", () => {
     expect(layout).toContain("safe-area-inset-bottom");
   });
 
-  it("compacts mobile grid cards without removing actions or list layout", () => {
+  it("compacts mobile grid cards: hide Compară, Info rate, keep list/desktop", () => {
     const list = readSrc("components/storefront/public-vehicle-list.tsx");
     const actions = readSrc("components/storefront/vehicle-list-actions.tsx");
+    const rate = readSrc("components/storefront/vehicle-card-rate.tsx");
 
     expect(list).toContain("line-clamp-2");
     expect(list).toContain("whitespace-nowrap");
     expect(list).toContain('density="grid-mobile"');
+    expect(list).toContain("compactMobile");
     expect(list).toContain('data-catalog-layout="grid-card"');
     expect(list).toContain('data-catalog-layout="list-row"');
     expect(list).toContain("VehicleListActions");
     expect(list).toContain("VehicleCardCompareButton");
     expect(actions).toContain("data-catalog-bookmark");
     expect(actions).toContain('density === "grid-mobile"');
-    expect(actions).toContain("max-md:sr-only");
+    expect(actions).toContain("max-md:hidden");
     expect(actions).toContain("aria-label");
+    expect(rate).toContain("data-catalog-rate-info");
+    expect(rate).toContain("data-catalog-rate-popover");
   });
 
   it("toolbar keeps results count on one line with aligned controls", () => {
