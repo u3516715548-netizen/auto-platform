@@ -4,8 +4,8 @@
 - Data: 11 octombrie 2026
 - Workspace: `C:\Users\Wolf\dev\aplicatie-masini`
 - Branch: `master`
-- Ultimul commit (context): `af7cb8d` — *fix(catalog): keep filter CTA clear of the mobile tab bar*
-- Status: **26A livrată local** (landing + prețuri + apex demo off); 26B/26C neîncepute; **fără** commit / push / deploy până la cerere
+- Ultimul commit (context): `35ff46919f32417217a4a567b8a6428eb0182562` — *26A: landing comercială, prețuri și mutare demo ACME*
+- Status: **26A pe `master`** (commit + push); **fără deploy**; 26B/26C neîncepute
 - Tip document: plan + livrare 26A (secțiune mai jos)
 - Documente citite:
   - `docs/handoffs/README.md`
@@ -259,7 +259,7 @@ Propuse pentru 26B+ (nu se adaugă acum):
 - **26B / 26C** — checkout, adapter plăți, webhook, entitlements DB, onboarding ghidat, gating publish
 - Migrări DB / RLS billing
 - Stripe / Netopia / chei env de plată
-- Commit / push / deploy (până la cerere)
+- Deploy (26A e pe `master`; fără deploy)
 
 ## Decizii rămase (blocker pentru 26B implementare)
 
@@ -328,13 +328,17 @@ node apps/web/scripts/_smoke-26a.mjs → 6/6 OK
 ### OUT (respectat)
 - Fără Stripe/Netopia/webhook/DB migrare entitlements
 - Fără modificare inventar ACME
-- Fără commit/push/deploy în această livrare
+- Fără deploy (commit + push pe `master` făcut)
+
+### Git
+- Commit: `35ff46919f32417217a4a567b8a6428eb0182562`
+- Mesaj: `26A: landing comercială, prețuri și mutare demo ACME`
+- Push: `origin master` — **fără deploy**
 
 ## Următorul pas recomandat
 
-1. Commit/push **26A** la cerere explicită.
-2. Decizie provider (Stripe vs Netopia) → start **26B**.
-3. **26C** după webhook + entitlements stabile.
+1. Decizie provider (Stripe vs Netopia) → start **26B**.
+2. **26C** după webhook + entitlements stabile.
 
 ## Reguli pentru agentul următor
 
@@ -359,4 +363,4 @@ node apps/web/scripts/_smoke-26a.mjs → 6/6 OK
 
 ---
 
-*Plan: 11 octombrie 2026. Livrare 26A locală (suite + smoke verzi), necomisă — același zi. 26B/26C: 0%.*
+*Plan: 11 octombrie 2026. Livrare 26A pe `master` (`35ff469`, fără deploy). 26B/26C: 0%.*
