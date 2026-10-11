@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { CatalogQuery } from "@/lib/storefront/catalog-query";
 import type { PublicVehicleCatalogDto } from "@/lib/storefront/public-vehicles";
 import {
   catalogViewToggleAria,
@@ -10,8 +10,9 @@ import {
   persistCatalogViewMode,
   type CatalogViewMode,
 } from "@/lib/storefront/catalog-view-mode";
+import { CatalogSortMenu } from "@/components/storefront/catalog-sort-menu";
 import { PublicVehicleList } from "@/components/storefront/public-vehicle-list";
-import { IconGrid, IconList, IconSort } from "@/components/storefront/icons";
+import { IconGrid, IconList } from "@/components/storefront/icons";
 
 type CatalogResultsSectionProps = {
   tenantSlug: string;
@@ -19,9 +20,7 @@ type CatalogResultsSectionProps = {
   totalLabel: string;
   stockHint: string;
   resultsSrOnly: string;
-  sortHref: string;
-  sortLabel: string;
-  sortShortLabel: string;
+  query: CatalogQuery;
   emptyState: ReactNode | null;
 };
 
@@ -45,9 +44,7 @@ export function CatalogResultsSection({
   totalLabel,
   stockHint,
   resultsSrOnly,
-  sortHref,
-  sortLabel,
-  sortShortLabel,
+  query,
   emptyState,
 }: CatalogResultsSectionProps) {
   const [viewMode, setViewMode] = useState<CatalogViewMode>(DEFAULT_CATALOG_VIEW_MODE);
@@ -73,7 +70,6 @@ export function CatalogResultsSection({
 
   const gridAria = catalogViewToggleAria(viewMode, "grid");
   const listAria = catalogViewToggleAria(viewMode, "list");
-  const sortAriaLabel = `Sortare: ${sortLabel}. Apasă pentru următoarea.`;
 
   return (
     <div className="flex min-w-0 flex-col">
@@ -117,17 +113,7 @@ export function CatalogResultsSection({
               <IconList size={16} />
             </button>
           </div>
-          <Link
-            href={sortHref}
-            prefetch={false}
-            className="inline-flex min-h-10 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-[var(--sf-border)] bg-[var(--sf-surface-muted)] px-2.5 text-xs font-semibold sm:flex-initial focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
-            style={{ color: "var(--sf-accent)" }}
-            aria-label={sortAriaLabel}
-            title={sortAriaLabel}
-          >
-            <IconSort size={14} className="shrink-0" />
-            <span className="min-w-0 truncate">{sortShortLabel}</span>
-          </Link>
+          <CatalogSortMenu query={query} />
         </div>
       </div>
 

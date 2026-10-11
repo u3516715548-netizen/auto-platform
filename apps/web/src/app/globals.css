@@ -36,15 +36,6 @@ textarea:focus-visible,
   outline-offset: 2px;
 }
 
-@keyframes catalog-drawer-up {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
 @keyframes catalog-drawer-backdrop-in {
   from {
     opacity: 0;
@@ -54,22 +45,79 @@ textarea:focus-visible,
   }
 }
 
+/**
+ * Mobile tab bar + filter sheet stack (T1/T2).
+ * Sheet extends behind nav; nav stays above via z-index when overlay is open.
+ */
+.storefront-template-1,
+.storefront-template-2 {
+  /* ul py-1.5 + min-h-12 links + safe-area — keep in sync with mobile-nav-layout.ts */
+  --sf-mobile-nav-clearance: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+  --sf-z-sheet-backdrop: 70;
+  --sf-z-sheet: 75;
+  --sf-z-mobile-nav: 90;
+  --sf-z-modal: 200;
+}
+
+.sf-mobile-nav {
+  z-index: var(--sf-z-mobile-nav, 90);
+}
+
+body[data-sf-catalog-overlay="open"] .sf-mobile-nav {
+  z-index: calc(var(--sf-z-mobile-nav, 90) + 20);
+}
+
+.catalog-filter-sheet-root {
+  z-index: var(--sf-z-sheet, 75);
+}
+
 .catalog-filter-drawer-panel {
-  animation: catalog-drawer-up 320ms cubic-bezier(0.32, 0.72, 0, 1);
-  will-change: transform;
+  background-color: var(--sf-surface, #ffffff);
 }
 
 .catalog-filter-drawer-backdrop {
   animation: catalog-drawer-backdrop-in 280ms ease-out;
-  will-change: opacity;
+}
+
+.catalog-filter-sheet-footer {
+  background-color: var(--sf-surface, #ffffff);
+  padding-bottom: var(--sf-mobile-nav-clearance, calc(3.75rem + env(safe-area-inset-bottom, 0px)));
+}
+
+/**
+ * iOS Safari zooms focused inputs when computed font-size < 16px.
+ * Scope to filter sheets only — do not disable user zoom.
+ */
+.catalog-filter-sheet input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.catalog-filter-sheet select,
+.catalog-filter-sheet textarea,
+.catalog-filter-sheet .catalog-filter-mobile-field {
+  font-size: 16px !important;
+}
+
+@media (min-width: 768px) {
+  .catalog-filter-sheet input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  .catalog-filter-sheet select,
+  .catalog-filter-sheet textarea,
+  .catalog-filter-sheet .catalog-filter-mobile-field {
+    font-size: 0.875rem !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .catalog-filter-drawer-panel,
   .catalog-filter-drawer-backdrop {
     animation: none;
-    will-change: auto;
   }
+
+  .catalog-filter-sheet-drag {
+    transition: none !important;
+  }
+}
+
+.storefront-template-2 .catalog-filter-drawer-panel,
+.storefront-template-2 .catalog-filter-sheet-footer {
+  background-color: var(--sf-surface);
+  border-color: var(--sf-border);
 }
 
 /**

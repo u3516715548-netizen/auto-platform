@@ -181,8 +181,8 @@ export function PublicStorefrontShell({
         {showMobileNav ? (
           <nav
             aria-label="Navigare mobil"
-            className="fixed inset-x-0 bottom-0 z-[90] border-t border-[var(--sf-border)] bg-white/95 backdrop-blur-md md:hidden"
-            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+            className="sf-mobile-nav fixed inset-x-0 bottom-0 border-t border-[var(--sf-border)] bg-[color-mix(in_srgb,var(--sf-surface)_95%,transparent)] backdrop-blur-md md:hidden"
+            style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
           >
             <ul className="mx-auto flex w-full max-w-[1200px] items-stretch justify-around px-1 py-1.5">
               <li className="min-w-0 flex-1">

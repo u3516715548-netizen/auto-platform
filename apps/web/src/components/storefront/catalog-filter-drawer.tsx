@@ -4,9 +4,6 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useId, useRef, useState } from "react";
 import type { CatalogQuery } from "@/lib/storefront/catalog-query";
-
-const MOBILE_NAV_CLEARANCE =
-  "calc(4.5rem + env(safe-area-inset-bottom, 0px))";
 import {
   catalogQueryHasFilterChips,
   countActiveCatalogFilters,
@@ -18,11 +15,11 @@ import {
   resolveFocusTrapIndex,
 } from "@/lib/storefront/catalog-drawer-a11y";
 import type { QuickSheetKind } from "@/components/storefront/catalog-quick-sheets";
+import { CatalogSheetShell } from "@/components/storefront/catalog-sheet-shell";
 import {
   IconBody,
   IconCalendar,
   IconChevronRight,
-  IconClose,
   IconFuel,
   IconGrid,
   IconSearch,
@@ -306,7 +303,7 @@ export function CatalogFilterDrawer({
             defaultValue={query.q ?? ""}
             maxLength={80}
             placeholder="Caută marca sau modelul..."
-            className="min-h-12 w-full rounded-2xl border border-[var(--sf-border)] bg-[var(--sf-surface-muted)] py-2.5 pr-3 pl-11 text-sm text-[var(--sf-text)] placeholder:text-[var(--sf-text-muted)] focus:border-[var(--sf-accent)] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--sf-accent)_25%,transparent)]"
+            className="catalog-filter-mobile-field min-h-12 w-full rounded-2xl border border-[var(--sf-border)] bg-[var(--sf-surface-muted)] py-2.5 pr-3 pl-11 text-base text-[var(--sf-text)] placeholder:text-[var(--sf-text-muted)] focus:border-[var(--sf-accent)] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--sf-accent)_25%,transparent)] md:text-sm"
           />
           {query.make.map((m) => (
             <input key={`make-${m}`} type="hidden" name="make" value={m} />
@@ -500,86 +497,44 @@ export function CatalogFilterDrawer({
       ) : null}
 
       {open && !isMdUp ? (
-        <div
-          className="fixed inset-x-0 top-0 z-[80] flex items-end justify-center"
-          style={{ bottom: MOBILE_NAV_CLEARANCE }}
+        <CatalogSheetShell
+          title="Filtrează"
+          titleId={titleId}
+          panelId={panelId}
+          panelRef={panelRef}
+          onClose={close}
+          footer={
+            <button
+              type="submit"
+              form={`${panelId}-form`}
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl text-sm font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
+              style={{ backgroundColor: "var(--sf-accent)" }}
+            >
+              Vezi rezultatele
+            </button>
+          }
         >
-          <button
-            type="button"
-            className="catalog-filter-drawer-backdrop absolute inset-0 bg-zinc-900/45"
-            aria-label="Închide filtrele"
-            onClick={close}
-          />
-          <div
-            ref={panelRef}
-            id={panelId}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            tabIndex={-1}
-            className="catalog-filter-drawer-panel relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-[var(--sf-border)] bg-white shadow-xl outline-none"
-            style={{
-              height: "min(80dvh, 100%)",
-              maxHeight: "min(80dvh, 100%)",
-            }}
-          >
-            <div className="relative flex shrink-0 items-center gap-2 border-b border-[var(--sf-border)] px-3 pt-4 pb-3">
-              <span
-                className="absolute top-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-zinc-300"
-                aria-hidden
-              />
-              <h2
-                id={titleId}
-                className="min-w-0 flex-1 text-center text-base font-bold text-[var(--sf-text)]"
-              >
-                Filtrează
-              </h2>
-              <button
-                type="button"
+          {hasFilters ? (
+            <div className="mb-3 border-b border-[var(--sf-border)] pb-2 text-center">
+              <Link
+                href={resetCatalogHref()}
+                prefetch={false}
+                className="text-sm font-medium text-[var(--sf-accent)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
                 onClick={close}
-                className="inline-flex size-10 items-center justify-center rounded-full border border-[var(--sf-border)] text-[var(--sf-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
-                aria-label="Închide"
               >
-                <IconClose size={18} />
-              </button>
+                Șterge opțiunile
+              </Link>
             </div>
-
-            {hasFilters ? (
-              <div className="shrink-0 border-b border-[var(--sf-border)] px-4 py-2 text-center">
-                <Link
-                  href={resetCatalogHref()}
-                  prefetch={false}
-                  className="text-sm font-medium text-[var(--sf-accent)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
-                  onClick={close}
-                >
-                  Șterge opțiunile
-                </Link>
-              </div>
-            ) : null}
-
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-4 py-4">
-              <CatalogFilters
-                query={query}
-                idPrefix="catalog-drawer"
-                formId={`${panelId}-form`}
-                submitLabel="Vezi rezultatele"
-                hideActions
-                className="flex flex-col gap-3 border-0 bg-transparent p-0"
-              />
-            </div>
-
-            <div className="sticky bottom-0 z-20 shrink-0 border-t border-[var(--sf-border)] bg-white px-4 py-3 shadow-[0_-6px_16px_rgba(24,24,27,0.08)]">
-              <button
-                type="submit"
-                form={`${panelId}-form`}
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl text-sm font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)]"
-                style={{ backgroundColor: "var(--sf-accent)" }}
-              >
-                Vezi rezultatele
-              </button>
-            </div>
-          </div>
-        </div>
+          ) : null}
+          <CatalogFilters
+            query={query}
+            idPrefix="catalog-drawer"
+            formId={`${panelId}-form`}
+            submitLabel="Vezi rezultatele"
+            hideActions
+            className="flex flex-col gap-3 border-0 bg-transparent p-0"
+          />
+        </CatalogSheetShell>
       ) : null}
     </div>
   );

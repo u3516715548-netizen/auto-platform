@@ -42,7 +42,7 @@ const fieldShell =
   "flex min-h-12 items-center rounded-lg border border-[var(--sf-border)] bg-[var(--sf-surface)] focus-within:border-[var(--sf-accent)] focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--sf-accent)_20%,transparent)]";
 
 const ghostInput =
-  "min-h-12 w-full min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-[var(--sf-text)] outline-none placeholder:text-[var(--sf-text-muted)]";
+  "catalog-filter-mobile-field min-h-12 w-full min-w-0 flex-1 border-0 bg-transparent px-3 text-base text-[var(--sf-text)] outline-none placeholder:text-[var(--sf-text-muted)] md:text-sm";
 
 const unitClass = "shrink-0 pr-3 text-sm font-medium text-[var(--sf-text)]";
 

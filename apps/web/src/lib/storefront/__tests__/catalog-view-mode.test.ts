@@ -153,8 +153,8 @@ describe("catalog view toggle a11y + layout semantics", () => {
       "utf8",
     );
     expect(toolbar).toContain("data-catalog-view-toggle");
-    expect(toolbar).toContain("sortHref");
-    expect(toolbar).toContain("aria-label={sortAriaLabel}");
+    expect(toolbar).toContain("CatalogSortMenu");
+    expect(toolbar).not.toContain("sortHref");
     expect(toolbar).not.toContain("publicSavedPath");
     expect(toolbar).not.toContain("IconBookmark");
     expect(toolbar).not.toMatch(/>\s*Salvează\s*</);

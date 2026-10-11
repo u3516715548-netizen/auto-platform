@@ -28,12 +28,7 @@ import { CatalogActiveFilters } from "@/components/storefront/catalog-active-fil
 import { CatalogPagination } from "@/components/storefront/catalog-pagination";
 import { CatalogResultsSection } from "@/components/storefront/catalog-results-section";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
-import {
-  buildCatalogHref,
-  CATALOG_SORT_LABELS_RO,
-  DEFAULT_CATALOG_QUERY,
-  type CatalogQuery,
-} from "@/lib/storefront/catalog-query";
+import { DEFAULT_CATALOG_QUERY } from "@/lib/storefront/catalog-query";
 import { withPerfRoute } from "@/lib/perf/server-timing";
 
 /**
@@ -69,13 +64,6 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     };
   }
   return { title: "Negăsit" };
-}
-
-function nextSortHref(query: CatalogQuery): string {
-  const order = ["newest", "price_asc", "price_desc", "year_desc", "mileage_asc"] as const;
-  const idx = order.indexOf(query.sort);
-  const next = order[(idx + 1) % order.length]!;
-  return buildCatalogHref({ ...query, sort: next, page: 1 });
 }
 
 /**
@@ -122,7 +110,6 @@ export default async function RootPage({ searchParams }: PageProps) {
   const totalPages = catalog?.totalPages ?? 1;
   const query = catalog?.query ?? DEFAULT_CATALOG_QUERY;
   const hasFilterChips = catalogQueryHasFilterChips(query);
-  const sortLabel = CATALOG_SORT_LABELS_RO[query.sort];
 
   const brandSet = new Set<string>([
     "Alfa Romeo",
@@ -192,9 +179,7 @@ export default async function RootPage({ searchParams }: PageProps) {
                   totalLabel={total === 1 ? "1 mașină" : `${total} mașini`}
                   stockHint="în stoc"
                   resultsSrOnly={catalogResultsLabel(total)}
-                  sortHref={nextSortHref(query)}
-                  sortLabel={sortLabel}
-                  sortShortLabel={query.sort === "newest" ? "Recente" : sortLabel}
+                  query={query}
                   emptyState={
                     total === 0 ? (
                       <div className="rounded-b-2xl border border-[var(--sf-border)] bg-[var(--sf-surface)] px-4 py-10 text-center">
