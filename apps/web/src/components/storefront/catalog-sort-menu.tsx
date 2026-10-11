@@ -172,11 +172,11 @@ export function CatalogSortMenu({ query }: CatalogSortMenuProps) {
     : undefined;
 
   return (
-    <div ref={rootRef} className="relative min-w-0 flex-1 md:flex-initial">
+    <div ref={rootRef} className="relative min-w-0 shrink-0">
       <button
         ref={triggerRef}
         type="button"
-        className={CATALOG_TOOLBAR_TRIGGER_CLASS}
+        className={`${CATALOG_TOOLBAR_TRIGGER_CLASS} min-w-[7.5rem] px-3`}
         style={{ color: "var(--sf-accent)" }}
         aria-haspopup="listbox"
         aria-expanded={open}

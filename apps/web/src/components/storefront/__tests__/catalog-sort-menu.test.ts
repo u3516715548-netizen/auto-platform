@@ -83,45 +83,46 @@ describe("CatalogSortMenu", () => {
     );
   });
 
-  it("prefers opening above the trigger on mobile viewports", () => {
+  it("always opens below the trigger and right-aligns on mobile viewports", () => {
     const menuHelper = readSrc("lib/storefront/catalog-toolbar-menu.ts");
-    expect(menuHelper).toContain("max-width: 767px");
-    expect(menuHelper).toContain('placeAbove');
+    expect(menuHelper).toContain('placement: "below"');
+    expect(menuHelper).toContain("rect.right - width");
     expect(menuHelper).toContain("260");
+    expect(menuHelper).not.toContain("placeAbove");
 
     const g = globalThis as typeof globalThis & {
       window?: {
         innerHeight: number;
         innerWidth: number;
-        matchMedia: (q: string) => { matches: boolean };
       };
     };
     const prev = g.window;
     g.window = {
       innerHeight: 812,
       innerWidth: 375,
-      matchMedia: (query: string) => ({
-        matches: query.includes("max-width: 767px"),
-      }),
     };
     try {
       const rect = {
         top: 420,
         bottom: 460,
-        left: 40,
+        left: 175,
         width: 160,
         height: 40,
-        right: 200,
-        x: 40,
+        right: 335,
+        x: 175,
         y: 420,
         toJSON() {
           return this;
         },
       } as DOMRect;
       const box = computeCatalogToolbarMenuBox(rect);
-      expect(box.placement).toBe("above");
+      expect(box.placement).toBe("below");
+      expect(box.top).toBe(460 + 6);
+      expect(box.bottom).toBe("auto");
+      expect(box.left).toBe(Math.max(8, 335 - box.width));
       expect(box.width).toBeLessThanOrEqual(260);
       expect(box.width).toBeGreaterThanOrEqual(200);
+      expect(box.maxHeight).toBeGreaterThan(0);
     } finally {
       if (prev === undefined) {
         delete g.window;

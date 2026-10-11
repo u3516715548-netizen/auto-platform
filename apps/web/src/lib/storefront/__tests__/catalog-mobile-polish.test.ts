@@ -45,12 +45,18 @@ describe("catalog mobile UI polish (post-24C)", () => {
     expect(rate).toContain("data-catalog-rate-popover");
   });
 
-  it("toolbar keeps results count on one line with aligned controls", () => {
+  it("toolbar stacks result lines left with square toggle and sort on the right", () => {
     const toolbar = readSrc("components/storefront/catalog-results-section.tsx");
+    const helpers = readSrc("lib/storefront/catalog-toolbar-menu.ts");
     expect(toolbar).toContain("whitespace-nowrap");
     expect(toolbar).toContain("data-catalog-results-count");
-    expect(toolbar).toContain("min-[360px]:flex-row");
-    expect(toolbar).toContain("CatalogViewMenu");
+    expect(toolbar).toContain("data-catalog-results-controls");
+    expect(toolbar).toContain("justify-between");
+    expect(toolbar).toContain("gap-2.5");
+    expect(toolbar).toContain("CatalogViewToggle");
     expect(toolbar).toContain("CatalogSortMenu");
+    expect(toolbar).not.toContain("CatalogViewMenu");
+    expect(helpers).toContain("CATALOG_VIEW_TOGGLE_CLASS");
+    expect(helpers).toContain("size-10");
   });
 });

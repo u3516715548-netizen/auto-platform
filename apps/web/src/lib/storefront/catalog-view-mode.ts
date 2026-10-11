@@ -96,12 +96,22 @@ export const CATALOG_LIST_MEDIA_CLASS =
 export const CATALOG_LIST_BODY_CLASS =
   "flex min-w-0 flex-1 flex-col gap-1.5 p-3 sm:p-4 lg:py-4 lg:pr-5";
 
-export function catalogViewToggleAria(
-  mode: CatalogViewMode,
-  button: CatalogViewMode,
-): { "aria-pressed": boolean; "aria-label": string } {
+/**
+ * Labels for the icon-only view switch.
+ * The control shows the *target* mode icon and announces the mode it will switch to.
+ */
+export function catalogViewToggleAria(mode: CatalogViewMode): {
+  "aria-label": string;
+  title: string;
+} {
+  if (mode === "grid") {
+    return {
+      "aria-label": "Schimbă în vizualizare listă",
+      title: "Schimbă în vizualizare listă",
+    };
+  }
   return {
-    "aria-pressed": mode === button,
-    "aria-label": button === "grid" ? "Vizualizare grid" : "Vizualizare listă",
+    "aria-label": "Schimbă în vizualizare grilă",
+    title: "Schimbă în vizualizare grilă",
   };
 }

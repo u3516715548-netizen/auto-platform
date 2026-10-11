@@ -10,7 +10,7 @@ import {
   type CatalogViewMode,
 } from "@/lib/storefront/catalog-view-mode";
 import { CatalogSortMenu } from "@/components/storefront/catalog-sort-menu";
-import { CatalogViewMenu } from "@/components/storefront/catalog-view-menu";
+import { CatalogViewToggle } from "@/components/storefront/catalog-view-toggle";
 import { PublicVehicleList } from "@/components/storefront/public-vehicle-list";
 
 type CatalogResultsSectionProps = {
@@ -24,7 +24,7 @@ type CatalogResultsSectionProps = {
 };
 
 /**
- * Results toolbar + view/sort dropdowns (client) + vehicle list.
+ * Results toolbar + view toggle / sort + vehicle list.
  * View preference is per-tenant in localStorage — never in the URL.
  * Salvate lives on cards + bottom nav — not in this toolbar.
  */
@@ -60,26 +60,27 @@ export function CatalogResultsSection({
   return (
     <div className="flex min-w-0 flex-col">
       <div
-        className="catalog-results-toolbar flex flex-col gap-2 rounded-t-2xl border border-[var(--sf-border)] bg-[var(--sf-surface)] px-3 py-2.5 max-md:rounded-b-none max-md:border-b-0 md:flex-row md:items-center md:justify-between md:gap-3 md:rounded-2xl md:px-5"
+        className="catalog-results-toolbar flex items-center justify-between gap-2 rounded-t-2xl border border-[var(--sf-border)] bg-[var(--sf-surface)] px-3 py-2.5 max-md:rounded-b-none max-md:border-b-0 md:gap-3 md:rounded-2xl md:px-5"
         aria-live="polite"
         aria-atomic="true"
+        data-catalog-results-toolbar="true"
       >
         <p
-          className="catalog-results-count min-w-0 whitespace-nowrap text-base font-bold tracking-tight text-[var(--sf-text)] md:text-lg"
+          className="catalog-results-count min-w-0 shrink-0 text-base font-bold tracking-tight text-[var(--sf-text)] md:text-lg"
           data-catalog-results-count="true"
         >
-          {totalLabel}{" "}
-          <span className="text-sm font-medium text-[var(--sf-text-muted)]">
+          <span className="block whitespace-nowrap">{totalLabel}</span>
+          <span className="block whitespace-nowrap text-sm font-medium text-[var(--sf-text-muted)]">
             {stockHint}
           </span>
           <span className="sr-only">{resultsSrOnly}</span>
         </p>
 
         <div
-          className="catalog-results-controls flex min-w-0 flex-col gap-1.5 min-[360px]:flex-row min-[360px]:items-stretch md:shrink-0 md:justify-end"
+          className="catalog-results-controls flex shrink-0 items-center gap-2.5 md:gap-3"
           data-catalog-results-controls="true"
         >
-          <CatalogViewMenu
+          <CatalogViewToggle
             viewMode={viewMode}
             onChange={setMode}
             hydrated={hydrated}

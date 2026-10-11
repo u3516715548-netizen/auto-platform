@@ -96,17 +96,15 @@ describe("catalog view mode storage", () => {
 });
 
 describe("catalog view toggle a11y + layout semantics", () => {
-  it("sets aria-pressed for the active mode", () => {
-    expect(catalogViewToggleAria("grid", "grid")).toEqual({
-      "aria-pressed": true,
-      "aria-label": "Vizualizare grid",
+  it("exposes dynamic switch aria-label for the target mode", () => {
+    expect(catalogViewToggleAria("grid")).toEqual({
+      "aria-label": "Schimbă în vizualizare listă",
+      title: "Schimbă în vizualizare listă",
     });
-    expect(catalogViewToggleAria("grid", "list")).toEqual({
-      "aria-pressed": false,
-      "aria-label": "Vizualizare listă",
+    expect(catalogViewToggleAria("list")).toEqual({
+      "aria-label": "Schimbă în vizualizare grilă",
+      title: "Schimbă în vizualizare grilă",
     });
-    expect(catalogViewToggleAria("list", "list")["aria-pressed"]).toBe(true);
-    expect(catalogViewToggleAria("list", "grid")["aria-pressed"]).toBe(false);
   });
 
   it("uses 2-col mobile and 3-col desktop grid classes", () => {
@@ -144,7 +142,7 @@ describe("catalog view toggle a11y + layout semantics", () => {
     expect(source).toContain('data-catalog-layout="grid-card"');
   });
 
-  it("results toolbar has view/sort dropdowns only — no redundant Salvează CTA", () => {
+  it("results toolbar has icon toggle + sort only — no redundant Salvează CTA", () => {
     const toolbar = readFileSync(
       resolve(
         __dirname,
@@ -152,11 +150,12 @@ describe("catalog view toggle a11y + layout semantics", () => {
       ),
       "utf8",
     );
-    expect(toolbar).toContain("CatalogViewMenu");
+    expect(toolbar).toContain("CatalogViewToggle");
     expect(toolbar).toContain("CatalogSortMenu");
     expect(toolbar).toContain("whitespace-nowrap");
+    expect(toolbar).not.toContain("CatalogViewMenu");
+    expect(toolbar).not.toContain("aria-haspopup");
     expect(toolbar).not.toContain("sortHref");
-    expect(toolbar).not.toContain("data-catalog-view-toggle");
     expect(toolbar).not.toContain("publicSavedPath");
     expect(toolbar).not.toContain("IconBookmark");
     expect(toolbar).not.toMatch(/>\s*Salvează\s*</);
