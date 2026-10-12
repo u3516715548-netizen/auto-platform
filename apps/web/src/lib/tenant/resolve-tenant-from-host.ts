@@ -7,6 +7,48 @@ export type HostTenantResolution =
   | { kind: "invalid"; reason: string };
 
 /**
+ * Canonical root for tenant subdomains (`acme.{root}`).
+ * Strips a leading `www.` so Production can safely set either
+ * `autobear.ro` or `www.autobear.ro` without breaking tenant hosts.
+ */
+export function normalizeRootDomain(value: string): string {
+  let root = normalizeHost(value);
+  if (root.startsWith("www.")) {
+    root = root.slice(4);
+  }
+  return root;
+}
+
+/**
+ * Absolute URL for bare-apex → www canonicalization, or null when no redirect.
+ * Skips localhost and `*.vercel.app` (Hobby / local).
+ */
+export function apexWwwRedirectUrl(input: {
+  hostHeader: string;
+  rootDomain: string;
+  pathname: string;
+  search: string;
+}): string | null {
+  const host = normalizeHost(input.hostHeader);
+  const root = normalizeRootDomain(input.rootDomain);
+  if (!host || !root) return null;
+
+  const rootHostname = root.split(":")[0] ?? root;
+  if (rootHostname === "localhost" || rootHostname.endsWith(".vercel.app")) {
+    return null;
+  }
+
+  // Only the bare apex (not www, not tenant subdomains).
+  if (host !== root) return null;
+
+  const path = input.pathname.startsWith("/") ? input.pathname : `/${input.pathname}`;
+  const search = input.search && !input.search.startsWith("?")
+    ? `?${input.search}`
+    : input.search;
+  return `https://www.${rootHostname}${path}${search}`;
+}
+
+/**
  * Pure host → tenant slug resolution.
  * Never accepts client body/query tenant_id.
  *
@@ -14,19 +56,20 @@ export type HostTenantResolution =
  * - acme.localhost:3000 → acme
  * - beta.localhost:3000 → beta
  * - localhost:3000 → apex
+ * - www.{root} → apex (Production custom domain)
  */
 export function resolveTenantSlugFromHost(
   hostHeader: string,
   rootDomain: string,
 ): HostTenantResolution {
   const host = normalizeHost(hostHeader);
-  const root = normalizeHost(rootDomain);
+  const root = normalizeRootDomain(rootDomain);
 
   if (!host || !root) {
     return { kind: "invalid", reason: "missing_host_or_root_domain" };
   }
 
-  if (host === root) {
+  if (host === root || host === `www.${root}`) {
     return { kind: "apex" };
   }
 

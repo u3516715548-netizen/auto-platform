@@ -3,6 +3,8 @@
  * Never log values. Never use service_role here.
  */
 
+import { normalizeRootDomain } from "@/lib/tenant/resolve-tenant-from-host";
+
 export type PublicSupabaseEnv = {
   url: string;
   anonKey: string;
@@ -29,5 +31,6 @@ export function getRootDomain(): string {
       "Missing NEXT_PUBLIC_ROOT_DOMAIN (e.g. localhost:3000). See .env.example.",
     );
   }
-  return root.toLowerCase();
+  // Strip leading www. so tenant hosts stay `{slug}.autobear.ro`.
+  return normalizeRootDomain(root);
 }

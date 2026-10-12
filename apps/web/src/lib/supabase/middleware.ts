@@ -6,7 +6,11 @@ import {
   isPerfServerTimingEnabled,
   logPerfDuration,
 } from "@/lib/perf/server-timing";
-import { resolveTenantSlugFromHost } from "@/lib/tenant/resolve-tenant-from-host";
+import {
+  apexWwwRedirectUrl,
+  normalizeRootDomain,
+  resolveTenantSlugFromHost,
+} from "@/lib/tenant/resolve-tenant-from-host";
 import { resolveHobbyDemoTenantSlugFromRequest } from "@/lib/tenant/vercel-demo-only";
 
 function perfPathLabel(pathname: string): string {
@@ -47,16 +51,31 @@ export async function updateSession(request: NextRequest) {
   const perfEnabled = isPerfServerTimingEnabled();
   const totalStarted = perfEnabled ? performance.now() : 0;
 
-  let response = NextResponse.next({
-    request: { headers: request.headers },
-  });
-
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.trim().toLowerCase();
+  const rootDomainRaw = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.trim();
+  const rootDomain = rootDomainRaw ? normalizeRootDomain(rootDomainRaw) : undefined;
   const pathname = request.nextUrl.pathname;
   const pathLabel = perfPathLabel(pathname);
   const needsAuthSession = middlewarePathRequiresAuthSession(pathname);
+
+  // Production custom domain: bare apex → https://www.{root} (308).
+  if (rootDomain) {
+    const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "";
+    const canonical = apexWwwRedirectUrl({
+      hostHeader: host,
+      rootDomain,
+      pathname: request.nextUrl.pathname,
+      search: request.nextUrl.search,
+    });
+    if (canonical) {
+      return NextResponse.redirect(canonical, 308);
+    }
+  }
+
+  let response = NextResponse.next({
+    request: { headers: request.headers },
+  });
 
   if (rootDomain) {
     attachTenantSlugHeader(response, request, rootDomain);
