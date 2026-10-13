@@ -14,8 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Auto Platform",
-  description: "Shopify pentru dealeri auto — storefront multi-tenant și dashboard dealer",
+  title: "Autobear",
+  description: "Storefront multi-tenant pentru dealeri auto — inventar, lead-uri și subdomeniu propriu",
+  icons: {
+    icon: [{ url: "/brand/autobear-icon.png", type: "image/png" }],
+    apple: [{ url: "/brand/autobear-icon.png" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -25,12 +25,154 @@ body {
   overflow-x: clip;
 }
 
-/** Apex commercial marketing (Etapa 26A) — scoped; does not affect tenant storefront. */
+/**
+ * Apex commercial marketing (Etapa 26A+) — Autobear dark + neon.
+ * Scoped to `.saas-marketing`; does not affect tenant storefront.
+ */
 .saas-marketing {
-  --saas-ink: #04161a;
-  --saas-teal: #2dd4bf;
+  --saas-ink: #050505;
+  --saas-surface: #0c0c0c;
+  --saas-elevated: #121212;
+  --saas-neon: #b8ff2e;
+  --saas-neon-dim: rgba(184, 255, 46, 0.14);
+  --saas-neon-glow: rgba(184, 255, 46, 0.35);
+  --saas-cyan: #5eead4;
+  --saas-muted: rgba(255, 255, 255, 0.62);
+  --saas-border: rgba(255, 255, 255, 0.1);
+  --saas-border-neon: rgba(184, 255, 46, 0.45);
+  --saas-radius: 1rem;
+  --saas-radius-pill: 999px;
+  --focus-ring: var(--saas-neon);
   background: var(--saas-ink);
-  color: #ecfdf5;
+  color: #f4f4f5;
+}
+
+.saas-marketing a:focus-visible,
+.saas-marketing button:focus-visible {
+  outline-color: var(--saas-neon);
+}
+
+.saas-hero-glow {
+  background:
+    radial-gradient(ellipse 80% 55% at 15% -10%, rgba(184, 255, 46, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 20%, rgba(94, 234, 212, 0.08), transparent 50%),
+    linear-gradient(180deg, #050505 0%, #080808 45%, #050505 100%);
+}
+
+.saas-grid-fade {
+  background-image:
+    linear-gradient(rgba(184, 255, 46, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184, 255, 46, 0.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 20%, transparent 75%);
+}
+
+.saas-btn-primary {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--saas-radius-pill);
+  background: var(--saas-neon);
+  padding: 0.75rem 1.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #050505;
+  box-shadow: 0 0 0 1px rgba(184, 255, 46, 0.35), 0 0 28px var(--saas-neon-glow);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    filter 160ms ease;
+}
+
+.saas-btn-primary:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 0 0 1px rgba(184, 255, 46, 0.55), 0 0 36px rgba(184, 255, 46, 0.5);
+  transform: translateY(-1px);
+}
+
+.saas-btn-ghost {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: var(--saas-radius-pill);
+  border: 1px solid var(--saas-border-neon);
+  background: transparent;
+  padding: 0.75rem 1.35rem;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--saas-neon);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.saas-btn-ghost:hover {
+  background: var(--saas-neon-dim);
+  border-color: var(--saas-neon);
+  box-shadow: 0 0 20px rgba(184, 255, 46, 0.15);
+}
+
+.saas-card {
+  border-radius: var(--saas-radius);
+  border: 1px solid var(--saas-border);
+  background:
+    linear-gradient(145deg, rgba(184, 255, 46, 0.06), transparent 42%),
+    var(--saas-elevated);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.saas-card:hover {
+  border-color: var(--saas-border-neon);
+  box-shadow:
+    0 0 0 1px rgba(184, 255, 46, 0.12),
+    0 12px 40px rgba(0, 0, 0, 0.35),
+    0 0 28px rgba(184, 255, 46, 0.08);
+}
+
+.saas-card-featured {
+  border-color: var(--saas-border-neon);
+  background:
+    linear-gradient(160deg, rgba(184, 255, 46, 0.14), transparent 50%),
+    var(--saas-elevated);
+  box-shadow:
+    0 0 0 1px rgba(184, 255, 46, 0.2),
+    0 0 32px rgba(184, 255, 46, 0.12);
+}
+
+.saas-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: var(--saas-radius-pill);
+  border: 1px solid rgba(184, 255, 46, 0.28);
+  background: rgba(184, 255, 46, 0.08);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--saas-neon);
+}
+
+.saas-chip-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--saas-neon);
+  box-shadow: 0 0 10px var(--saas-neon-glow);
 }
 
 /* Visible keyboard focus for interactive elements without a dedicated component style */

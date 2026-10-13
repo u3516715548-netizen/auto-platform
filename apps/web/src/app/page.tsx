@@ -60,7 +60,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   }
   if (resolved.kind === "apex") {
     return {
-      title: "Auto Platform — storefront pentru dealeri auto",
+      title: "Autobear — storefront pentru dealeri auto",
       description:
         "Publică stocul auto pe subdomeniu propriu. Planuri lunare în RON: 50, Business, Premium și Enterprise.",
     };
