@@ -16,9 +16,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Autobear",
   description: "Storefront multi-tenant pentru dealeri auto — inventar, lead-uri și subdomeniu propriu",
+  // App Router also serves `app/icon.png`, `app/apple-icon.png`, and generated `/favicon.ico`.
+  // Public mark is light-on-dark so the tab stays readable (source brand icon is black-on-transparent).
   icons: {
-    icon: [{ url: "/brand/autobear-icon.png", type: "image/png" }],
-    apple: [{ url: "/brand/autobear-icon.png" }],
+    icon: [
+      { url: "/favicon.png", type: "image/png", sizes: "48x48" },
+      { url: "/brand/autobear-icon-mark.png", type: "image/png", sizes: "512x512" },
+    ],
+    shortcut: ["/favicon.png"],
+    apple: [{ url: "/brand/autobear-icon-mark.png", sizes: "512x512", type: "image/png" }],
   },
 };
 

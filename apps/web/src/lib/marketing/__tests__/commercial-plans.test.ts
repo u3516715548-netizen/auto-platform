@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 import {
   COMMERCIAL_CONTACT_EMAIL,
   COMMERCIAL_PLANS,
+  commercialInterestMailtoHref,
   commercialPlanContactHref,
   commercialPlanPublicCta,
   commercialPlanSignupHref,
+  commercialPlansForPricingGrid,
   formatVehicleLimitRo,
   getCommercialPlan,
   isCommercialSelfServeCheckoutEnabled,
@@ -154,14 +156,28 @@ describe("commercial plans catalog (Etapa 26A)", () => {
       resolve(webRoot, "components/marketing/pricing-grid.tsx"),
       "utf8",
     );
-    expect(grid).toContain("COMMERCIAL_PLANS");
+    expect(grid).toContain("commercialPlansForPricingGrid");
     expect(grid).toContain("commercialPlanPublicCta");
     expect(grid).toContain("isCommercialSelfServeCheckoutEnabled");
     expect(grid).toContain("Activarea se face prin contact");
+    expect(grid).toContain("COMMERCIAL_ENTERPRISE_CONTACT_HREF");
     expect(grid).not.toMatch(/149\s*lei/);
     expect(grid).not.toContain("commercialPlanSignupHref");
     expect(grid).not.toContain("ACME");
     expect(grid).not.toMatch(/self-checkout/i);
+  });
+
+  it("exposes pricing-grid plans without Enterprise card", () => {
+    const codes = commercialPlansForPricingGrid().map((p) => p.code);
+    expect(codes).toEqual(["plan_50", "business", "premium"]);
+    expect(codes).not.toContain("enterprise");
+  });
+
+  it("builds an honest interest mailto with the visitor email", () => {
+    const href = commercialInterestMailtoHref("dealer@showroom.ro");
+    expect(href).toContain(`mailto:${COMMERCIAL_CONTACT_EMAIL}`);
+    expect(href).toContain(encodeURIComponent("AUTOBEAR — Vreau să încep"));
+    expect(href).toContain(encodeURIComponent("dealer@showroom.ro"));
   });
 });
 

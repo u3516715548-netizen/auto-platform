@@ -53,19 +53,35 @@ body {
 }
 
 /* Wordmark is 1024×146 (~7:1) — never force a mismatched box. */
+.saas-header-brand {
+  width: 33%;
+  max-width: 33%;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .saas-header-brand {
+    width: auto;
+    max-width: none;
+  }
+}
+
 .saas-logo {
   display: block;
-  width: auto !important;
-  max-width: min(12.5rem, 58vw);
-  height: 1.75rem !important;
+  width: 100% !important;
+  max-width: 100%;
+  height: auto !important;
+  max-height: 1.85rem;
   object-fit: contain;
   object-position: left center;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .saas-logo {
-    height: 2rem !important;
+    width: auto !important;
     max-width: 14rem;
+    height: 2rem !important;
+    max-height: none;
   }
 }
 
@@ -76,6 +92,714 @@ body {
   height: 1.5rem !important;
   object-fit: contain;
   object-position: left center;
+}
+
+.saas-nav-link {
+  border-radius: 999px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.68);
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.saas-nav-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.saas-header-auth-text {
+  padding: 0.45rem 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.82);
+  white-space: nowrap;
+  transition: color 160ms ease;
+}
+
+/* 320px: hide label — login stays in fullscreen menu (avoids clip) */
+@media (max-width: 359px) {
+  .saas-header-auth-text {
+    display: none;
+  }
+}
+
+.saas-header-auth-text:hover {
+  color: var(--saas-neon);
+}
+
+.saas-hamburger {
+  position: relative;
+  z-index: 60;
+  display: inline-flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  transition:
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.saas-hamburger:hover {
+  border-color: rgba(184, 255, 46, 0.35);
+  background: rgba(184, 255, 46, 0.06);
+}
+
+.saas-hamburger-line {
+  display: block;
+  height: 1.5px;
+  width: 1.05rem;
+  border-radius: 999px;
+  background: #f4f4f5;
+  transition:
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 200ms ease,
+    background 180ms ease;
+  transform-origin: center;
+}
+
+.saas-hamburger-line.is-open-1 {
+  transform: translateY(6.5px) rotate(45deg);
+  background: var(--saas-neon);
+}
+
+.saas-hamburger-line.is-open-2 {
+  opacity: 0;
+  transform: scaleX(0.4);
+}
+
+.saas-hamburger-line.is-open-3 {
+  transform: translateY(-6.5px) rotate(-45deg);
+  background: var(--saas-neon);
+}
+
+.saas-header-menu-open {
+  border-color: transparent;
+  background: #000 !important;
+  backdrop-filter: none;
+}
+
+/* Homepage: header overlays hero — no solid band */
+.saas-header-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+}
+
+.saas-header-transparent {
+  border: 0 !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.saas-header-transparent .saas-hamburger {
+  border-color: transparent;
+  background: transparent;
+}
+
+.saas-header-transparent .saas-hamburger:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.saas-marketing-home {
+  position: relative;
+}
+
+.saas-mobile-menu {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  visibility: hidden;
+}
+
+.saas-mobile-menu.is-open {
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.saas-mobile-menu-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  padding: 4.75rem 1.25rem 1.35rem;
+  opacity: 0;
+  transform: translateY(-0.6%);
+  transition:
+    opacity 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.saas-mobile-menu.is-open .saas-mobile-menu-panel {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.saas-mobile-menu-list {
+  display: flex;
+  list-style: none;
+  flex: 1;
+  flex-direction: column;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  overflow: auto;
+}
+
+.saas-mobile-menu-list > li {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.saas-mobile-menu-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.15rem 0.15rem;
+  font-family: var(--font-saas-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #f4f4f5;
+  transition: color 160ms ease;
+}
+
+.saas-mobile-menu-link:hover {
+  color: var(--saas-neon);
+}
+
+.saas-mobile-menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: auto;
+  padding-top: 1.25rem;
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+}
+
+.saas-mobile-menu-login {
+  display: inline-flex;
+  min-height: 3.15rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  background: transparent;
+  padding: 0.85rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.saas-mobile-menu-login:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.saas-mobile-menu-register {
+  display: inline-flex;
+  min-height: 3.15rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--saas-neon);
+  padding: 0.85rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #050505;
+  box-shadow: 0 0 28px rgba(184, 255, 46, 0.32);
+  transition:
+    filter 160ms ease,
+    box-shadow 180ms ease,
+    transform 160ms ease;
+}
+
+.saas-mobile-menu-register:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 0 36px rgba(184, 255, 46, 0.45);
+  transform: translateY(-1px);
+}
+
+.saas-mobile-menu-login:focus-visible,
+.saas-mobile-menu-register:focus-visible {
+  outline: 2px solid var(--saas-neon);
+  outline-offset: 3px;
+}
+
+/**
+ * Hero — Shopify composition:
+ * one content group (headline → sub → form → CTAs) with fixed gaps.
+ * Viewport height may fill the background; it must NOT separate title from subtitle.
+ */
+.saas-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  /* mobile: height from content — no forced 100svh black void */
+}
+
+@media (min-width: 1024px) {
+  .saas-hero {
+    min-height: min(100svh, 52rem);
+  }
+}
+
+.saas-hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: #050505;
+}
+
+.saas-hero-video,
+.saas-hero-video-fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.saas-hero-video {
+  object-fit: cover;
+  /* mobile: subject framed toward optical center; copy stays left */
+  object-position: 64% 38%;
+}
+
+@media (min-width: 768px) {
+  .saas-hero-video {
+    object-position: 66% 38%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .saas-hero-video {
+    object-position: 70% 38%;
+  }
+}
+
+.saas-hero-video-fallback {
+  background:
+    radial-gradient(ellipse 70% 55% at 70% 35%, rgba(184, 255, 46, 0.14), transparent 58%),
+    radial-gradient(ellipse 80% 60% at 15% -10%, rgba(184, 255, 46, 0.1), transparent 55%),
+    linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%);
+}
+
+/* Keep headline / form readable over cinematic footage */
+.saas-hero-video-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(5, 5, 5, 0.55) 0%,
+      rgba(5, 5, 5, 0.42) 38%,
+      rgba(5, 5, 5, 0.72) 72%,
+      rgba(5, 5, 5, 0.92) 100%
+    ),
+    /* left-weighted: copy is left-aligned on all breakpoints */
+    linear-gradient(90deg, rgba(5, 5, 5, 0.78) 0%, rgba(5, 5, 5, 0.35) 48%, rgba(5, 5, 5, 0.2) 100%);
+}
+
+.saas-hero-video-tint {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 55% 45% at 72% 30%,
+    rgba(184, 255, 46, 0.1),
+    transparent 70%
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0.85;
+}
+
+.saas-hero-frame {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  box-sizing: border-box;
+  /* header → headline clearance; bottom ~48–72px after last CTA */
+  padding: 8.7rem 1.25rem 3.75rem;
+}
+
+@media (max-width: 359px) {
+  .saas-hero-frame {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .saas-hero-frame {
+    padding: 9.6rem 1.5rem 4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .saas-hero-frame {
+    min-height: min(100svh, 52rem);
+    padding: 10.2rem 1.5rem 4.5rem;
+  }
+}
+
+.saas-hero-content {
+  display: flex;
+  width: 100%;
+  max-width: 34rem;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+@media (min-width: 1024px) {
+  .saas-hero-content {
+    max-width: 38rem;
+  }
+}
+
+.saas-hero-title {
+  margin: 0;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  font-family: var(--font-saas-display), ui-sans-serif, system-ui, sans-serif;
+  /* sized so longest rotator (“showroom-ul auto.”) fits without x-clip */
+  font-size: clamp(2.15rem, 8.6vw, 3.15rem);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  color: #fff;
+}
+
+@media (min-width: 390px) {
+  .saas-hero-title {
+    font-size: clamp(2.35rem, 8.4vw, 3.35rem);
+  }
+}
+
+@media (min-width: 768px) {
+  .saas-hero-title {
+    font-size: clamp(3.85rem, 6.4vw, 5.5rem);
+    letter-spacing: -0.05em;
+    line-height: 1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .saas-hero-title {
+    font-size: clamp(4.5rem, 5.6vw, 6.75rem);
+  }
+}
+
+.saas-hero-title-fixed {
+  display: block;
+  color: #fff;
+}
+
+.saas-hero-dynamic {
+  position: relative;
+  display: grid;
+  width: 100%;
+  justify-items: start;
+  /* clip slide animation; font-size above keeps phrases inside width */
+  overflow: hidden;
+  padding-bottom: 0.22em;
+  margin-bottom: -0.06em;
+  color: var(--saas-neon);
+  text-align: left;
+}
+
+.saas-hero-dynamic-measure,
+.saas-hero-dynamic-line {
+  grid-area: 1 / 1;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+}
+
+.saas-hero-dynamic-measure {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.saas-hero-dynamic-line {
+  display: block;
+  color: var(--saas-neon);
+}
+
+.saas-hero-word {
+  display: inline-block;
+  white-space: nowrap; /* keep tokens like „showroom-ul” intact */
+  will-change: transform, opacity;
+}
+
+.saas-hero-dynamic-line.is-static .saas-hero-word {
+  transform: none;
+  opacity: 1;
+}
+
+.saas-hero-dynamic-line.is-in:not(.is-static) .saas-hero-word {
+  animation: saas-hero-word-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 220ms);
+}
+
+.saas-hero-dynamic-line.is-out .saas-hero-word {
+  animation: saas-hero-word-out 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 220ms);
+}
+
+@keyframes saas-hero-word-in {
+  from {
+    transform: translate3d(0, 115%, 0);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes saas-hero-word-out {
+  from {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(0, -115%, 0);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saas-hero-dynamic-line.is-in .saas-hero-word,
+  .saas-hero-dynamic-line.is-out .saas-hero-word {
+    animation: none !important;
+  }
+}
+
+/* Headline → subtitle */
+.saas-hero-sub {
+  margin: 3.25rem 0 0;
+  max-width: 22.5rem;
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.94);
+  text-align: left;
+}
+
+@media (min-width: 768px) {
+  .saas-hero-sub {
+    margin-top: 2.55rem;
+    max-width: 26rem;
+    font-size: 1.25rem;
+    line-height: 1.4;
+  }
+}
+
+/* Subtitle → form */
+.saas-hero-interest {
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 26rem;
+}
+
+@media (min-width: 768px) {
+  .saas-hero-interest {
+    margin-top: 1.75rem;
+  }
+}
+
+/* Shopify form stack: consent glued above input, then gap to button */
+.saas-interest {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.saas-interest-fields {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.saas-interest-consent {
+  margin: 0 0 0.4rem;
+  padding: 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 390px) {
+  .saas-interest-consent {
+    font-size: 0.8125rem;
+  }
+}
+
+.saas-interest-input {
+  width: 100%;
+  min-height: 3.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1.05rem 1.05rem;
+  font-size: 1rem;
+  font-weight: 400;
+  color: #ffffff;
+  caret-color: #ffffff;
+  outline: none;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+/* Shopify: placeholder reads as white, not muted brown-grey */
+.saas-interest-input::placeholder {
+  color: rgba(255, 255, 255, 0.92);
+  opacity: 1;
+}
+
+.saas-interest-input:hover {
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.saas-interest-input:focus {
+  border-color: rgba(184, 255, 46, 0.65);
+  background: rgba(184, 255, 46, 0.05);
+  box-shadow: 0 0 0 3px rgba(184, 255, 46, 0.14);
+}
+
+.saas-interest-submit {
+  display: inline-flex;
+  width: 100%;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--saas-neon);
+  padding: 0.9rem 1.35rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: #050505;
+  box-shadow: 0 0 24px rgba(184, 255, 46, 0.28);
+  transition:
+    transform 160ms ease,
+    filter 160ms ease,
+    box-shadow 180ms ease;
+}
+
+.saas-interest-submit:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 0 34px rgba(184, 255, 46, 0.42);
+  transform: translateY(-1px);
+}
+
+.saas-interest-submit:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+
+.saas-interest-submit:focus-visible {
+  outline: 2px solid var(--saas-neon);
+  outline-offset: 3px;
+}
+
+/* Button → secondary row (link + tiny bear, no extra hero block) */
+.saas-hero-secondary-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  align-self: flex-start;
+  margin-top: 1.5rem;
+}
+
+.saas-hero-secondary {
+  margin: 0;
+  text-align: left;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+  text-decoration: underline;
+  text-underline-offset: 0.22em;
+  transition: color 160ms ease;
+}
+
+.saas-hero-secondary:hover {
+  color: var(--saas-neon);
+}
+
+.saas-bear-walk {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.75rem;
+  margin: 0;
+}
+
+.saas-bear-walk-inline {
+  opacity: 0.92;
+}
+
+.saas-bear-walk-lottie,
+.saas-bear-walk-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saas-hamburger-line,
+  .saas-mobile-menu-panel,
+  .saas-interest-submit,
+  .saas-mobile-menu-register {
+    transition: none !important;
+  }
+
+  .saas-mobile-menu-panel {
+    transform: none;
+  }
 }
 
 .saas-hero-glow {

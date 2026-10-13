@@ -39,6 +39,33 @@ export function commercialPlanContactHref(plan: CommercialPlan): string {
   return commercialPlanContactHrefName(plan.name);
 }
 
+/** Plans shown in the public pricing grid (Enterprise is menu / contact only). */
+export function commercialPlansForPricingGrid(): CommercialPlan[] {
+  return COMMERCIAL_PLANS.filter((plan) => plan.code !== "enterprise");
+}
+
+/**
+ * Honest “start” CTA from the hero email field — opens mail client with the address prefilled.
+ * Not a self-serve free trial (checkout stays gated).
+ */
+export function commercialInterestMailtoHref(email: string): string {
+  const trimmed = email.trim();
+  const subject = encodeURIComponent("AUTOBEAR — Vreau să încep");
+  const body = encodeURIComponent(
+    `Bună,\n\nVreau să aflu cum pot activa un showroom AUTOBEAR.\n\nEmail: ${trimmed}\n\nMulțumesc.`,
+  );
+  return `mailto:${COMMERCIAL_CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+}
+
+/** Mobile menu „Înregistrare” — honest activation request (no public self-serve signup yet). */
+export function commercialRegisterMailtoHref(): string {
+  const subject = encodeURIComponent("AUTOBEAR — Înregistrare");
+  const body = encodeURIComponent(
+    "Bună,\n\nVreau să mă înregistrez / să activez un showroom AUTOBEAR.\n\nMulțumesc.",
+  );
+  return `mailto:${COMMERCIAL_CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+}
+
 export const COMMERCIAL_PLANS: readonly CommercialPlan[] = [
   {
     code: "plan_50",

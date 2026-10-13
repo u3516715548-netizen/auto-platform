@@ -1,7 +1,8 @@
 import Link from "next/link";
 import {
-  COMMERCIAL_PLANS,
+  COMMERCIAL_ENTERPRISE_CONTACT_HREF,
   commercialPlanPublicCta,
+  commercialPlansForPricingGrid,
   formatVehicleLimitRo,
   isCommercialSelfServeCheckoutEnabled,
   type CommercialPlan,
@@ -71,8 +72,8 @@ export function PricingGrid({ pageMode = false }: PricingGridProps) {
           </p>
         </div>
 
-        <ul className="mt-10 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4">
-          {COMMERCIAL_PLANS.map((plan) => (
+        <ul className="mt-10 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
+          {commercialPlansForPricingGrid().map((plan) => (
             <li
               key={plan.code}
               data-plan-code={plan.code}
@@ -116,8 +117,15 @@ export function PricingGrid({ pageMode = false }: PricingGridProps) {
             </li>
           ))}
         </ul>
-        <p className="mt-6 text-xs leading-5 text-white/35">
-          * Enterprise: utilizare rezonabilă. Activare pe contract.
+        <p className="mt-6 text-sm leading-6 text-white/45">
+          Ai nevoie de volum mare sau setup dedicat?{" "}
+          <a
+            href={COMMERCIAL_ENTERPRISE_CONTACT_HREF}
+            className="font-medium text-[var(--saas-neon)] underline-offset-4 transition hover:underline"
+          >
+            Scrie-ne pentru Enterprise
+          </a>
+          .
         </p>
       </div>
     </section>
