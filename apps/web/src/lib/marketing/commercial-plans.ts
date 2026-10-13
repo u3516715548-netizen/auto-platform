@@ -21,9 +21,23 @@ export type CommercialPlan = {
   highlighted?: boolean;
 };
 
-/** Contact for Enterprise (no self-checkout in MVP). */
-export const COMMERCIAL_ENTERPRISE_CONTACT_HREF =
-  "mailto:contact@autofy.ro?subject=Auto%20Platform%20Enterprise";
+/**
+ * Public contact inbox for plan activation CTAs.
+ * Inbox `contact@autobear.ro` is not wired in-repo yet — keep working autofy fallback.
+ */
+export const COMMERCIAL_CONTACT_EMAIL = "contact@autofy.ro";
+
+/** @deprecated Prefer commercialPlanContactHref(plan) for plan-specific subjects. */
+export const COMMERCIAL_ENTERPRISE_CONTACT_HREF = commercialPlanContactHrefName("Enterprise");
+
+function commercialPlanContactHrefName(planName: string): string {
+  const subject = encodeURIComponent(`AUTOBEAR — Plan ${planName}`);
+  return `mailto:${COMMERCIAL_CONTACT_EMAIL}?subject=${subject}`;
+}
+
+export function commercialPlanContactHref(plan: CommercialPlan): string {
+  return commercialPlanContactHrefName(plan.name);
+}
 
 export const COMMERCIAL_PLANS: readonly CommercialPlan[] = [
   {
@@ -33,7 +47,11 @@ export const COMMERCIAL_PLANS: readonly CommercialPlan[] = [
     priceRonMonthly: 149,
     priceLabel: "149 lei/lună",
     blurb: "Pentru showroom-uri mici care vor un stoc public curat.",
-    highlights: ["50 mașini publicate", "Storefront pe subdomeniu", "Dashboard inventar & lead-uri"],
+    highlights: [
+      "50 mașini publicate",
+      "Site pe adresa ta",
+      "Inventar și cereri de la clienți",
+    ],
     selfServeCheckout: true,
   },
   {
@@ -42,8 +60,12 @@ export const COMMERCIAL_PLANS: readonly CommercialPlan[] = [
     maxPublishedVehicles: 150,
     priceRonMonthly: 299,
     priceLabel: "299 lei/lună",
-    blurb: "Volum mai mare, același flux de publicare și lead-uri.",
-    highlights: ["150 mașini publicate", "Filtre & finanțare pe storefront", "Echipă și roluri"],
+    blurb: "Volum mai mare, același flux simplu de publicare și cereri.",
+    highlights: [
+      "150 mașini publicate",
+      "Filtre pe site și cereri de finanțare",
+      "Echipă și roluri",
+    ],
     selfServeCheckout: true,
     highlighted: true,
   },
@@ -54,7 +76,11 @@ export const COMMERCIAL_PLANS: readonly CommercialPlan[] = [
     priceRonMonthly: 599,
     priceLabel: "599 lei/lună",
     blurb: "Pentru dealeri cu stoc mare și ritm rapid de rotație.",
-    highlights: ["500 mașini publicate", "Teme storefront", "Prioritate la onboarding"],
+    highlights: [
+      "500 mașini publicate",
+      "Aspect personalizabil",
+      "Pornire asistată, cu prioritate",
+    ],
     selfServeCheckout: true,
   },
   {
@@ -63,8 +89,12 @@ export const COMMERCIAL_PLANS: readonly CommercialPlan[] = [
     maxPublishedVehicles: null,
     priceRonMonthly: null,
     priceLabel: "Preț negociat",
-    blurb: "Nelimitat, cu utilizare rezonabilă — configurare dedicată.",
-    highlights: ["Stoc nelimitat*", "SLA și onboarding dedicat", "Fără self-checkout"],
+    blurb: "Stoc nelimitat, cu utilizare rezonabilă — configurare dedicată.",
+    highlights: [
+      "Stoc nelimitat*",
+      "Suport dedicat și pornire ghidată",
+      "Activare pe contract",
+    ],
     selfServeCheckout: false,
   },
 ] as const;
@@ -148,8 +178,8 @@ export function commercialPlanPublicCta(plan: CommercialPlan): CommercialPlanPub
   }
   return {
     kind: "contact",
-    href: COMMERCIAL_ENTERPRISE_CONTACT_HREF,
-    label: "Contactează-ne",
+    href: commercialPlanContactHref(plan),
+    label: `Scrie-ne pentru ${plan.name}`,
   };
 }
 

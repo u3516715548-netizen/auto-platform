@@ -15,6 +15,10 @@ const body = DM_Sans({
   weight: ["400", "500", "600", "700"],
 });
 
+/** Intrinsic PNG size — 1024×146 (~7.01:1). Do not invent a shorter box. */
+const LOGO_WIDTH = 1024;
+const LOGO_HEIGHT = 146;
+
 type SaasShellProps = {
   children: ReactNode;
 };
@@ -31,13 +35,18 @@ export function SaasShell({ children }: SaasShellProps) {
     >
       <header className="relative z-20 border-b border-white/8 bg-black/70 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
-          <Link href="/" className="group inline-flex items-center gap-3" aria-label="Autobear — acasă">
+          <Link
+            href="/"
+            className="inline-flex shrink-0 items-center"
+            aria-label="Autobear — acasă"
+          >
             <Image
               src="/brand/autobear-logo-white.png"
               alt="Autobear"
-              width={168}
-              height={36}
-              className="h-7 w-auto sm:h-8"
+              width={LOGO_WIDTH}
+              height={LOGO_HEIGHT}
+              className="saas-logo"
+              sizes="(max-width: 640px) 176px, 224px"
               priority
             />
           </Link>
@@ -60,12 +69,13 @@ export function SaasShell({ children }: SaasShellProps) {
           <Image
             src="/brand/autobear-logo-white.png"
             alt="Autobear"
-            width={140}
-            height={30}
-            className="h-6 w-auto opacity-90"
+            width={LOGO_WIDTH}
+            height={LOGO_HEIGHT}
+            className="saas-logo-footer opacity-90"
+            sizes="168px"
           />
           <p className="max-w-md leading-6">
-            Storefrontul dealerului rămâne pe subdomeniu — nu pe această pagină.
+            Site-ul showroom-ului e pe adresa dealerului, nu pe această pagină.
           </p>
         </div>
       </footer>

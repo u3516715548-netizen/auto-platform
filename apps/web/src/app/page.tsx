@@ -60,9 +60,9 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   }
   if (resolved.kind === "apex") {
     return {
-      title: "Autobear — storefront pentru dealeri auto",
+      title: "AUTOBEAR — Showroom online sub brandul tău",
       description:
-        "Publică stocul auto pe subdomeniu propriu. Planuri lunare în RON: 50, Business, Premium și Enterprise.",
+        "Creează un showroom online pentru stocul auto: pagini clare pentru mașini, cereri de la clienți și administrare simplă. Planuri lunare în RON.",
     };
   }
   return { title: "Negăsit" };

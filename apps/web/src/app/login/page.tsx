@@ -19,9 +19,9 @@ export default async function LoginPage({
   const plan = parseSelfServePlanCode(params.plan);
   const errorMessage =
     params.error === "membership"
-      ? "Contul este autentificat, dar nu are membership pe acest dealer."
+      ? "Contul e autentificat, dar nu are acces la acest showroom."
       : params.error === "tenant"
-        ? "Tenant invalid sau indisponibil pe acest host."
+        ? "Showroom-ul nu este disponibil pe această adresă."
         : null;
   const headerStore = await headers();
   const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? "";
@@ -46,20 +46,20 @@ export default async function LoginPage({
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-4 py-10 sm:px-6">
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium tracking-wide text-teal-800 uppercase">Auto Platform</p>
+        <p className="text-sm font-medium tracking-wide text-teal-800 uppercase">AUTOBEAR</p>
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-          {commercialFlow ? "Cont pentru checkout" : "Autentificare dealer"}
+          {commercialFlow ? "Creează contul pentru activare" : "Intră în cont"}
         </h1>
         <p className="text-sm leading-6 text-zinc-600">
           {commercialFlow
-            ? "Creează un cont sau autentifică-te, apoi alegi subdomeniul și plătești planul."
-            : "Intră cu contul Supabase Auth. După login rămâi pe același host (acme / beta)."}
+            ? "Creează un cont sau autentifică-te. Apoi alegi adresa site-ului și finalizezi plata."
+            : "Folosește emailul și parola contului tău AUTOBEAR."}
         </p>
       </div>
 
       {params.auth === "required" ? (
         <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
-          Autentificare necesară pentru dashboard.
+          Autentifică-te ca să deschizi panoul.
         </p>
       ) : null}
 

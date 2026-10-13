@@ -2,8 +2,9 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  COMMERCIAL_ENTERPRISE_CONTACT_HREF,
+  COMMERCIAL_CONTACT_EMAIL,
   COMMERCIAL_PLANS,
+  commercialPlanContactHref,
   commercialPlanPublicCta,
   commercialPlanSignupHref,
   formatVehicleLimitRo,
@@ -112,9 +113,13 @@ describe("commercial plans catalog (Etapa 26A)", () => {
     for (const k of keys) delete process.env[k];
     try {
       for (const code of ["plan_50", "business", "premium", "enterprise"] as const) {
-        const cta = commercialPlanPublicCta(getCommercialPlan(code));
+        const plan = getCommercialPlan(code);
+        const cta = commercialPlanPublicCta(plan);
         expect(cta.kind).toBe("contact");
-        expect(cta.href).toBe(COMMERCIAL_ENTERPRISE_CONTACT_HREF);
+        expect(cta.href).toBe(commercialPlanContactHref(plan));
+        expect(cta.href).toContain(`mailto:${COMMERCIAL_CONTACT_EMAIL}`);
+        expect(cta.href).toContain("AUTOBEAR");
+        expect(cta.label).toBe(`Scrie-ne pentru ${plan.name}`);
         expect(cta.href).not.toContain("/login?plan=");
         expect(cta.href).not.toContain("/checkout");
       }
@@ -152,8 +157,11 @@ describe("commercial plans catalog (Etapa 26A)", () => {
     expect(grid).toContain("COMMERCIAL_PLANS");
     expect(grid).toContain("commercialPlanPublicCta");
     expect(grid).toContain("isCommercialSelfServeCheckoutEnabled");
-    expect(grid).toContain("contactează-ne");
+    expect(grid).toContain("Activarea se face prin contact");
     expect(grid).not.toMatch(/149\s*lei/);
     expect(grid).not.toContain("commercialPlanSignupHref");
+    expect(grid).not.toContain("ACME");
+    expect(grid).not.toMatch(/self-checkout/i);
   });
 });
+
