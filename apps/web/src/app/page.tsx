@@ -18,7 +18,15 @@ import {
   catalogUrlHasQueryString,
 } from "@/lib/storefront/catalog-seo";
 import { applySeoDefaultsToCatalogMetadata } from "@/lib/seo/build-page-metadata";
+import {
+  buildOrganizationJsonLd,
+  buildWebSiteJsonLd,
+} from "@/lib/seo/build-json-ld";
 import { loadPublicSeoSettings } from "@/lib/seo/load-public-seo-settings";
+import { getPublicRequestOrigin } from "@/lib/seo/public-origin";
+import { buildVerificationMetadata } from "@/lib/marketing/build-verification-metadata";
+import { loadPublicMarketingIntegrations } from "@/lib/marketing/load-public-marketing-integrations";
+import { JsonLd } from "@/components/seo/json-ld";
 import { PublicStorefrontShell } from "@/components/storefront/public-shell";
 import {
   CatalogFilterDrawer,
@@ -54,9 +62,17 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
       dealerName: resolved.tenant.name,
       hasQuery,
     });
-    const seo = await loadPublicSeoSettings(resolved.tenant.tenantId);
+    const [seo, origin, marketing] = await Promise.all([
+      loadPublicSeoSettings(resolved.tenant.tenantId),
+      getPublicRequestOrigin(),
+      loadPublicMarketingIntegrations(resolved.tenant.tenantId),
+    ]);
     // SEO settings are independent of catalog query parsing above.
-    return applySeoDefaultsToCatalogMetadata(base, seo, resolved.tenant.name);
+    // Verification meta tags only on tenant homepage (Search Console requirement).
+    return {
+      ...applySeoDefaultsToCatalogMetadata(base, seo, resolved.tenant.name, origin),
+      ...buildVerificationMetadata(marketing),
+    };
   }
   if (resolved.kind === "apex") {
     return {
@@ -93,11 +109,13 @@ export default async function RootPage({ searchParams }: PageProps) {
   let listError: string | null = null;
 
   // tenant branding/company and catalog inventory are independent after Host resolve.
-  const [tenantView, catalogOutcome] = await Promise.all([
+  const [tenantView, catalogOutcome, origin, seo] = await Promise.all([
     toPublicTenantViewForRequest(resolved.tenant),
     listPublicVehiclesForCatalog(resolved.tenant.tenantId, params)
       .then((result) => ({ ok: true as const, result }))
       .catch(() => ({ ok: false as const })),
+    getPublicRequestOrigin(),
+    loadPublicSeoSettings(resolved.tenant.tenantId),
   ]);
 
   if (catalogOutcome.ok) {
@@ -150,7 +168,19 @@ export default async function RootPage({ searchParams }: PageProps) {
     yearCeiling,
   );
 
+  const jsonLd = [
+    buildOrganizationJsonLd({
+      dealerName: resolved.tenant.name,
+      origin,
+      company: tenantView.company,
+      seo,
+    }),
+    buildWebSiteJsonLd({ dealerName: resolved.tenant.name, origin }),
+  ];
+
   return (
+    <>
+      <JsonLd data={jsonLd} />
     <PublicStorefrontShell tenant={tenantView} stickySurface="catalog">
       <div className="sf-glow-ambient flex min-w-0 flex-col">
         <h2 className="sr-only">Vehicule disponibile</h2>
@@ -226,6 +256,7 @@ export default async function RootPage({ searchParams }: PageProps) {
         </CatalogScrollCollapse>
       </div>
     </PublicStorefrontShell>
+    </>
   );
   });
 }

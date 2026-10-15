@@ -6,8 +6,8 @@ import { useEffect, useId, useState } from "react";
 import type { MembershipRole } from "@auto-platform/types";
 import { DASHBOARD_NAV, isDashboardNavActive } from "@/lib/dashboard/nav";
 import {
-  isCustomizationSectionActive,
   isSettingsChildActive,
+  isSettingsGroupSectionActive,
   isSettingsNavActive,
   settingsNavForRole,
   type SettingsNavItem,
@@ -45,7 +45,7 @@ function settingsLeafClass(active: boolean, compact?: boolean) {
   }`;
 }
 
-function CustomizationGroup({
+function SettingsNavGroup({
   item,
   pathname,
   compact,
@@ -55,7 +55,7 @@ function CustomizationGroup({
   compact?: boolean;
 }) {
   const children = item.children ?? [];
-  const sectionActive = isCustomizationSectionActive(pathname);
+  const sectionActive = isSettingsGroupSectionActive(pathname, item);
   const [expanded, setExpanded] = useState(sectionActive);
   const panelId = useId();
 
@@ -172,7 +172,7 @@ function SettingsTree({
         {items.map((item) => {
           if (item.children?.length) {
             return (
-              <CustomizationGroup
+              <SettingsNavGroup
                 key={item.href}
                 item={item}
                 pathname={pathname}
@@ -203,7 +203,7 @@ function SettingsTree({
         if (item.children?.length) {
           return (
             <li key={item.href}>
-              <CustomizationGroup item={item} pathname={pathname} />
+              <SettingsNavGroup item={item} pathname={pathname} />
             </li>
           );
         }

@@ -1,4 +1,14 @@
 import { z } from "zod";
+import {
+  CMS_FAQ_MAX_ITEMS,
+  CMS_INTERNAL_LINKS_MAX,
+  normalizeCanonicalPath,
+  normalizeTenantLocalPath,
+  sanitizeLandingCatalogFilters,
+  tenantPageFaqItemSchema,
+  tenantPageInternalLinkSchema,
+  type LandingCatalogFilters,
+} from "./cms-landing";
 
 /** Shared domain enums / schemas — aligned with Drizzle pgEnums in packages/db. */
 
@@ -1408,7 +1418,7 @@ export type CompanyProfileView = PublicCompanyView & {
 
 /* ─── Etapa 23A — CMS pages + basic SEO ─────────────────────────────────── */
 
-export const tenantPageStatusSchema = z.enum(["draft", "published"]);
+export const tenantPageStatusSchema = z.enum(["draft", "published", "archived"]);
 export type TenantPageStatus = z.infer<typeof tenantPageStatusSchema>;
 
 export const tenantPageKindSchema = z.enum([
@@ -1418,8 +1428,41 @@ export const tenantPageKindSchema = z.enum([
   "terms",
   "privacy",
   "cookies",
+  "local_inventory",
+  "brand_inventory",
+  "body_type_inventory",
+  "fuel_inventory",
+  "financing",
+  "buyback",
+  "warranty",
+  "service",
 ]);
 export type TenantPageKind = z.infer<typeof tenantPageKindSchema>;
+
+export {
+  INVENTORY_PAGE_KINDS,
+  isInventoryPageKind,
+  CMS_PUBLISH_MIN_CONTENT_CHARS,
+  CMS_PUBLISH_META_MIN,
+  CMS_PUBLISH_META_MAX,
+  CMS_FAQ_MAX_ITEMS,
+  CMS_INTERNAL_LINKS_MAX,
+  normalizeTenantLocalPath,
+  normalizeCanonicalPath,
+  selfCanonicalPathForSlug,
+  resolvePageCanonicalPath,
+  isSelfCanonicalPage,
+  tenantPageFaqItemSchema,
+  tenantPageInternalLinkSchema,
+  landingCatalogFiltersSchema,
+  sanitizeLandingCatalogFilters,
+  landingFiltersHaveConstraint,
+  landingFiltersToSearchParamsRecord,
+  validateCmsPageForPublish,
+  type InventoryPageKind,
+  type LandingCatalogFilters,
+  type CmsPublishGateInput,
+} from "./cms-landing";
 
 /** Fixed legal slugs (RO) mapped to page_kind. */
 export const LEGAL_PAGE_SLUGS = [
@@ -1491,6 +1534,44 @@ export function sanitizeOptionalSeoField(
   return trimmed;
 }
 
+function parseOptionalJsonArray(raw: unknown): unknown {
+  if (raw == null || raw === "") return [];
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  return raw;
+}
+
+function parseOptionalJsonObject(raw: unknown): unknown {
+  if (raw == null || raw === "") return {};
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  return raw;
+}
+
+const cmsPageExtendedFieldsSchema = z.object({
+  h1: z.string().trim().max(160).optional().nullable(),
+  intro: z.string().max(2000).optional().default(""),
+  ctaLabel: z.string().trim().max(80).optional().nullable(),
+  ctaHref: z.string().trim().max(200).optional().nullable(),
+  ogImagePath: z.string().trim().max(500).optional().nullable(),
+  canonicalPath: z.string().trim().max(200).optional().nullable(),
+  noindex: z.boolean().optional().default(false),
+  includeInSitemap: z.boolean().optional().default(true),
+  faqJson: z.unknown().optional(),
+  catalogFiltersJson: z.unknown().optional(),
+  internalLinksJson: z.unknown().optional(),
+});
+
 export const createTenantPageInputSchema = z
   .object({
     title: z.string().trim().min(1, "Titlul este obligatoriu").max(160),
@@ -1500,6 +1581,7 @@ export const createTenantPageInputSchema = z
     seoTitle: z.string().trim().max(70).optional().nullable(),
     seoDescription: z.string().trim().max(160).optional().nullable(),
   })
+  .merge(cmsPageExtendedFieldsSchema)
   .strict()
   .superRefine((data, ctx) => {
     const slug = normalizeTenantPageSlug(data.slug);
@@ -1512,7 +1594,7 @@ export const createTenantPageInputSchema = z
       return;
     }
     const kind = data.pageKind;
-    if (kind !== "custom") {
+    if (KIND_TO_LEGAL_SLUG[kind]) {
       const expected = KIND_TO_LEGAL_SLUG[kind];
       if (expected && slug !== expected) {
         ctx.addIssue({
@@ -1548,6 +1630,57 @@ export const createTenantPageInputSchema = z
         message: "Descriere SEO invalidă",
       });
     }
+    if (data.ctaHref?.trim() && !normalizeTenantLocalPath(data.ctaHref)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["ctaHref"],
+        message: "CTA path invalid",
+      });
+    }
+    if (data.canonicalPath?.trim() && !normalizeCanonicalPath(data.canonicalPath)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["canonicalPath"],
+        message: "Canonical path invalid (doar path relativ local)",
+      });
+    }
+    const faqRaw = parseOptionalJsonArray(data.faqJson);
+    if (faqRaw === null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["faqJson"], message: "FAQ invalid" });
+    } else {
+      const faqParsed = z.array(tenantPageFaqItemSchema).max(CMS_FAQ_MAX_ITEMS).safeParse(faqRaw);
+      if (!faqParsed.success) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["faqJson"], message: "FAQ invalid" });
+      }
+    }
+    const filtersRaw = parseOptionalJsonObject(data.catalogFiltersJson);
+    if (filtersRaw === null || sanitizeLandingCatalogFilters(filtersRaw) === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["catalogFiltersJson"],
+        message: "Filtre catalog invalide",
+      });
+    }
+    const linksRaw = parseOptionalJsonArray(data.internalLinksJson);
+    if (linksRaw === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["internalLinksJson"],
+        message: "Linkuri interne invalide",
+      });
+    } else {
+      const linksParsed = z
+        .array(tenantPageInternalLinkSchema)
+        .max(CMS_INTERNAL_LINKS_MAX)
+        .safeParse(linksRaw);
+      if (!linksParsed.success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["internalLinksJson"],
+          message: "Linkuri interne invalide",
+        });
+      }
+    }
   })
   .transform((data) => {
     const slug = normalizeTenantPageSlug(data.slug)!;
@@ -1555,6 +1688,17 @@ export const createTenantPageInputSchema = z
     if ((LEGAL_PAGE_SLUGS as readonly string[]).includes(slug)) {
       pageKind = LEGAL_SLUG_TO_KIND[slug as LegalPageSlug];
     }
+    const faq = z
+      .array(tenantPageFaqItemSchema)
+      .max(CMS_FAQ_MAX_ITEMS)
+      .parse(parseOptionalJsonArray(data.faqJson) ?? []);
+    const internalLinks = z
+      .array(tenantPageInternalLinkSchema)
+      .max(CMS_INTERNAL_LINKS_MAX)
+      .parse(parseOptionalJsonArray(data.internalLinksJson) ?? []);
+    const catalogFilters =
+      sanitizeLandingCatalogFilters(parseOptionalJsonObject(data.catalogFiltersJson) ?? {}) ?? {};
+    const h1Raw = data.h1?.trim() || null;
     return {
       title: data.title.trim(),
       slug,
@@ -1562,6 +1706,17 @@ export const createTenantPageInputSchema = z
       pageKind,
       seoTitle: sanitizeOptionalSeoField(data.seoTitle, 70) ?? null,
       seoDescription: sanitizeOptionalSeoField(data.seoDescription, 160) ?? null,
+      h1: h1Raw,
+      intro: (data.intro ?? "").trim().slice(0, 2000),
+      ctaLabel: data.ctaLabel?.trim() || null,
+      ctaHref: normalizeTenantLocalPath(data.ctaHref),
+      ogImagePath: data.ogImagePath?.trim() || null,
+      canonicalPath: normalizeCanonicalPath(data.canonicalPath),
+      noindex: data.noindex ?? false,
+      includeInSitemap: data.includeInSitemap ?? true,
+      faq,
+      catalogFilters,
+      internalLinks,
     };
   });
 export type CreateTenantPageInput = z.infer<typeof createTenantPageInputSchema>;
@@ -1576,6 +1731,7 @@ export const updateTenantPageInputSchema = z
     seoTitle: z.string().trim().max(70).optional().nullable(),
     seoDescription: z.string().trim().max(160).optional().nullable(),
   })
+  .merge(cmsPageExtendedFieldsSchema)
   .strict()
   .superRefine((data, ctx) => {
     const slug = normalizeTenantPageSlug(data.slug);
@@ -1587,7 +1743,7 @@ export const updateTenantPageInputSchema = z
       });
       return;
     }
-    if (data.pageKind !== "custom") {
+    if (KIND_TO_LEGAL_SLUG[data.pageKind]) {
       const expected = KIND_TO_LEGAL_SLUG[data.pageKind];
       if (expected && slug !== expected) {
         ctx.addIssue({
@@ -1604,21 +1760,80 @@ export const updateTenantPageInputSchema = z
         message: "Conținut invalid",
       });
     }
+    if (data.ctaHref?.trim() && !normalizeTenantLocalPath(data.ctaHref)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["ctaHref"],
+        message: "CTA path invalid",
+      });
+    }
+    if (data.canonicalPath?.trim() && !normalizeCanonicalPath(data.canonicalPath)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["canonicalPath"],
+        message: "Canonical path invalid",
+      });
+    }
+    const filtersRaw = parseOptionalJsonObject(data.catalogFiltersJson);
+    if (filtersRaw === null || sanitizeLandingCatalogFilters(filtersRaw) === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["catalogFiltersJson"],
+        message: "Filtre catalog invalide",
+      });
+    }
+    const faqRaw = parseOptionalJsonArray(data.faqJson);
+    if (faqRaw === null || !z.array(tenantPageFaqItemSchema).max(CMS_FAQ_MAX_ITEMS).safeParse(faqRaw).success) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["faqJson"], message: "FAQ invalid" });
+    }
+    const linksRaw = parseOptionalJsonArray(data.internalLinksJson);
+    if (
+      linksRaw === null ||
+      !z.array(tenantPageInternalLinkSchema).max(CMS_INTERNAL_LINKS_MAX).safeParse(linksRaw).success
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["internalLinksJson"],
+        message: "Linkuri interne invalide",
+      });
+    }
   })
-  .transform((data) => ({
-    pageId: data.pageId,
-    title: data.title.trim(),
-    slug: normalizeTenantPageSlug(data.slug)!,
-    body: sanitizeTenantPageBody(data.body) ?? "",
-    pageKind:
-      (LEGAL_PAGE_SLUGS as readonly string[]).includes(normalizeTenantPageSlug(data.slug)!)
-        ? LEGAL_SLUG_TO_KIND[normalizeTenantPageSlug(data.slug)! as LegalPageSlug]
-        : data.pageKind === "custom"
-          ? "custom"
-          : data.pageKind,
-    seoTitle: sanitizeOptionalSeoField(data.seoTitle, 70) ?? null,
-    seoDescription: sanitizeOptionalSeoField(data.seoDescription, 160) ?? null,
-  }));
+  .transform((data) => {
+    const slug = normalizeTenantPageSlug(data.slug)!;
+    const pageKind = (LEGAL_PAGE_SLUGS as readonly string[]).includes(slug)
+      ? LEGAL_SLUG_TO_KIND[slug as LegalPageSlug]
+      : data.pageKind;
+    const faq = z
+      .array(tenantPageFaqItemSchema)
+      .max(CMS_FAQ_MAX_ITEMS)
+      .parse(parseOptionalJsonArray(data.faqJson) ?? []);
+    const internalLinks = z
+      .array(tenantPageInternalLinkSchema)
+      .max(CMS_INTERNAL_LINKS_MAX)
+      .parse(parseOptionalJsonArray(data.internalLinksJson) ?? []);
+    const catalogFilters =
+      sanitizeLandingCatalogFilters(parseOptionalJsonObject(data.catalogFiltersJson) ?? {}) ?? {};
+    return {
+      pageId: data.pageId,
+      title: data.title.trim(),
+      slug,
+      body: sanitizeTenantPageBody(data.body) ?? "",
+      pageKind,
+      seoTitle: sanitizeOptionalSeoField(data.seoTitle, 70) ?? null,
+      seoDescription: sanitizeOptionalSeoField(data.seoDescription, 160) ?? null,
+      h1: data.h1?.trim() || null,
+      intro: (data.intro ?? "").trim().slice(0, 2000),
+      ctaLabel: data.ctaLabel?.trim() || null,
+      ctaHref: normalizeTenantLocalPath(data.ctaHref),
+      ogImagePath: data.ogImagePath?.trim() || null,
+      canonicalPath: normalizeCanonicalPath(data.canonicalPath),
+      noindex: data.noindex ?? false,
+      includeInSitemap: data.includeInSitemap ?? true,
+      faq,
+      catalogFilters,
+      internalLinks,
+    };
+  });
 export type UpdateTenantPageInput = z.infer<typeof updateTenantPageInputSchema>;
 
 export const tenantPageIdInputSchema = z
@@ -1627,12 +1842,38 @@ export const tenantPageIdInputSchema = z
   })
   .strict();
 
+/**
+ * Normalizes an optional title template.
+ * Must contain `%s` (page title). `{dealer}` is replaced at render time.
+ */
+export function normalizeSeoTitleTemplate(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed.length > 80) return null;
+  if (!trimmed.includes("%s")) return null;
+  if (/[<>]/.test(trimmed) || /javascript\s*:/i.test(trimmed)) return null;
+  return trimmed;
+}
+
+/** Twitter/X handle without leading @. */
+export function normalizeTwitterHandle(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  const trimmed = raw.trim().replace(/^@+/, "");
+  if (!trimmed) return null;
+  if (!/^[A-Za-z0-9_]{1,15}$/.test(trimmed)) return null;
+  return trimmed;
+}
+
 export const upsertTenantSeoSettingsInputSchema = z
   .object({
     seoTitleDefault: z.string().trim().max(70).optional().nullable(),
     seoDescriptionDefault: z.string().trim().max(160).optional().nullable(),
     faviconPath: z.string().trim().max(500).optional().nullable(),
     indexingEnabled: z.boolean(),
+    titleTemplate: z.string().trim().max(80).optional().nullable(),
+    ogImagePath: z.string().trim().max(500).optional().nullable(),
+    twitterHandle: z.string().trim().max(20).optional().nullable(),
   })
   .strict()
   .superRefine((data, ctx) => {
@@ -1669,6 +1910,39 @@ export const upsertTenantSeoSettingsInputSchema = z
         message: "Referință favicon invalidă",
       });
     }
+    if (
+      data.titleTemplate != null &&
+      data.titleTemplate !== "" &&
+      normalizeSeoTitleTemplate(data.titleTemplate) === null
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["titleTemplate"],
+        message: "Template titlu invalid (max 80, trebuie să conțină %s)",
+      });
+    }
+    if (
+      data.ogImagePath != null &&
+      data.ogImagePath !== "" &&
+      !normalizeBrandAssetPath(data.ogImagePath)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["ogImagePath"],
+        message: "Referință imagine OG invalidă",
+      });
+    }
+    if (
+      data.twitterHandle != null &&
+      data.twitterHandle !== "" &&
+      normalizeTwitterHandle(data.twitterHandle) === null
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["twitterHandle"],
+        message: "Handle Twitter/X invalid",
+      });
+    }
   })
   .transform((data) => ({
     seoTitleDefault: sanitizeOptionalSeoField(data.seoTitleDefault, 70) ?? null,
@@ -1678,6 +1952,12 @@ export const upsertTenantSeoSettingsInputSchema = z
         ? null
         : normalizeBrandAssetPath(data.faviconPath),
     indexingEnabled: data.indexingEnabled,
+    titleTemplate: normalizeSeoTitleTemplate(data.titleTemplate),
+    ogImagePath:
+      data.ogImagePath == null || data.ogImagePath === ""
+        ? null
+        : normalizeBrandAssetPath(data.ogImagePath),
+    twitterHandle: normalizeTwitterHandle(data.twitterHandle),
   }));
 export type UpsertTenantSeoSettingsInput = z.infer<typeof upsertTenantSeoSettingsInputSchema>;
 
@@ -1688,6 +1968,18 @@ export type PublicTenantPageView = {
   pageKind: TenantPageKind;
   seoTitle?: string;
   seoDescription?: string;
+  h1?: string;
+  intro?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  ogImagePath?: string;
+  /** Relative canonical path resolved for this page (self or valid override). */
+  canonicalPath: string;
+  noindex: boolean;
+  includeInSitemap: boolean;
+  faq: Array<{ question: string; answer: string }>;
+  catalogFilters: LandingCatalogFilters;
+  internalLinks: Array<{ label: string; path: string }>;
 };
 
 export type PublicSeoSettingsView = {
@@ -1695,6 +1987,9 @@ export type PublicSeoSettingsView = {
   seoDescriptionDefault?: string;
   faviconPath?: string;
   indexingEnabled: boolean;
+  titleTemplate?: string;
+  ogImagePath?: string;
+  twitterHandle?: string;
 };
 
 export type TenantPageListItem = {
@@ -1704,6 +1999,311 @@ export type TenantPageListItem = {
   title: string;
   status: TenantPageStatus;
   pageKind: TenantPageKind;
+  noindex: boolean;
+  includeInSitemap: boolean;
   updatedAt: string;
   publishedAt?: string;
 };
+
+/* ─── Phase 3 — Marketing integrations (IDs only; no public whitelist) ──── */
+
+function emptyToNull(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  const trimmed = raw.trim();
+  return trimmed ? trimmed : null;
+}
+
+/** Reject HTML/script and control characters in verification tokens. */
+export function sanitizeMarketingVerificationToken(
+  raw: string | null | undefined,
+  max = 200,
+): string | null {
+  if (raw == null) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed.length > max) return null;
+  if (/[\u0000-\u001F\u007F]/.test(trimmed)) return null;
+  if (/[<>]/.test(trimmed) || /javascript\s*:/i.test(trimmed)) return null;
+  return trimmed;
+}
+
+export function normalizeGtmContainerId(raw: string | null | undefined): string | null {
+  const v = emptyToNull(raw);
+  if (!v) return null;
+  const upper = v.toUpperCase();
+  if (!/^GTM-[A-Z0-9]{1,20}$/.test(upper)) return null;
+  return upper;
+}
+
+export function normalizeGa4MeasurementId(raw: string | null | undefined): string | null {
+  const v = emptyToNull(raw);
+  if (!v) return null;
+  const upper = v.toUpperCase();
+  if (!/^G-[A-Z0-9]{4,20}$/.test(upper)) return null;
+  return upper;
+}
+
+/** Accepts `AW-123456789` or bare digits (normalized to AW-…). */
+export function normalizeGoogleAdsConversionId(raw: string | null | undefined): string | null {
+  const v = emptyToNull(raw);
+  if (!v) return null;
+  const upper = v.toUpperCase().replace(/\s+/g, "");
+  if (/^AW-\d{5,15}$/.test(upper)) return upper;
+  if (/^\d{5,15}$/.test(upper)) return `AW-${upper}`;
+  return null;
+}
+
+export function normalizeGoogleAdsConversionLabel(raw: string | null | undefined): string | null {
+  const v = emptyToNull(raw);
+  if (!v) return null;
+  if (v.length > 64) return null;
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(v)) return null;
+  return v;
+}
+
+export function normalizeMetaPixelId(raw: string | null | undefined): string | null {
+  const v = emptyToNull(raw);
+  if (!v) return null;
+  if (!/^\d{5,20}$/.test(v)) return null;
+  return v;
+}
+
+/** TikTok Pixel IDs vary; allow alphanumeric with light separators, length-bounded. */
+export function normalizeTiktokPixelId(raw: string | null | undefined): string | null {
+  const v = emptyToNull(raw);
+  if (!v) return null;
+  if (v.length < 5 || v.length > 64) return null;
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(v)) return null;
+  return v;
+}
+
+export function normalizeLinkedinPartnerId(raw: string | null | undefined): string | null {
+  const v = emptyToNull(raw);
+  if (!v) return null;
+  if (!/^\d{5,20}$/.test(v)) return null;
+  return v;
+}
+
+const optionalMarketingString = z.string().trim().max(200).optional().nullable();
+
+export const upsertTenantMarketingIntegrationsInputSchema = z
+  .object({
+    gtmContainerId: optionalMarketingString,
+    gtmEnabled: z.boolean(),
+    ga4MeasurementId: optionalMarketingString,
+    ga4Enabled: z.boolean(),
+    googleAdsConversionId: optionalMarketingString,
+    googleAdsConversionLabel: optionalMarketingString,
+    googleAdsEnabled: z.boolean(),
+    metaPixelId: optionalMarketingString,
+    metaPixelEnabled: z.boolean(),
+    tiktokPixelId: optionalMarketingString,
+    tiktokPixelEnabled: z.boolean(),
+    linkedinPartnerId: optionalMarketingString,
+    linkedinEnabled: z.boolean(),
+    googleSearchConsoleVerification: optionalMarketingString,
+    bingWebmasterVerification: optionalMarketingString,
+    metaDomainVerification: optionalMarketingString,
+    pinterestVerification: optionalMarketingString,
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    const checks: Array<{
+      key: keyof typeof data;
+      value: string | null | undefined;
+      ok: boolean;
+      message: string;
+    }> = [
+      {
+        key: "gtmContainerId",
+        value: data.gtmContainerId,
+        ok:
+          !data.gtmContainerId?.trim() ||
+          normalizeGtmContainerId(data.gtmContainerId) !== null,
+        message: "GTM invalid (ex. GTM-XXXXXXX)",
+      },
+      {
+        key: "ga4MeasurementId",
+        value: data.ga4MeasurementId,
+        ok:
+          !data.ga4MeasurementId?.trim() ||
+          normalizeGa4MeasurementId(data.ga4MeasurementId) !== null,
+        message: "GA4 invalid (ex. G-XXXXXXXX)",
+      },
+      {
+        key: "googleAdsConversionId",
+        value: data.googleAdsConversionId,
+        ok:
+          !data.googleAdsConversionId?.trim() ||
+          normalizeGoogleAdsConversionId(data.googleAdsConversionId) !== null,
+        message: "Google Ads ID invalid (ex. AW-123456789)",
+      },
+      {
+        key: "googleAdsConversionLabel",
+        value: data.googleAdsConversionLabel,
+        ok:
+          !data.googleAdsConversionLabel?.trim() ||
+          normalizeGoogleAdsConversionLabel(data.googleAdsConversionLabel) !== null,
+        message: "Google Ads label invalid",
+      },
+      {
+        key: "metaPixelId",
+        value: data.metaPixelId,
+        ok: !data.metaPixelId?.trim() || normalizeMetaPixelId(data.metaPixelId) !== null,
+        message: "Meta Pixel ID invalid (doar cifre)",
+      },
+      {
+        key: "tiktokPixelId",
+        value: data.tiktokPixelId,
+        ok:
+          !data.tiktokPixelId?.trim() || normalizeTiktokPixelId(data.tiktokPixelId) !== null,
+        message: "TikTok Pixel ID invalid",
+      },
+      {
+        key: "linkedinPartnerId",
+        value: data.linkedinPartnerId,
+        ok:
+          !data.linkedinPartnerId?.trim() ||
+          normalizeLinkedinPartnerId(data.linkedinPartnerId) !== null,
+        message: "LinkedIn Partner ID invalid (doar cifre)",
+      },
+    ];
+
+    for (const check of checks) {
+      if (!check.ok) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [check.key],
+          message: check.message,
+        });
+      }
+    }
+
+    const verificationFields = [
+      "googleSearchConsoleVerification",
+      "bingWebmasterVerification",
+      "metaDomainVerification",
+      "pinterestVerification",
+    ] as const;
+    for (const key of verificationFields) {
+      const raw = data[key];
+      if (raw != null && raw.trim() !== "" && sanitizeMarketingVerificationToken(raw) === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: "Token de verificare invalid",
+        });
+      }
+    }
+
+    if (
+      data.googleAdsConversionLabel?.trim() &&
+      !data.googleAdsConversionId?.trim()
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["googleAdsConversionLabel"],
+        message: "Label-ul Ads necesită Conversion ID",
+      });
+    }
+  })
+  .transform((data) => ({
+    gtmContainerId: normalizeGtmContainerId(data.gtmContainerId),
+    gtmEnabled: data.gtmEnabled,
+    ga4MeasurementId: normalizeGa4MeasurementId(data.ga4MeasurementId),
+    ga4Enabled: data.ga4Enabled,
+    googleAdsConversionId: normalizeGoogleAdsConversionId(data.googleAdsConversionId),
+    googleAdsConversionLabel: normalizeGoogleAdsConversionLabel(data.googleAdsConversionLabel),
+    googleAdsEnabled: data.googleAdsEnabled,
+    metaPixelId: normalizeMetaPixelId(data.metaPixelId),
+    metaPixelEnabled: data.metaPixelEnabled,
+    tiktokPixelId: normalizeTiktokPixelId(data.tiktokPixelId),
+    tiktokPixelEnabled: data.tiktokPixelEnabled,
+    linkedinPartnerId: normalizeLinkedinPartnerId(data.linkedinPartnerId),
+    linkedinEnabled: data.linkedinEnabled,
+    googleSearchConsoleVerification: sanitizeMarketingVerificationToken(
+      data.googleSearchConsoleVerification,
+    ),
+    bingWebmasterVerification: sanitizeMarketingVerificationToken(
+      data.bingWebmasterVerification,
+    ),
+    metaDomainVerification: sanitizeMarketingVerificationToken(data.metaDomainVerification),
+    pinterestVerification: sanitizeMarketingVerificationToken(data.pinterestVerification),
+  }));
+export type UpsertTenantMarketingIntegrationsInput = z.infer<
+  typeof upsertTenantMarketingIntegrationsInputSchema
+>;
+
+export type MarketingIntegrationStatus = "not_configured" | "configured" | "disabled";
+
+export function marketingIntegrationStatus(
+  id: string | null | undefined,
+  enabled: boolean,
+): MarketingIntegrationStatus {
+  if (!id) return "not_configured";
+  return enabled ? "configured" : "disabled";
+}
+
+/* ─── Phase 4 — Consent + public marketing runtime (whitelist view) ─────── */
+
+export const consentCategorySchema = z.enum([
+  "necessary",
+  "preferences",
+  "analytics",
+  "marketing",
+]);
+export type ConsentCategory = z.infer<typeof consentCategorySchema>;
+
+/** Persisted consent choice — necessary is always implied true. */
+export type ConsentState = {
+  version: 1;
+  preferences: boolean;
+  analytics: boolean;
+  marketing: boolean;
+  /** Unix ms when choice was recorded. */
+  updatedAt: number;
+};
+
+export type PublicMarketingVerificationView = {
+  google?: string;
+  bing?: string;
+  metaDomain?: string;
+  pinterest?: string;
+};
+
+/**
+ * Safe public projection for storefront runtime.
+ * Only enabled IDs; never full DB row; no write paths.
+ */
+export type PublicMarketingRuntimeView = {
+  gtmContainerId?: string;
+  ga4MeasurementId?: string;
+  googleAdsConversionId?: string;
+  googleAdsConversionLabel?: string;
+  metaPixelId?: string;
+  tiktokPixelId?: string;
+  linkedinPartnerId?: string;
+  verification: PublicMarketingVerificationView;
+  /**
+   * When true, client loads GTM only (recommended path).
+   * Native GA4/pixels are skipped to avoid double-firing.
+   */
+  preferGtm: boolean;
+};
+
+export function hasAnyPublicMarketingRuntime(
+  view: PublicMarketingRuntimeView,
+): boolean {
+  return Boolean(
+    view.gtmContainerId ||
+      view.ga4MeasurementId ||
+      view.googleAdsConversionId ||
+      view.metaPixelId ||
+      view.tiktokPixelId ||
+      view.linkedinPartnerId ||
+      view.verification.google ||
+      view.verification.bing ||
+      view.verification.metaDomain ||
+      view.verification.pinterest,
+  );
+}

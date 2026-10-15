@@ -10,6 +10,9 @@ type SeoRow = {
   seo_description_default: string | null;
   favicon_path: string | null;
   indexing_enabled: boolean;
+  title_template: string | null;
+  og_image_path: string | null;
+  twitter_handle: string | null;
 };
 
 /**
@@ -36,6 +39,9 @@ export const loadPublicSeoSettings = cache(
           : {}),
         ...(row.favicon_path ? { faviconPath: row.favicon_path } : {}),
         indexingEnabled: row.indexing_enabled !== false,
+        ...(row.title_template ? { titleTemplate: row.title_template } : {}),
+        ...(row.og_image_path ? { ogImagePath: row.og_image_path } : {}),
+        ...(row.twitter_handle ? { twitterHandle: row.twitter_handle } : {}),
       };
     });
   },

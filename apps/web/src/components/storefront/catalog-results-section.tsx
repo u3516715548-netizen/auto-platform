@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { CatalogQuery } from "@/lib/storefront/catalog-query";
+import { countActiveCatalogFilters } from "@/lib/storefront/catalog-chips";
 import type { PublicVehicleCatalogDto } from "@/lib/storefront/public-vehicles";
 import {
   DEFAULT_CATALOG_VIEW_MODE,
@@ -12,6 +13,7 @@ import {
 import { CatalogSortMenu } from "@/components/storefront/catalog-sort-menu";
 import { CatalogViewToggle } from "@/components/storefront/catalog-view-toggle";
 import { PublicVehicleList } from "@/components/storefront/public-vehicle-list";
+import { emitMarketingEvent } from "@/lib/marketing/emit-marketing-event";
 
 type CatalogResultsSectionProps = {
   tenantSlug: string;
@@ -50,6 +52,44 @@ export function CatalogResultsSection({
     }
     setHydrated(true);
   }, [tenantSlug]);
+
+  useEffect(() => {
+    const filterCount = countActiveCatalogFilters(query);
+    const listKey = [
+      query.q ?? "",
+      query.page,
+      query.sort,
+      query.make.join(","),
+      String(filterCount),
+      String(vehicles.length),
+    ].join("|");
+
+    emitMarketingEvent(
+      "view_item_list",
+      {
+        page_type: "catalog",
+        list_id: "catalog",
+        list_name: "catalog",
+        items_count: vehicles.length,
+        filter_count: filterCount,
+        ...(query.q ? { search_term: query.q } : {}),
+      },
+      { dedupeKey: `view_item_list:${tenantSlug}:${listKey}` },
+    );
+
+    if (query.q?.trim()) {
+      emitMarketingEvent(
+        "search",
+        {
+          page_type: "catalog",
+          search_term: query.q.trim(),
+          filter_count: filterCount,
+          items_count: vehicles.length,
+        },
+        { dedupeKey: `search:${tenantSlug}:${query.q.trim()}:${filterCount}` },
+      );
+    }
+  }, [tenantSlug, query, vehicles.length]);
 
   function setMode(next: CatalogViewMode) {
     userPickedRef.current = true;

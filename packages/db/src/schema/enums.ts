@@ -26,13 +26,14 @@ export const companyEntityTypeEnum = pgEnum("company_entity_type", [
   "other",
 ]);
 
-/** Etapa 23A — CMS page lifecycle. */
+/** Etapa 23A + Phase 6 — CMS page lifecycle. */
 export const tenantPageStatusEnum = pgEnum("tenant_page_status", [
   "draft",
   "published",
+  "archived",
 ]);
 
-/** Etapa 23A — CMS page kinds (legal + custom). */
+/** Etapa 23A + Phase 6 — CMS page kinds (legal + SEO landings + custom). */
 export const tenantPageKindEnum = pgEnum("tenant_page_kind", [
   "custom",
   "about",
@@ -40,6 +41,14 @@ export const tenantPageKindEnum = pgEnum("tenant_page_kind", [
   "terms",
   "privacy",
   "cookies",
+  "local_inventory",
+  "brand_inventory",
+  "body_type_inventory",
+  "fuel_inventory",
+  "financing",
+  "buyback",
+  "warranty",
+  "service",
 ]);
 
 

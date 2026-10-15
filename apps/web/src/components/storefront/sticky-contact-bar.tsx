@@ -5,6 +5,7 @@ import type { StickyContactAction } from "@/lib/storefront/sticky-contact-action
 import { resolveLeadFormFocusTarget } from "@/lib/storefront/lead-form-ui";
 import { STOREFRONT_CONTACT_ANCHOR_ID } from "@/lib/storefront/storefront-contact-links";
 import { IconPhone, IconWhatsApp } from "@/components/storefront/icons";
+import { emitContactClickFromHref, emitMarketingEvent } from "@/lib/marketing/emit-marketing-event";
 
 type StickyContactBarProps = {
   actions: StickyContactAction[];
@@ -16,6 +17,10 @@ function prefersReducedMotion(): boolean {
 }
 
 function scrollToContact(event: MouseEvent<HTMLAnchorElement>) {
+  emitMarketingEvent("contact_start", {
+    contact_method: "message",
+    source_context: "sticky_bar",
+  });
   const target = document.getElementById(STOREFRONT_CONTACT_ANCHOR_ID);
   if (!target) return;
   event.preventDefault();
@@ -86,6 +91,7 @@ export function StickyContactBar({ actions }: StickyContactBarProps) {
                     backgroundColor: isWhatsApp ? "var(--sf-success)" : "var(--sf-accent)",
                   }}
                   aria-label={action.label}
+                  onClick={() => emitContactClickFromHref(action.href, "sticky_bar")}
                   {...(action.external
                     ? { target: "_blank", rel: "noopener noreferrer" }
                     : {})}

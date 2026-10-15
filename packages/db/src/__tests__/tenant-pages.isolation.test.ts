@@ -77,6 +77,7 @@ describe.skipIf(!canRunOnline)(
 
     it("owner ACME CRUD pages; draft hidden from anon; published visible", async () => {
       const pageId = randomUUID();
+      const slug = `p6-${pageId.slice(0, 8)}`;
 
       await withRlsRole(
         db,
@@ -85,11 +86,11 @@ describe.skipIf(!canRunOnline)(
           await tx.insert(tenantPages).values({
             id: pageId,
             tenantId: acmeId,
-            slug: "despre",
-            title: "Despre ACME",
+            slug,
+            title: "Pagina test ACME",
             body: "Text despre",
             status: "draft",
-            pageKind: "about",
+            pageKind: "custom",
             locale: "ro",
           });
 
@@ -115,7 +116,7 @@ describe.skipIf(!canRunOnline)(
           const published = await tx
             .select({ slug: tenantPages.slug, status: tenantPages.status })
             .from(tenantPages)
-            .where(and(eq(tenantPages.tenantId, acmeId), eq(tenantPages.slug, "despre")));
+            .where(and(eq(tenantPages.tenantId, acmeId), eq(tenantPages.slug, slug)));
           expect(published.some((r) => r.status === "published")).toBe(true);
         },
         {
@@ -126,11 +127,11 @@ describe.skipIf(!canRunOnline)(
               .values({
                 id: pageId,
                 tenantId: acmeId,
-                slug: "despre",
-                title: "Despre ACME",
+                slug,
+                title: "Pagina test ACME",
                 body: "Text",
                 status: "published",
-                pageKind: "about",
+                pageKind: "custom",
                 locale: "ro",
                 publishedAt: new Date(),
               })

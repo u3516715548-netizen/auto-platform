@@ -11,6 +11,7 @@ import {
   type CreateFinanceApplicationState,
 } from "@/lib/storefront/create-finance-application";
 import { FeedbackBanner } from "@/components/ui/feedback-banner";
+import { emitMarketingEvent } from "@/lib/marketing/emit-marketing-event";
 
 type VehicleFinancePanelProps = {
   vehicleSlug: string;
@@ -157,7 +158,14 @@ export function VehicleFinancePanel({
 
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setOpen(true);
+            emitMarketingEvent("finance_start", {
+              vehicle_slug: vehicleSlug,
+              ...(price > 0 ? { price, currency: "EUR" as const } : {}),
+              source_context: "finance_panel",
+            });
+          }}
           className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-full text-sm font-bold text-white"
           style={{ backgroundColor: "var(--sf-accent)" }}
         >
@@ -204,11 +212,30 @@ function FinanceApplyDialog({
   const statusRef = useRef<HTMLDivElement>(null);
   const consentId = useId();
 
+  const financeTrackedRef = useRef(false);
+
   useEffect(() => {
     if (state?.success || state?.error) {
       statusRef.current?.focus({ preventScroll: true });
     }
   }, [state?.success, state?.error]);
+
+  useEffect(() => {
+    if (!state?.success || financeTrackedRef.current) return;
+    financeTrackedRef.current = true;
+    const shared = {
+      vehicle_slug: vehicleSlug,
+      lead_type: "finance" as const,
+      ...(amount > 0 ? { price: amount, currency: "EUR" as const } : {}),
+      source_context: "finance_form",
+    };
+    emitMarketingEvent("finance_submit", shared, {
+      dedupeKey: `finance_submit:${vehicleSlug}`,
+    });
+    emitMarketingEvent("generate_lead", shared, {
+      dedupeKey: `generate_lead:finance:${vehicleSlug}`,
+    });
+  }, [state?.success, vehicleSlug, amount]);
 
   const showSuccess = Boolean(state?.success);
   const informativeOnly = !leadsEnabled;

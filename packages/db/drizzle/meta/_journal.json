@@ -113,6 +113,34 @@
       "when": 1791749000000,
       "tag": "0015_billing_activate_revoke_authenticated",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791900000000,
+      "tag": "0016_seo_core_og_templates",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791910000000,
+      "tag": "0017_tenant_marketing_integrations",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791920000000,
+      "tag": "0018_public_marketing_integrations",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791930000000,
+      "tag": "0019_tenant_pages_seo_landing",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   COMPARE_MAX,
+  parsePriceEurNumber,
   type StorefrontVehicleLite,
 } from "@/lib/storefront/storefront-vehicle-lite";
 import {
@@ -21,6 +22,20 @@ import {
   removeBySlug,
   upsertBySlug,
 } from "@/lib/storefront/storefront-lists-storage";
+import { emitMarketingEvent } from "@/lib/marketing/emit-marketing-event";
+
+function vehicleTrackingParams(vehicle: StorefrontVehicleLite) {
+  const price = parsePriceEurNumber(vehicle.price);
+  return {
+    vehicle_slug: vehicle.slug,
+    make: vehicle.make,
+    model: vehicle.model,
+    year: vehicle.year,
+    ...(vehicle.fuel ? { fuel_type: vehicle.fuel } : {}),
+    ...(vehicle.transmission ? { transmission: vehicle.transmission } : {}),
+    ...(price > 0 ? { price, currency: "EUR" as const } : {}),
+  };
+}
 
 type StorefrontListsContextValue = {
   tenantSlug: string;
@@ -76,11 +91,20 @@ export function StorefrontListsProvider({
   );
 
   const toggleSaved = useCallback((vehicle: StorefrontVehicleLite) => {
-    setSaved((prev) =>
-      prev.some((v) => v.slug === vehicle.slug)
-        ? removeBySlug(prev, vehicle.slug)
-        : upsertBySlug(prev, vehicle),
-    );
+    let didAdd = false;
+    setSaved((prev) => {
+      if (prev.some((v) => v.slug === vehicle.slug)) {
+        return removeBySlug(prev, vehicle.slug);
+      }
+      didAdd = true;
+      return upsertBySlug(prev, vehicle);
+    });
+    if (didAdd) {
+      emitMarketingEvent("saved_vehicle", {
+        ...vehicleTrackingParams(vehicle),
+        source_context: "salvate",
+      });
+    }
   }, []);
 
   const removeSaved = useCallback((slug: string) => {
@@ -89,6 +113,7 @@ export function StorefrontListsProvider({
 
   const toggleCompare = useCallback((vehicle: StorefrontVehicleLite) => {
     let result: { ok: boolean; message?: string } = { ok: true };
+    let didAdd = false;
     setCompare((prev) => {
       if (prev.some((v) => v.slug === vehicle.slug)) {
         return removeBySlug(prev, vehicle.slug);
@@ -100,8 +125,15 @@ export function StorefrontListsProvider({
         };
         return prev;
       }
+      didAdd = true;
       return upsertBySlug(prev, vehicle, COMPARE_MAX);
     });
+    if (didAdd && result.ok) {
+      emitMarketingEvent("compare_add", {
+        ...vehicleTrackingParams(vehicle),
+        source_context: "compare",
+      });
+    }
     return result;
   }, []);
 

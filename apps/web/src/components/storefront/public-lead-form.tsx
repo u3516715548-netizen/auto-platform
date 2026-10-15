@@ -11,6 +11,7 @@ import {
   LEAD_FORM_COPY,
   LEAD_FORM_HEADING_ID,
 } from "@/lib/storefront/lead-form-ui";
+import { emitMarketingEvent } from "@/lib/marketing/emit-marketing-event";
 
 const initialState: CreatePublicLeadState = { error: null, success: false };
 
@@ -39,11 +40,27 @@ export function PublicLeadForm({
   const consentId = useId();
   const statusRef = useRef<HTMLDivElement>(null);
 
+  const leadTrackedRef = useRef(false);
+
   useEffect(() => {
     if (state?.success || state?.error) {
       statusRef.current?.focus({ preventScroll: true });
     }
   }, [state?.success, state?.error]);
+
+  useEffect(() => {
+    if (!state?.success || leadTrackedRef.current) return;
+    leadTrackedRef.current = true;
+    emitMarketingEvent(
+      "generate_lead",
+      {
+        lead_type: "contact",
+        vehicle_slug: vehicleSlug,
+        source_context: "public_lead_form",
+      },
+      { dedupeKey: `generate_lead:contact:${vehicleSlug}` },
+    );
+  }, [state?.success, vehicleSlug]);
 
   if (disabled) {
     return (

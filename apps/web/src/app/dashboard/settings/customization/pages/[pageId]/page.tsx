@@ -30,6 +30,17 @@ export default async function DashboardCmsPageEditPage({ params }: PageProps) {
         status={page.status}
         seoTitle={page.seoTitle}
         seoDescription={page.seoDescription}
+        h1={page.h1}
+        intro={page.intro}
+        ctaLabel={page.ctaLabel}
+        ctaHref={page.ctaHref}
+        ogImagePath={page.ogImagePath}
+        canonicalPath={page.canonicalPath}
+        noindex={page.noindex}
+        includeInSitemap={page.includeInSitemap}
+        faq={page.faq}
+        catalogFilters={page.catalogFilters}
+        internalLinks={page.internalLinks}
       />
     </div>
   );

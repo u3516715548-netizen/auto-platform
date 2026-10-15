@@ -16,6 +16,7 @@ export type PerfSpanName =
   | "signedUrls"
   | "company.profile"
   | "seo.settings"
+  | "marketing.public"
   | "ssr.route";
 
 type PerfMetaValue = string | number | boolean | undefined;

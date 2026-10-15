@@ -17,13 +17,23 @@ import {
 } from "@/lib/storefront/public-dto";
 import { parseVehicleSlugParam } from "@/lib/storefront/parse-public-lead";
 import { publicCatalogPath } from "@/lib/storefront/paths";
+import { buildPublicVehiclePageMetadata } from "@/lib/seo/build-page-metadata";
+import {
+  buildBreadcrumbJsonLd,
+  buildOrganizationJsonLd,
+  buildVehicleProductJsonLd,
+  buildWebSiteJsonLd,
+} from "@/lib/seo/build-json-ld";
 import { loadPublicSeoSettings } from "@/lib/seo/load-public-seo-settings";
+import { getPublicRequestOrigin } from "@/lib/seo/public-origin";
 import { STOREFRONT_CONTACT_ANCHOR_ID } from "@/lib/storefront/storefront-contact-links";
+import { JsonLd } from "@/components/seo/json-ld";
 import { PublicStorefrontShell } from "@/components/storefront/public-shell";
 import { PublicLeadForm } from "@/components/storefront/public-lead-form";
 import { PublicVehicleDetail } from "@/components/storefront/public-vehicle-detail";
 import { VehicleAlternativesCarousel } from "@/components/storefront/vehicle-alternatives-carousel";
 import { VehicleSaveHeaderButton } from "@/components/storefront/vehicle-list-actions";
+import { StorefrontViewItemTracker } from "@/components/marketing/storefront-view-item-tracker";
 import { IconChevronLeft } from "@/components/storefront/icons";
 import { toStorefrontVehicleLite } from "@/lib/storefront/storefront-vehicle-lite";
 import { withPerfRoute } from "@/lib/perf/server-timing";
@@ -47,23 +57,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (resolved.kind !== "ok" || !slug) {
     return { title: "Vehicul" };
   }
-  const [vehicle, seo] = await Promise.all([
+  const [vehicle, seo, origin] = await Promise.all([
     getPublicVehicleBySlug(resolved.tenant.tenantId, slug),
     loadPublicSeoSettings(resolved.tenant.tenantId),
+    getPublicRequestOrigin(),
   ]);
   if (!vehicle) {
-    return { title: "Vehicul indisponibil" };
+    return { title: "Vehicul indisponibil", robots: { index: false, follow: true } };
   }
-  return {
+  return buildPublicVehiclePageMetadata({
     title: buildPublicVehicleDetailTitle(vehicle, resolved.tenant.name),
     description: buildPublicVehicleDetailDescription(vehicle),
-    alternates: { canonical: `/vehicles/${slug}` },
-    robots:
-      seo.indexingEnabled === false
-        ? { index: false, follow: true }
-        : { index: true, follow: true },
-    ...(seo.faviconPath ? { icons: { icon: seo.faviconPath } } : {}),
-  };
+    slug,
+    seo,
+    origin,
+  });
 }
 
 export default async function PublicVehicleDetailPage({ params }: PageProps) {
@@ -80,9 +88,11 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
   }
 
   // Detail + tenant shell are independent; alternatives need the resolved slug/vehicle.
-  const [vehicle, tenantView] = await Promise.all([
+  const [vehicle, tenantView, origin, seo] = await Promise.all([
     getPublicVehicleDetailBySlug(resolved.tenant.tenantId, slug),
     toPublicTenantViewForRequest(resolved.tenant),
+    getPublicRequestOrigin(),
+    loadPublicSeoSettings(resolved.tenant.tenantId),
   ]);
   if (!vehicle) {
     notFound();
@@ -90,6 +100,33 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
 
   const accent = tenantView.primaryColor;
   const cover = vehicle.images.find((img) => img.url) ?? vehicle.images[0] ?? null;
+  const vehicleName = `${vehicle.make} ${vehicle.model} ${vehicle.year}`;
+  const productLd = buildVehicleProductJsonLd({
+    name: vehicleName,
+    description: buildPublicVehicleDetailDescription(vehicle),
+    path: `/vehicles/${slug}`,
+    origin,
+    price: vehicle.price,
+    currency: vehicle.currency,
+    imageUrl: cover?.url,
+  });
+  const jsonLd = [
+    buildOrganizationJsonLd({
+      dealerName: resolved.tenant.name,
+      origin,
+      company: tenantView.company,
+      seo,
+    }),
+    buildWebSiteJsonLd({ dealerName: resolved.tenant.name, origin }),
+    buildBreadcrumbJsonLd(
+      [
+        { name: "Stoc", path: "/" },
+        { name: vehicleName, path: `/vehicles/${slug}` },
+      ],
+      origin,
+    ),
+    ...(productLd ? [productLd] : []),
+  ];
   const lite = toStorefrontVehicleLite({
     ...vehicle,
     coverImage: cover ? { url: cover.url, altText: cover.altText } : null,
@@ -101,11 +138,14 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
   );
 
   return (
+    <>
+      <JsonLd data={jsonLd} />
     <PublicStorefrontShell
       tenant={tenantView}
       stickySurface="detail"
       mainClassName="pb-28 md:pb-8"
     >
+      <StorefrontViewItemTracker vehicle={vehicle} />
       <div className="sf-glow-ambient mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-6 sm:gap-8">
         <div className="flex items-center justify-between gap-3">
           <Link
@@ -149,6 +189,7 @@ export default async function PublicVehicleDetailPage({ params }: PageProps) {
         </div>
       ) : null}
     </PublicStorefrontShell>
+    </>
   );
   });
 }

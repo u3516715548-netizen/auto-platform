@@ -33,7 +33,8 @@ export default async function DashboardSettingsPreferencesPage() {
       <section className="flex flex-col gap-3">
         <h3 className="text-lg font-semibold text-zinc-900">SEO de bază</h3>
         <FeedbackBanner variant="info">
-          Sitemap, robots, JSON-LD, Open Graph și marketing pixels rămân pentru etapele 23B/23C.
+          robots.txt, sitemap.xml, Open Graph și JSON-LD sunt active pe storefront. Tracking /
+          consent / Marketing Center urmează în fazele următoare.
         </FeedbackBanner>
         <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5">
           <SeoSettingsForm settings={seo} />

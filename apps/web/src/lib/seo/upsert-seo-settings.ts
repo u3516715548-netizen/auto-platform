@@ -48,6 +48,9 @@ export async function upsertSeoSettingsAction(
     seoDescriptionDefault: String(formData.get("seoDescriptionDefault") ?? ""),
     faviconPath: String(formData.get("faviconPath") ?? ""),
     indexingEnabled: indexingRaw === "on" || indexingRaw === "true" || indexingRaw === "1",
+    titleTemplate: String(formData.get("titleTemplate") ?? ""),
+    ogImagePath: String(formData.get("ogImagePath") ?? ""),
+    twitterHandle: String(formData.get("twitterHandle") ?? ""),
   });
   if (!parsed.success) {
     return {
@@ -72,8 +75,21 @@ export async function upsertSeoSettingsAction(
         seoDescriptionDefault: input.seoDescriptionDefault,
         faviconPath: input.faviconPath,
         indexingEnabled: input.indexingEnabled,
+        titleTemplate: input.titleTemplate,
+        ogImagePath: input.ogImagePath,
+        twitterHandle: input.twitterHandle,
         updatedAt: now,
       };
+
+      const changedKeys = [
+        "seoTitleDefault",
+        "seoDescriptionDefault",
+        "faviconPath",
+        "indexingEnabled",
+        "titleTemplate",
+        "ogImagePath",
+        "twitterHandle",
+      ];
 
       if (!existing) {
         await db.insert(tenantSeoSettings).values({
@@ -88,7 +104,7 @@ export async function upsertSeoSettingsAction(
           entityType: "tenant_seo_settings",
           entityId: tenantId,
           metadata: {
-            changedKeys: ["seoTitleDefault", "seoDescriptionDefault", "faviconPath", "indexingEnabled"],
+            changedKeys,
             indexingEnabled: input.indexingEnabled,
           },
         });
@@ -104,7 +120,7 @@ export async function upsertSeoSettingsAction(
           entityType: "tenant_seo_settings",
           entityId: tenantId,
           metadata: {
-            changedKeys: ["seoTitleDefault", "seoDescriptionDefault", "faviconPath", "indexingEnabled"],
+            changedKeys,
             indexingEnabled: input.indexingEnabled,
           },
         });

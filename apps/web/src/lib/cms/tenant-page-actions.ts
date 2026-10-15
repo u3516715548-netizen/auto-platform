@@ -10,11 +10,15 @@ import {
   tenantPageIdInputSchema,
   tenantPageKindSchema,
   updateTenantPageInputSchema,
+  sanitizeLandingCatalogFilters,
+  validateCmsPageForPublish,
 } from "@auto-platform/types";
 import { requireRole } from "@/lib/auth/require-role";
 import { SETTINGS_OWNER_ROLES } from "@/lib/dashboard/settings-nav";
 import { revalidatePublicStorefrontPaths } from "@/lib/perf/public-storefront-cache";
 import { rejectTenantIdFromForm } from "@/lib/vehicles/parse-update-form";
+import { countInventoryVehiclesForFilters } from "@/lib/cms/count-inventory-for-filters";
+import { parseCmsPageFormFields } from "@/lib/cms/parse-cms-page-form";
 
 export type TenantPageActionState = {
   error: string | null;
@@ -23,10 +27,6 @@ export type TenantPageActionState = {
 
 const NEUTRAL_ERROR = "Pagina nu a putut fi salvată. Încearcă din nou.";
 const NEUTRAL_DENIED = "Rolul tău nu permite administrarea paginilor.";
-
-function formString(formData: FormData, key: string): string {
-  return String(formData.get(key) ?? "");
-}
 
 async function requireOwner() {
   try {
@@ -48,6 +48,34 @@ function revalidateCms(tenantId: string, slug?: string) {
   revalidatePublicStorefrontPaths({ tenantId });
 }
 
+function extendedValues(input: {
+  h1: string | null;
+  intro: string;
+  ctaLabel: string | null;
+  ctaHref: string | null;
+  ogImagePath: string | null;
+  canonicalPath: string | null;
+  noindex: boolean;
+  includeInSitemap: boolean;
+  faq: Array<{ question: string; answer: string }>;
+  catalogFilters: Record<string, unknown>;
+  internalLinks: Array<{ label: string; path: string }>;
+}) {
+  return {
+    h1: input.h1,
+    intro: input.intro,
+    ctaLabel: input.ctaLabel,
+    ctaHref: input.ctaHref,
+    ogImagePath: input.ogImagePath,
+    canonicalPath: input.canonicalPath,
+    noindex: input.noindex,
+    includeInSitemap: input.includeInSitemap,
+    faq: input.faq,
+    catalogFilters: input.catalogFilters,
+    internalLinks: input.internalLinks,
+  };
+}
+
 export async function createTenantPageAction(
   _prev: TenantPageActionState | null,
   formData: FormData,
@@ -58,23 +86,16 @@ export async function createTenantPageAction(
   const session = await requireOwner();
   if (!session) return { error: NEUTRAL_DENIED, success: false };
 
-  const pageKindParsed = tenantPageKindSchema.safeParse(
-    formString(formData, "pageKind") || "custom",
-  );
+  const fields = parseCmsPageFormFields(formData);
+  const pageKindParsed = tenantPageKindSchema.safeParse(fields.pageKind);
   const pageKind = pageKindParsed.success ? pageKindParsed.data : "custom";
   const legalSlug = KIND_TO_LEGAL_SLUG[pageKind];
-  const slug =
-    pageKind !== "custom" && legalSlug
-      ? legalSlug
-      : formString(formData, "slug");
+  const slug = legalSlug ?? fields.slug;
 
   const parsed = createTenantPageInputSchema.safeParse({
-    title: formString(formData, "title"),
+    ...fields,
     slug,
-    body: formString(formData, "body"),
     pageKind,
-    seoTitle: formString(formData, "seoTitle"),
-    seoDescription: formString(formData, "seoDescription"),
   });
   if (!parsed.success) {
     return {
@@ -109,6 +130,8 @@ export async function createTenantPageAction(
           locale: "ro",
           seoTitle: input.seoTitle,
           seoDescription: input.seoDescription,
+          ...extendedValues(input),
+          updatedBy: profileId,
         })
         .returning({ id: tenantPages.id });
 
@@ -146,14 +169,10 @@ export async function updateTenantPageAction(
   const session = await requireOwner();
   if (!session) return { error: NEUTRAL_DENIED, success: false };
 
+  const fields = parseCmsPageFormFields(formData);
   const parsed = updateTenantPageInputSchema.safeParse({
-    pageId: formString(formData, "pageId"),
-    title: formString(formData, "title"),
-    slug: formString(formData, "slug"),
-    body: formString(formData, "body"),
-    pageKind: formString(formData, "pageKind") || "custom",
-    seoTitle: formString(formData, "seoTitle"),
-    seoDescription: formString(formData, "seoDescription"),
+    pageId: String(formData.get("pageId") ?? ""),
+    ...fields,
   });
   if (!parsed.success) {
     return {
@@ -192,6 +211,8 @@ export async function updateTenantPageAction(
           pageKind: input.pageKind,
           seoTitle: input.seoTitle,
           seoDescription: input.seoDescription,
+          ...extendedValues(input),
+          updatedBy: profileId,
           updatedAt: new Date(),
         })
         .where(and(eq(tenantPages.id, input.pageId), eq(tenantPages.tenantId, tenantId)));
@@ -205,7 +226,6 @@ export async function updateTenantPageAction(
         metadata: {
           slug: input.slug,
           pageKind: input.pageKind,
-          changedKeys: ["title", "slug", "body", "seoTitle", "seoDescription", "pageKind"],
         },
       });
     });
@@ -237,9 +257,16 @@ export async function unpublishTenantPageAction(
   return setPageStatus(formData, "draft");
 }
 
+export async function archiveTenantPageAction(
+  _prev: TenantPageActionState | null,
+  formData: FormData,
+): Promise<TenantPageActionState> {
+  return setPageStatus(formData, "archived");
+}
+
 async function setPageStatus(
   formData: FormData,
-  status: "draft" | "published",
+  status: "draft" | "published" | "archived",
 ): Promise<TenantPageActionState> {
   if (rejectTenantIdFromForm(formData)) {
     return { error: NEUTRAL_ERROR, success: false };
@@ -248,7 +275,7 @@ async function setPageStatus(
   if (!session) return { error: NEUTRAL_DENIED, success: false };
 
   const parsed = tenantPageIdInputSchema.safeParse({
-    pageId: formString(formData, "pageId"),
+    pageId: String(formData.get("pageId") ?? ""),
   });
   if (!parsed.success) {
     return { error: "Pagină invalidă.", success: false };
@@ -266,12 +293,41 @@ async function setPageStatus(
       if (!existing) throw new Error("NOT_FOUND");
       slug = existing.slug;
 
+      if (status === "published") {
+        const catalogFilters = sanitizeLandingCatalogFilters(existing.catalogFilters) ?? {};
+        const inventoryVehicleCount = await countInventoryVehiclesForFilters(
+          tenantId,
+          existing.pageKind,
+          catalogFilters,
+        );
+        const gate = validateCmsPageForPublish({
+          title: existing.title,
+          h1: existing.h1,
+          intro: existing.intro,
+          body: existing.body,
+          seoDescription: existing.seoDescription,
+          pageKind: existing.pageKind,
+          catalogFilters,
+          inventoryVehicleCount,
+          faq: Array.isArray(existing.faq)
+            ? (existing.faq as Array<{ question: string; answer: string }>)
+            : [],
+          ctaLabel: existing.ctaLabel,
+          ctaHref: existing.ctaHref,
+        });
+        if (gate) {
+          throw new Error(`PUBLISH_GATE:${gate}`);
+        }
+      }
+
       const now = new Date();
       await db
         .update(tenantPages)
         .set({
           status,
-          publishedAt: status === "published" ? (existing.publishedAt ?? now) : existing.publishedAt,
+          publishedAt:
+            status === "published" ? (existing.publishedAt ?? now) : existing.publishedAt,
+          updatedBy: profileId,
           updatedAt: now,
         })
         .where(and(eq(tenantPages.id, parsed.data.pageId), eq(tenantPages.tenantId, tenantId)));
@@ -279,13 +335,21 @@ async function setPageStatus(
       await writeAuditLog(db, {
         tenantId,
         actorProfileId: profileId,
-        action: status === "published" ? "cms.page.publish" : "cms.page.unpublish",
+        action:
+          status === "published"
+            ? "cms.page.publish"
+            : status === "archived"
+              ? "cms.page.archive"
+              : "cms.page.unpublish",
         entityType: "tenant_page",
         entityId: parsed.data.pageId,
         metadata: { slug, status },
       });
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("PUBLISH_GATE:")) {
+      return { error: error.message.slice("PUBLISH_GATE:".length), success: false };
+    }
     return { error: NEUTRAL_ERROR, success: false };
   }
 
@@ -304,7 +368,7 @@ export async function deleteTenantPageAction(
   if (!session) return { error: NEUTRAL_DENIED, success: false };
 
   const parsed = tenantPageIdInputSchema.safeParse({
-    pageId: formString(formData, "pageId"),
+    pageId: String(formData.get("pageId") ?? ""),
   });
   if (!parsed.success) {
     return { error: "Pagină invalidă.", success: false };

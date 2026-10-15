@@ -16,6 +16,7 @@ describe("settings nav", () => {
       "/dashboard/settings/team",
       "/dashboard/settings/company",
       "/dashboard/settings/customization",
+      "/dashboard/settings/marketing",
     ]);
     const customization = SETTINGS_NAV.find((i) => i.href === "/dashboard/settings/customization");
     expect(customization?.children?.map((c) => c.href)).toEqual([
@@ -23,6 +24,10 @@ describe("settings nav", () => {
       "/dashboard/settings/customization/pages",
       "/dashboard/settings/customization/preferences",
     ]);
+    const marketing = SETTINGS_NAV.find((i) => i.href === "/dashboard/settings/marketing");
+    expect(marketing?.children?.map((c) => c.href)).toContain(
+      "/dashboard/settings/marketing/health",
+    );
   });
 
   it("marks owner as the only settings administrator role", () => {
@@ -37,7 +42,7 @@ describe("settings nav", () => {
     expect(settingsNavForRole("sales").map((i) => i.href)).toEqual([
       "/dashboard/settings/general",
     ]);
-    expect(settingsNavForRole("owner")).toHaveLength(4);
+    expect(settingsNavForRole("owner").length).toBeGreaterThanOrEqual(5);
   });
 
   it("detects active leaf and customization section", () => {

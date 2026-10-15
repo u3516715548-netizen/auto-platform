@@ -1,6 +1,12 @@
 import { desc, eq } from "drizzle-orm";
 import { getDb, tenantPages, withTenantContext } from "@auto-platform/db";
-import type { TenantPageListItem, TenantPageKind, TenantPageStatus } from "@auto-platform/types";
+import type {
+  LandingCatalogFilters,
+  TenantPageKind,
+  TenantPageListItem,
+  TenantPageStatus,
+} from "@auto-platform/types";
+import { sanitizeLandingCatalogFilters } from "@auto-platform/types";
 import type { MembershipSession } from "@/lib/auth/require-membership";
 
 export async function listTenantPagesForSettings(
@@ -20,6 +26,8 @@ export async function listTenantPagesForSettings(
           title: tenantPages.title,
           status: tenantPages.status,
           pageKind: tenantPages.pageKind,
+          noindex: tenantPages.noindex,
+          includeInSitemap: tenantPages.includeInSitemap,
           updatedAt: tenantPages.updatedAt,
           publishedAt: tenantPages.publishedAt,
         })
@@ -34,15 +42,14 @@ export async function listTenantPagesForSettings(
     title: row.title,
     status: row.status as TenantPageStatus,
     pageKind: row.pageKind as TenantPageKind,
+    noindex: row.noindex === true,
+    includeInSitemap: row.includeInSitemap !== false,
     updatedAt: row.updatedAt.toISOString(),
     ...(row.publishedAt ? { publishedAt: row.publishedAt.toISOString() } : {}),
   }));
 }
 
-export async function getTenantPageForSettings(
-  session: MembershipSession,
-  pageId: string,
-): Promise<{
+export type TenantPageSettingsDetail = {
   pageId: string;
   slug: string;
   title: string;
@@ -51,7 +58,23 @@ export async function getTenantPageForSettings(
   pageKind: TenantPageKind;
   seoTitle: string | null;
   seoDescription: string | null;
-} | null> {
+  h1: string | null;
+  intro: string;
+  ctaLabel: string | null;
+  ctaHref: string | null;
+  ogImagePath: string | null;
+  canonicalPath: string | null;
+  noindex: boolean;
+  includeInSitemap: boolean;
+  faq: Array<{ question: string; answer: string }>;
+  catalogFilters: LandingCatalogFilters;
+  internalLinks: Array<{ label: string; path: string }>;
+};
+
+export async function getTenantPageForSettings(
+  session: MembershipSession,
+  pageId: string,
+): Promise<TenantPageSettingsDetail | null> {
   const tenantId = session.tenant.tenantId;
   const profileId = session.user.profile.id;
 
@@ -75,5 +98,18 @@ export async function getTenantPageForSettings(
     pageKind: row.pageKind as TenantPageKind,
     seoTitle: row.seoTitle,
     seoDescription: row.seoDescription,
+    h1: row.h1,
+    intro: row.intro ?? "",
+    ctaLabel: row.ctaLabel,
+    ctaHref: row.ctaHref,
+    ogImagePath: row.ogImagePath,
+    canonicalPath: row.canonicalPath,
+    noindex: row.noindex === true,
+    includeInSitemap: row.includeInSitemap !== false,
+    faq: Array.isArray(row.faq) ? (row.faq as Array<{ question: string; answer: string }>) : [],
+    catalogFilters: sanitizeLandingCatalogFilters(row.catalogFilters) ?? {},
+    internalLinks: Array.isArray(row.internalLinks)
+      ? (row.internalLinks as Array<{ label: string; path: string }>)
+      : [],
   };
 }

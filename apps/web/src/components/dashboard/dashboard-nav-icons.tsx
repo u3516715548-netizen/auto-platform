@@ -196,6 +196,48 @@ function IconPreferences(props: IconProps) {
   );
 }
 
+function IconMarketing(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path
+        d="M4.5 18.5V9.5L12 4.5l7.5 5v9"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path d="M9 18.5v-5h6v5" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconMarketingChart(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4.5 19.5h15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path
+        d="M7 16V11M12 16V8M17 16v-3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconMarketingShield(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path
+        d="M12 3.5l7 3v5.2c0 4.2-2.8 7.1-7 8.8-4.2-1.7-7-4.6-7-8.8V6.5l7-3Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path d="M9.5 12l1.8 1.8L15 10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function DashboardNavIcon({
   name,
   size = 18,
@@ -228,6 +270,16 @@ export function DashboardNavIcon({
       return <IconPages size={size} />;
     case "preferences":
       return <IconPreferences size={size} />;
+    case "marketing":
+    case "marketing-overview":
+      return <IconMarketing size={size} />;
+    case "marketing-seo":
+    case "marketing-health":
+      return <IconPreferences size={size} />;
+    case "marketing-analytics":
+      return <IconMarketingChart size={size} />;
+    case "marketing-verification":
+      return <IconMarketingShield size={size} />;
   }
 }
 

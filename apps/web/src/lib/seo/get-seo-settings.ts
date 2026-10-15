@@ -7,6 +7,9 @@ export type SeoSettingsForForm = {
   seoDescriptionDefault: string;
   faviconPath: string;
   indexingEnabled: boolean;
+  titleTemplate: string;
+  ogImagePath: string;
+  twitterHandle: string;
 };
 
 export async function getSeoSettingsForSettings(
@@ -29,5 +32,8 @@ export async function getSeoSettingsForSettings(
     seoDescriptionDefault: row?.seoDescriptionDefault ?? "",
     faviconPath: row?.faviconPath ?? "",
     indexingEnabled: row?.indexingEnabled ?? true,
+    titleTemplate: row?.titleTemplate ?? "",
+    ogImagePath: row?.ogImagePath ?? "",
+    twitterHandle: row?.twitterHandle ?? "",
   };
 }

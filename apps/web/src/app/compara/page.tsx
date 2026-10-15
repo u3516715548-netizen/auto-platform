@@ -10,6 +10,7 @@ import { publicCatalogPath } from "@/lib/storefront/paths";
 import { PublicStorefrontShell } from "@/components/storefront/public-shell";
 import { ComparePageClient } from "@/components/storefront/compare-page-client";
 import { IconChevronLeft } from "@/components/storefront/icons";
+import { buildForcedNoindexMetadata } from "@/lib/seo/build-page-metadata";
 import { withPerfRoute } from "@/lib/perf/server-timing";
 
 export const dynamic = "force-dynamic";
@@ -17,9 +18,9 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
   const resolved = await resolvePublicTenantFromHost();
   if (resolved.kind === "ok") {
-    return { title: `Comparație — ${resolved.tenant.name}` };
+    return buildForcedNoindexMetadata(`Comparație — ${resolved.tenant.name}`);
   }
-  return { title: "Comparație" };
+  return buildForcedNoindexMetadata("Comparație");
 }
 
 export default async function ComparePage() {

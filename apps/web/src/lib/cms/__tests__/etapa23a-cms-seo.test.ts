@@ -60,12 +60,21 @@ describe("Etapa 23A CMS slug + sanitize", () => {
 
 describe("Etapa 23A SEO metadata", () => {
   it("CMS metadata uses page SEO, canonical slug, respects indexing flag", () => {
+    const basePage = {
+      slug: "termeni",
+      title: "Termeni",
+      body: "…",
+      pageKind: "terms" as const,
+      canonicalPath: "/p/termeni",
+      noindex: false,
+      includeInSitemap: true,
+      faq: [] as Array<{ question: string; answer: string }>,
+      catalogFilters: {},
+      internalLinks: [] as Array<{ label: string; path: string }>,
+    };
     const meta = buildPublicCmsPageMetadata({
       page: {
-        slug: "termeni",
-        title: "Termeni",
-        body: "…",
-        pageKind: "terms",
+        ...basePage,
         seoTitle: "Termeni SEO",
         seoDescription: "Desc SEO",
       },
@@ -78,16 +87,18 @@ describe("Etapa 23A SEO metadata", () => {
     expect(meta.robots).toEqual({ index: true, follow: true });
 
     const noindex = buildPublicCmsPageMetadata({
-      page: {
-        slug: "termeni",
-        title: "Termeni",
-        body: "",
-        pageKind: "terms",
-      },
+      page: { ...basePage, body: "" },
       dealerName: "ACME",
       seo: { indexingEnabled: false },
     });
     expect(noindex.robots).toEqual({ index: false, follow: true });
+
+    const pageNoindex = buildPublicCmsPageMetadata({
+      page: { ...basePage, noindex: true, seoDescription: "Desc SEO" },
+      dealerName: "ACME",
+      seo: { indexingEnabled: true },
+    });
+    expect(pageNoindex.robots).toEqual({ index: false, follow: true });
   });
 
   it("catalog keeps query canonical / and can apply SEO defaults", () => {
@@ -128,5 +139,13 @@ describe("Etapa 23A SEO metadata", () => {
         indexingEnabled: true,
       }).success,
     ).toBe(false);
+
+    expect(
+      upsertTenantSeoSettingsInputSchema.safeParse({
+        indexingEnabled: true,
+        ogImagePath: "https://cdn.example.com/og.png",
+        titleTemplate: "%s | Shop",
+      }).success,
+    ).toBe(true);
   });
 });

@@ -1,6 +1,10 @@
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
-import type { PublicTenantView } from "@/lib/storefront/resolve-public-tenant";
+import type { PublicMarketingRuntimeView } from "@auto-platform/types";
+import {
+  resolvePublicTenantFromHost,
+  type PublicTenantView,
+} from "@/lib/storefront/resolve-public-tenant";
 import {
   publicCatalogPath,
   publicComparePath,
@@ -17,9 +21,12 @@ import {
   resolveStickyContactActions,
   type StickyContactSurface,
 } from "@/lib/storefront/sticky-contact-actions";
+import { loadPublicMarketingIntegrations } from "@/lib/marketing/load-public-marketing-integrations";
 import { StickyContactBar } from "@/components/storefront/sticky-contact-bar";
 import { StorefrontListsProvider } from "@/components/storefront/storefront-lists-context";
 import { CompareFloatingBar } from "@/components/storefront/compare-floating-bar";
+import { StorefrontMarketingRuntime } from "@/components/marketing/storefront-marketing-runtime";
+import { TrackedContactLink } from "@/components/marketing/tracked-contact-link";
 import {
   IconBookmark,
   IconCar,
@@ -27,6 +34,11 @@ import {
   IconHome,
   IconPhone,
 } from "@/components/storefront/icons";
+import { cookies } from "next/headers";
+import {
+  CONSENT_COOKIE_NAME,
+  parseConsentCookieValue,
+} from "@/lib/consent/consent-state";
 
 type PublicStorefrontShellProps = {
   tenant: PublicTenantView;
@@ -44,7 +56,16 @@ const focusLink =
 const APP_FRAME =
   "sf-canvas mx-auto flex w-full max-w-[1200px] flex-1 flex-col md:shadow-[0_0_0_1px_rgba(24,24,27,0.06)]";
 
-export function PublicStorefrontShell({
+const EMPTY_MARKETING: PublicMarketingRuntimeView = {
+  verification: {},
+  preferGtm: false,
+};
+
+/**
+ * Tenant storefront chrome. Async so marketing whitelist loads with resolve cache
+ * and the consent banner can SSR (client runtime as direct child, not streamed slot).
+ */
+export async function PublicStorefrontShell({
   tenant,
   children,
   mainClassName,
@@ -68,7 +89,17 @@ export function PublicStorefrontShell({
     ["--sf-accent" as string]: accent,
   } as CSSProperties;
 
+  let marketing: PublicMarketingRuntimeView = EMPTY_MARKETING;
+  const resolved = await resolvePublicTenantFromHost();
+  if (resolved.kind === "ok" && resolved.tenant.slug === tenant.slug) {
+    marketing = await loadPublicMarketingIntegrations(resolved.tenant.tenantId);
+  }
+
+  const jar = await cookies();
+  const initialConsent = parseConsentCookieValue(jar.get(CONSENT_COOKIE_NAME)?.value);
+
   return (
+    <>
     <StorefrontListsProvider tenantSlug={tenant.slug}>
       <div
         className={`${shellClass} flex min-h-full min-w-0 flex-1 flex-col overflow-x-clip`}
@@ -120,8 +151,9 @@ export function PublicStorefrontShell({
                 </nav>
               </div>
 
-              <a
+              <TrackedContactLink
                 href={headerCta.href}
+                sourceContext="header_cta"
                 className={`inline-flex min-h-9 shrink-0 items-center justify-center rounded-full px-3.5 text-sm font-semibold text-white md:min-h-10 md:px-4 ${focusLink}`}
                 style={{ backgroundColor: accent }}
                 {...(headerCta.href.startsWith("http")
@@ -129,7 +161,7 @@ export function PublicStorefrontShell({
                   : {})}
               >
                 {headerCta.label}
-              </a>
+              </TrackedContactLink>
             </div>
           </header>
 
@@ -161,15 +193,16 @@ export function PublicStorefrontShell({
                 <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[var(--sf-text-muted)]">
                   {footerContacts.map((link) => (
                     <li key={link.label}>
-                      <a
+                      <TrackedContactLink
                         href={link.href}
+                        sourceContext="footer"
                         className={`inline-flex min-h-10 items-center ${focusLink}`}
                         {...(link.external
                           ? { target: "_blank", rel: "noopener noreferrer" }
                           : {})}
                       >
                         {link.label}
-                      </a>
+                      </TrackedContactLink>
                     </li>
                   ))}
                 </ul>
@@ -239,15 +272,16 @@ export function PublicStorefrontShell({
               </li>
               {mobilePhone ? (
                 <li className="min-w-0 flex-1">
-                  <a
+                  <TrackedContactLink
                     href={`tel:${mobilePhone.replace(/\s+/g, "")}`}
+                    sourceContext="mobile_nav"
                     className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-[var(--sf-text-muted)] ${focusLink}`}
                   >
                     <span className="flex size-8 items-center justify-center" aria-hidden>
                       <IconPhone size={18} />
                     </span>
                     Sună
-                  </a>
+                  </TrackedContactLink>
                 </li>
               ) : null}
             </ul>
@@ -258,5 +292,12 @@ export function PublicStorefrontShell({
         <StickyContactBar actions={stickyActions} />
       </div>
     </StorefrontListsProvider>
+    {/* Outside client provider — single consent tree (SSR via client initial HTML). */}
+    <StorefrontMarketingRuntime
+      tenantSlug={tenant.slug}
+      marketing={marketing}
+      initialConsent={initialConsent}
+    />
+    </>
   );
 }
